@@ -184,9 +184,20 @@ public class TextSearchDocument extends AbstractOmnisearchDocument {
 				return null;
 
 			selectQuery.append(", ");
+			
+			// Check if the specified text search configuration exists
+	        String tsConfig = getTSConfig();
+	        String fallbackConfig = "english";
+	        String checkConfigQuery = "SELECT COUNT(*) FROM pg_ts_config WHERE cfgname = ?";
+	        int configCount = DB.getSQLValue(null, checkConfigQuery, tsConfig);
+
+	        if (configCount == 0) {
+	            log.log(Level.WARNING, "Text search configuration '" + tsConfig + "' does not exist. Falling back to '" + fallbackConfig + "'.");
+	            tsConfig = fallbackConfig;
+	        }
 
 			selectQuery.append("to_tsvector(");
-			selectQuery.append("'" + getTSConfig() + "', "); //Language Parameter config		
+			selectQuery.append("'" + tsConfig + "', "); //Language Parameter config		
 		}
 
 		//Columns that want to be indexed
