@@ -47,7 +47,6 @@ public class TSearchIndexEventHandler extends AbstractEventHandler {
 	protected void initialize() {
 		log.warning("");
 
-//		List<String> indexedTables = OmnisearchHelper.getIndexedTableNames(TextSearchValues.TS_INDEX_NAME, trxName);
 		List<String> indexedTables = OmnisearchHelper.getIndexedTableNames(trxName, -1); // CLDE this gets data from all clients
 
 		for (String tableName : indexedTables) {
@@ -56,7 +55,6 @@ public class TSearchIndexEventHandler extends AbstractEventHandler {
 			registerTableEvent(IEventTopics.PO_AFTER_DELETE, tableName);
 		}
 
-//		fkTableNames = OmnisearchHelper.getForeignTableNames(TextSearchValues.TS_INDEX_NAME, trxName);
 		fkTableNames = OmnisearchHelper.getForeignTableNames(trxName, -1); // CLDE - this gets data from all clients
 		//Index the FK tables
 		for (String tableName : fkTableNames) {
@@ -65,12 +63,7 @@ public class TSearchIndexEventHandler extends AbstractEventHandler {
 				registerTableEvent(IEventTopics.PO_AFTER_CHANGE, tableName);
 		}
 
-		//Handle the changes in MColumn to update the index
-//		registerTableEvent(IEventTopics.PO_AFTER_NEW, MColumn.Table_Name);
-//		registerTableEvent(IEventTopics.PO_AFTER_CHANGE, MColumn.Table_Name);
-//		registerTableEvent(IEventTopics.PO_AFTER_DELETE, MColumn.Table_Name);
-		
-		// CLDE
+		// CLDE -Handle the changes in the Omnisearch Config to update the index
 		registerTableEvent(IEventTopics.PO_AFTER_NEW, MOmnSearchConfigLine.Table_Name);
 		registerTableEvent(IEventTopics.PO_AFTER_CHANGE, MOmnSearchConfigLine.Table_Name);
 		registerTableEvent(IEventTopics.PO_AFTER_DELETE, MOmnSearchConfigLine.Table_Name);
@@ -82,16 +75,6 @@ public class TSearchIndexEventHandler extends AbstractEventHandler {
 		PO po = getPO(event);
 		trxName = po.get_TrxName();
 		
-//		if (po instanceof MColumn) {
-//			if ((type.equals(IEventTopics.PO_AFTER_CHANGE) &&
-//					po.is_ValueChanged(TextSearchValues.TS_INDEX_NAME)) || 
-//					(po.get_ValueAsBoolean(TextSearchValues.TS_INDEX_NAME))) {
-//				//If the Text search index flag is changed -> register/unregister the modified table
-//				IEventManager tempManager = eventManager;
-//				unbindEventManager(eventManager);
-//				bindEventManager(tempManager);
-//			}
-//		}
 		// CLDE
 		if (po instanceof MOmnSearchConfigLine) {
 			if (type.equals(IEventTopics.PO_AFTER_NEW) ||

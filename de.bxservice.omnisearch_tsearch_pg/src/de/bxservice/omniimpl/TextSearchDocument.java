@@ -59,7 +59,6 @@ public class TextSearchDocument extends AbstractOmnisearchDocument {
 	 */
 	public void buildDocument(String trxName) {
 		if (indexedTables == null)
-//			getIndexedTables(true, trxName, TextSearchValues.TS_INDEX_NAME);
 			getIndexedTables(true, trxName); // CLDE
 
 		if (indexedTables != null && indexedTables.size() > 0) {
