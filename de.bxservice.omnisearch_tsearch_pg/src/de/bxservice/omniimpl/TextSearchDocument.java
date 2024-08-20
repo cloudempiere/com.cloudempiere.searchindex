@@ -59,7 +59,8 @@ public class TextSearchDocument extends AbstractOmnisearchDocument {
 	 */
 	public void buildDocument(String trxName) {
 		if (indexedTables == null)
-			getIndexedTables(true, trxName, TextSearchValues.TS_INDEX_NAME);
+//			getIndexedTables(true, trxName, TextSearchValues.TS_INDEX_NAME);
+			getIndexedTables(true, trxName); // CLDE
 
 		if (indexedTables != null && indexedTables.size() > 0) {
 			log.log(Level.INFO, "Indexing...");
@@ -77,13 +78,13 @@ public class TextSearchDocument extends AbstractOmnisearchDocument {
 		if (po == null)
 			return;
 
-		ArrayList<Integer> columnIds = getIndexedColumns(po.get_Table_ID(), TextSearchValues.TS_INDEX_NAME);
+		ArrayList<Integer> columnIds = getIndexedColumns(po.get_Table_ID());
 
 		//Insert 
 		if (isNew) {
 			insertIntoDocument(trxName, po.get_Table_ID(), po.get_ID(), columnIds);
 		} else { //Update
-			ArrayList<String> columnNames = getIndexedColumnNames(po.get_Table_ID(), TextSearchValues.TS_INDEX_NAME);
+			ArrayList<String> columnNames = getIndexedColumnNames(po.get_Table_ID());
 			//Check if one of the indexed columns was modified
 			boolean indexChanged = false;
 			for (String columnName : columnNames) {
@@ -123,37 +124,42 @@ public class TextSearchDocument extends AbstractOmnisearchDocument {
 
 		log.log(Level.INFO, "Indexing " + AD_Table_ID + " " + columns);
 
-		StringBuilder insertQuery = new StringBuilder();
-		insertQuery.append("INSERT INTO ");
-		insertQuery.append(TextSearchValues.TS_TABLE_NAME);
-		insertQuery.append(" (");
-		for (String columnName : TextSearchValues.TS_COLUMNS) {
-			insertQuery.append(columnName);
-			insertQuery.append(",");
-		}
-		insertQuery.deleteCharAt(insertQuery.length() -1); //remove last comma
-		insertQuery.append(") ");
+		StringBuilder upsertQuery = new StringBuilder();
+	    upsertQuery.append("INSERT INTO ");
+	    upsertQuery.append(TextSearchValues.TS_TABLE_NAME);
+	    upsertQuery.append(" (");
+	    for (String columnName : TextSearchValues.TS_COLUMNS) {
+	    	upsertQuery.append(columnName);
+	    	upsertQuery.append(",");
+	    }
+	    upsertQuery.deleteCharAt(upsertQuery.length() - 1); // remove last comma
+	    upsertQuery.append(") ");
 
-		String selectQuery = getSelectQuery(AD_Table_ID, columns, false, Record_ID > 0);
+	    String selectQuery = getSelectQuery(AD_Table_ID, columns, false, Record_ID > 0);
 
-		if (selectQuery == null) {
-			log.log(Level.WARNING, "A table with more than one key column cannot be indexed");
-		} else {
-			insertQuery.append(selectQuery);
+	    if (selectQuery == null) {
+	        log.log(Level.WARNING, "A table with more than one key column cannot be indexed");
+	    } else {
+	        upsertQuery.append(selectQuery);
+	        upsertQuery.append(" ON CONFLICT (AD_Table_ID, Record_ID) DO UPDATE SET ");
+	        for (String columnName : TextSearchValues.TS_COLUMNS) {
+	            upsertQuery.append(columnName).append(" = EXCLUDED.").append(columnName).append(",");
+	        }
+	        upsertQuery.deleteCharAt(upsertQuery.length() - 1); // remove last comma
 
-			Object[] params = null;
-			if (Record_ID > 0)
-				params = new Object[]{Env.getAD_Client_ID(Env.getCtx()), Record_ID};
-			else if (Env.getAD_Client_ID(Env.getCtx()) > 0)
-				params = new Object[]{Env.getAD_Client_ID(Env.getCtx())};
+	        Object[] params = null;
+	        if (Record_ID > 0)
+	            params = new Object[]{Env.getAD_Client_ID(Env.getCtx()), Record_ID};
+	        else if (Env.getAD_Client_ID(Env.getCtx()) > 0)
+	            params = new Object[]{Env.getAD_Client_ID(Env.getCtx())};
 
-			try {
-				DB.executeUpdateEx(insertQuery.toString(), params, trxName);
-			} catch (Exception e) {
-				log.log(Level.SEVERE, insertQuery.toString());
-				throw new AdempiereException(e);
-			}
-		}
+	        try {
+	            DB.executeUpdateEx(upsertQuery.toString(), params, trxName);
+	        } catch (Exception e) {
+	            log.log(Level.SEVERE, upsertQuery.toString());
+	            throw new AdempiereException(e);
+	        }
+	    }
 	}
 
 	@Override
@@ -185,19 +191,8 @@ public class TextSearchDocument extends AbstractOmnisearchDocument {
 
 			selectQuery.append(", ");
 			
-			// Check if the specified text search configuration exists
-	        String tsConfig = getTSConfig();
-	        String fallbackConfig = "english";
-	        String checkConfigQuery = "SELECT COUNT(*) FROM pg_ts_config WHERE cfgname = ?";
-	        int configCount = DB.getSQLValue(null, checkConfigQuery, tsConfig);
-
-	        if (configCount == 0) {
-	            log.log(Level.WARNING, "Text search configuration '" + tsConfig + "' does not exist. Falling back to '" + fallbackConfig + "'.");
-	            tsConfig = fallbackConfig;
-	        }
-
 			selectQuery.append("to_tsvector(");
-			selectQuery.append("'" + tsConfig + "', "); //Language Parameter config		
+			selectQuery.append("'" + getTSConfig() + "', "); //Language Parameter config		
 		}
 
 		//Columns that want to be indexed
@@ -324,10 +319,18 @@ public class TextSearchDocument extends AbstractOmnisearchDocument {
 		return joinClause.toString();
 	}
 	
-	
-
 	private String getTSConfig() {
-		return MClient.get(Env.getCtx()).getLanguage().getLocale().getDisplayLanguage(Locale.ENGLISH);
+		// Check if the specified text search configuration exists
+        String tsConfig = MClient.get(Env.getCtx()).getLanguage().getLocale().getDisplayLanguage(Locale.ENGLISH);
+        String fallbackConfig = "simple";
+        String checkConfigQuery = "SELECT COUNT(*) FROM pg_ts_config WHERE cfgname = ?";
+        int configCount = DB.getSQLValue(null, checkConfigQuery, tsConfig);
+
+        if (configCount == 0) {
+            log.log(Level.INFO, "Text search configuration '" + tsConfig + "' does not exist. Falling back to '" + fallbackConfig + "'.");
+            tsConfig = fallbackConfig;
+        }
+		return tsConfig;
 	}
 
 	@Override
@@ -451,7 +454,7 @@ public class TextSearchDocument extends AbstractOmnisearchDocument {
 			sql.append(indexQuery.get(result.getAD_Table_ID()));
 		} else {
 
-			ArrayList<Integer> columnIds = getIndexedColumns(result.getAD_Table_ID(), TextSearchValues.TS_INDEX_NAME);
+			ArrayList<Integer> columnIds = getIndexedColumns(result.getAD_Table_ID());
 
 			if(columnIds == null || columnIds.isEmpty()) {
 				result.setHtmlHeadline("");
@@ -592,7 +595,7 @@ public class TextSearchDocument extends AbstractOmnisearchDocument {
 		if (!identifierChanged(po))
 			return;
 		
-		List<MColumn> fkColumns = getReferencedColumns(TextSearchValues.TS_INDEX_NAME, po.get_TableName());
+		List<MColumn> fkColumns = getReferencedColumns(po.get_TableName());
 		for (MColumn fkColumn : fkColumns) {
 			List<PO> referencedPOs = new Query(Env.getCtx(),MTable.get(Env.getCtx(), fkColumn.getAD_Table_ID()), 
 					fkColumn.getColumnName() + "=?", po.get_TrxName())
@@ -603,7 +606,7 @@ public class TextSearchDocument extends AbstractOmnisearchDocument {
 		
 			ArrayList<Integer> columnIds = null;
 			for (PO refPO : referencedPOs) {
-				columnIds = getIndexedColumns(refPO.get_Table_ID(), TextSearchValues.TS_INDEX_NAME);
+				columnIds = getIndexedColumns(refPO.get_Table_ID());
 				updateRecord(refPO, columnIds, po.get_TrxName());
 			}
 		}

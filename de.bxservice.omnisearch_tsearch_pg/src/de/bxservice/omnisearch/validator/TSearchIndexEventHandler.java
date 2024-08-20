@@ -27,12 +27,11 @@ import java.util.Set;
 import org.adempiere.base.event.AbstractEventHandler;
 import org.adempiere.base.event.IEventManager;
 import org.adempiere.base.event.IEventTopics;
-import org.compiere.model.MColumn;
+import org.cloudempiere.model.MOmnSearchConfigLine;
 import org.compiere.model.PO;
 import org.compiere.util.CLogger;
 import org.osgi.service.event.Event;
 
-import de.bxservice.omniimpl.TextSearchValues;
 import de.bxservice.omnisearch.tools.OmnisearchAbstractFactory;
 import de.bxservice.omnisearch.tools.OmnisearchHelper;
 
@@ -48,7 +47,8 @@ public class TSearchIndexEventHandler extends AbstractEventHandler {
 	protected void initialize() {
 		log.warning("");
 
-		List<String> indexedTables = OmnisearchHelper.getIndexedTableNames(TextSearchValues.TS_INDEX_NAME, trxName);
+//		List<String> indexedTables = OmnisearchHelper.getIndexedTableNames(TextSearchValues.TS_INDEX_NAME, trxName);
+		List<String> indexedTables = OmnisearchHelper.getIndexedTableNames(trxName, -1); // CLDE this gets data from all clients
 
 		for (String tableName : indexedTables) {
 			registerTableEvent(IEventTopics.PO_AFTER_NEW, tableName);
@@ -56,7 +56,8 @@ public class TSearchIndexEventHandler extends AbstractEventHandler {
 			registerTableEvent(IEventTopics.PO_AFTER_DELETE, tableName);
 		}
 
-		fkTableNames = OmnisearchHelper.getForeignTableNames(TextSearchValues.TS_INDEX_NAME, trxName);
+//		fkTableNames = OmnisearchHelper.getForeignTableNames(TextSearchValues.TS_INDEX_NAME, trxName);
+		fkTableNames = OmnisearchHelper.getForeignTableNames(trxName, -1); // CLDE - this gets data from all clients
 		//Index the FK tables
 		for (String tableName : fkTableNames) {
 			//Don't duplicate the Event for the same table
@@ -65,9 +66,14 @@ public class TSearchIndexEventHandler extends AbstractEventHandler {
 		}
 
 		//Handle the changes in MColumn to update the index
-		registerTableEvent(IEventTopics.PO_AFTER_NEW, MColumn.Table_Name);
-		registerTableEvent(IEventTopics.PO_AFTER_CHANGE, MColumn.Table_Name);
-		registerTableEvent(IEventTopics.PO_AFTER_DELETE, MColumn.Table_Name);
+//		registerTableEvent(IEventTopics.PO_AFTER_NEW, MColumn.Table_Name);
+//		registerTableEvent(IEventTopics.PO_AFTER_CHANGE, MColumn.Table_Name);
+//		registerTableEvent(IEventTopics.PO_AFTER_DELETE, MColumn.Table_Name);
+		
+		// CLDE
+		registerTableEvent(IEventTopics.PO_AFTER_NEW, MOmnSearchConfigLine.Table_Name);
+		registerTableEvent(IEventTopics.PO_AFTER_CHANGE, MOmnSearchConfigLine.Table_Name);
+		registerTableEvent(IEventTopics.PO_AFTER_DELETE, MOmnSearchConfigLine.Table_Name);
 	}
 
 	@Override
@@ -76,11 +82,24 @@ public class TSearchIndexEventHandler extends AbstractEventHandler {
 		PO po = getPO(event);
 		trxName = po.get_TrxName();
 		
-		if (po instanceof MColumn) {
-			if ((type.equals(IEventTopics.PO_AFTER_CHANGE) &&
-					po.is_ValueChanged(TextSearchValues.TS_INDEX_NAME)) || 
-					(po.get_ValueAsBoolean(TextSearchValues.TS_INDEX_NAME))) {
-				//If the Text search index flag is changed -> register/unregister the modified table
+//		if (po instanceof MColumn) {
+//			if ((type.equals(IEventTopics.PO_AFTER_CHANGE) &&
+//					po.is_ValueChanged(TextSearchValues.TS_INDEX_NAME)) || 
+//					(po.get_ValueAsBoolean(TextSearchValues.TS_INDEX_NAME))) {
+//				//If the Text search index flag is changed -> register/unregister the modified table
+//				IEventManager tempManager = eventManager;
+//				unbindEventManager(eventManager);
+//				bindEventManager(tempManager);
+//			}
+//		}
+		// CLDE
+		if (po instanceof MOmnSearchConfigLine) {
+			if (type.equals(IEventTopics.PO_AFTER_NEW) ||
+					type.equals(IEventTopics.PO_AFTER_DELETE) ||
+					(type.equals(IEventTopics.PO_AFTER_CHANGE) &&
+					po.is_ValueChanged(MOmnSearchConfigLine.COLUMNNAME_AD_Column_ID) || 
+					po.is_ValueChanged(MOmnSearchConfigLine.COLUMNNAME_AD_Table_ID))) {
+				//If the Omnisearch configuration has changed -> register/unregister the modified table
 				IEventManager tempManager = eventManager;
 				unbindEventManager(eventManager);
 				bindEventManager(tempManager);
