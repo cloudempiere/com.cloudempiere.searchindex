@@ -23,26 +23,39 @@ package de.bxservice.omnisearch.process;
 
 import java.util.logging.Level;
 
+import org.adempiere.exceptions.FillMandatoryException;
 import org.compiere.process.ProcessInfoParameter;
 import org.compiere.process.SvrProcess;
+import org.compiere.util.Msg;
 
-import de.bxservice.omnisearch.tools.OmnisearchAbstractFactory;
-import de.bxservice.omnisearch.tools.OmnisearchHelper;
+import com.cloudempiere.omnisearch.indexprovider.ISearchIndexProvider;
+import com.cloudempiere.omnisearch.indexprovider.SearchIndexProviderFactory;
+import com.cloudempiere.omnisearch.model.MSearchIndexProvider;
 
 public class CreateIndexProcess extends SvrProcess {
 	
-	String indexType = null;
+	protected int p_AD_SearchIndexProvider_ID = 0;
 	
 	@Override
 	protected void prepare() {
 		ProcessInfoParameter[] para = getParameter();
+//		for (int i = 0; i < para.length; i++)
+//		{
+//			String name = para[i].getParameterName();
+//			if (para[i].getParameter() == null)
+//				;
+//			else if (name.equals("BXS_IndexType"))
+//				indexType = (String)para[i].getParameter();
+//			else
+//				log.log(Level.SEVERE, "Unknown Parameter: " + name);
+//		}
 		for (int i = 0; i < para.length; i++)
 		{
 			String name = para[i].getParameterName();
 			if (para[i].getParameter() == null)
 				;
-			else if (name.equals("BXS_IndexType"))
-				indexType = (String)para[i].getParameter();
+			else if (name.equals("AD_SearchIndexProvider_ID"))
+				p_AD_SearchIndexProvider_ID = para[i].getParameterAsInt();
 			else
 				log.log(Level.SEVERE, "Unknown Parameter: " + name);
 		}
@@ -50,20 +63,34 @@ public class CreateIndexProcess extends SvrProcess {
 
 	@Override
 	protected String doIt() throws Exception {
+//		//Set default in case of null to avoid NPE
+//		if (indexType == null)
+//			indexType = OmnisearchAbstractFactory.TEXTSEARCH_INDEX;
+//
+//		//First populate the vector then create the index for faster performance
+//		//Creates the document
+//		log.log(Level.INFO, "Creating the document");
+//		OmnisearchHelper.recreateDocument(indexType, get_TrxName());
+//		
+//		//Creates the index
+//		log.log(Level.INFO, "Creating the index");
+//		OmnisearchHelper.getIndex(indexType).recreateIndex(get_TrxName());
+//		
+//        return "@OK@";
 		
-		//Set default in case of null to avoid NPE
-		if (indexType == null)
-			indexType = OmnisearchAbstractFactory.TEXTSEARCH_INDEX;
-
-		//First populate the vector then create the index for faster performance
-		//Creates the document
-		log.log(Level.INFO, "Creating the document");
-		OmnisearchHelper.recreateDocument(indexType, get_TrxName());
+		if(p_AD_SearchIndexProvider_ID <= 0)
+			throw new FillMandatoryException("AD_SearchIndexProvider_ID");
 		
-		//Creates the index
-		log.log(Level.INFO, "Creating the index");
-		OmnisearchHelper.getIndex(indexType).recreateIndex(get_TrxName());
+		MSearchIndexProvider providerDef = new MSearchIndexProvider(getCtx(), p_AD_SearchIndexProvider_ID, get_TrxName());		
+		SearchIndexProviderFactory factory = new SearchIndexProviderFactory();
+		ISearchIndexProvider provider = factory.getSearchIndexProvider(providerDef.getClassname());
 		
-        return "@OK@";
+		// TODO get configuration from AD_SearchIndex
+		
+		// TODO load data based on the configuration (table, columns)
+		
+		// TODO call the search provider
+		
+		return Msg.getMsg(getCtx(), "Success");
 	}
 }
