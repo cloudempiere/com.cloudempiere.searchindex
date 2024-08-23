@@ -27,10 +27,11 @@ import java.util.Set;
 import org.adempiere.base.event.AbstractEventHandler;
 import org.adempiere.base.event.IEventManager;
 import org.adempiere.base.event.IEventTopics;
-import org.cloudempiere.model.MOmnSearchConfigLine;
 import org.compiere.model.PO;
 import org.compiere.util.CLogger;
 import org.osgi.service.event.Event;
+
+import com.cloudempiere.omnisearch.model.MSearchIndexColumn;
 
 import de.bxservice.omnisearch.tools.OmnisearchAbstractFactory;
 import de.bxservice.omnisearch.tools.OmnisearchHelper;
@@ -64,9 +65,9 @@ public class TSearchIndexEventHandler extends AbstractEventHandler {
 		}
 
 		// CLDE -Handle the changes in the Omnisearch Config to update the index
-		registerTableEvent(IEventTopics.PO_AFTER_NEW, MOmnSearchConfigLine.Table_Name);
-		registerTableEvent(IEventTopics.PO_AFTER_CHANGE, MOmnSearchConfigLine.Table_Name);
-		registerTableEvent(IEventTopics.PO_AFTER_DELETE, MOmnSearchConfigLine.Table_Name);
+		registerTableEvent(IEventTopics.PO_AFTER_NEW, MSearchIndexColumn.Table_Name);
+		registerTableEvent(IEventTopics.PO_AFTER_CHANGE, MSearchIndexColumn.Table_Name);
+		registerTableEvent(IEventTopics.PO_AFTER_DELETE, MSearchIndexColumn.Table_Name);
 	}
 
 	@Override
@@ -76,12 +77,12 @@ public class TSearchIndexEventHandler extends AbstractEventHandler {
 		trxName = po.get_TrxName();
 		
 		// CLDE
-		if (po instanceof MOmnSearchConfigLine) {
+		if (po instanceof MSearchIndexColumn) {
 			if (type.equals(IEventTopics.PO_AFTER_NEW) ||
 					type.equals(IEventTopics.PO_AFTER_DELETE) ||
 					(type.equals(IEventTopics.PO_AFTER_CHANGE) &&
-					po.is_ValueChanged(MOmnSearchConfigLine.COLUMNNAME_AD_Column_ID) || 
-					po.is_ValueChanged(MOmnSearchConfigLine.COLUMNNAME_AD_Table_ID))) {
+					po.is_ValueChanged(MSearchIndexColumn.COLUMNNAME_AD_Column_ID) || 
+					po.is_ValueChanged(MSearchIndexColumn.COLUMNNAME_AD_Table_ID))) {
 				//If the Omnisearch configuration has changed -> register/unregister the modified table
 				IEventManager tempManager = eventManager;
 				unbindEventManager(eventManager);
