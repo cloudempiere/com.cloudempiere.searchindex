@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.cloudempiere.omnisearch.indexprovider;
 
 /**

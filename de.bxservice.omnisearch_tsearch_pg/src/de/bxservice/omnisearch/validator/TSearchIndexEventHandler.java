@@ -25,15 +25,12 @@ import java.util.List;
 import java.util.Set;
 
 import org.adempiere.base.event.AbstractEventHandler;
-import org.adempiere.base.event.IEventManager;
 import org.adempiere.base.event.IEventTopics;
-import org.compiere.model.PO;
 import org.compiere.util.CLogger;
 import org.osgi.service.event.Event;
 
 import com.cloudempiere.omnisearch.model.MSearchIndexColumn;
 
-import de.bxservice.omnisearch.tools.OmnisearchAbstractFactory;
 import de.bxservice.omnisearch.tools.OmnisearchHelper;
 
 public class TSearchIndexEventHandler extends AbstractEventHandler {
@@ -72,31 +69,33 @@ public class TSearchIndexEventHandler extends AbstractEventHandler {
 
 	@Override
 	protected void doHandleEvent(Event event) {
-		String type = event.getTopic();
-		PO po = getPO(event);
-		trxName = po.get_TrxName();
+// TODO implement the event handler for AD_IndexColumn 
 		
-		// CLDE
-		if (po instanceof MSearchIndexColumn) {
-			if (type.equals(IEventTopics.PO_AFTER_NEW) ||
-					type.equals(IEventTopics.PO_AFTER_DELETE) ||
-					(type.equals(IEventTopics.PO_AFTER_CHANGE) &&
-					po.is_ValueChanged(MSearchIndexColumn.COLUMNNAME_AD_Column_ID) || 
-					po.is_ValueChanged(MSearchIndexColumn.COLUMNNAME_AD_Table_ID))) {
-				//If the Omnisearch configuration has changed -> register/unregister the modified table
-				IEventManager tempManager = eventManager;
-				unbindEventManager(eventManager);
-				bindEventManager(tempManager);
-			}
-		} else if (type.equals(IEventTopics.PO_AFTER_DELETE))
-			OmnisearchHelper.deleteFromDocument(OmnisearchAbstractFactory.TEXTSEARCH_INDEX, po);
-		else 
-			OmnisearchHelper.updateDocument(OmnisearchAbstractFactory.TEXTSEARCH_INDEX, po, 
-					type.equals(IEventTopics.PO_AFTER_NEW));
-		
-		if (fkTableNames.contains(po.get_TableName())) {
-			OmnisearchHelper.updateParent(OmnisearchAbstractFactory.TEXTSEARCH_INDEX, po);
-		}
+//		String type = event.getTopic();
+//		PO po = getPO(event);
+//		trxName = po.get_TrxName();
+//		
+//		// CLDE
+//		if (po instanceof MSearchIndexColumn) {
+//			if (type.equals(IEventTopics.PO_AFTER_NEW) ||
+//					type.equals(IEventTopics.PO_AFTER_DELETE) ||
+//					(type.equals(IEventTopics.PO_AFTER_CHANGE) &&
+//					po.is_ValueChanged(MSearchIndexColumn.COLUMNNAME_AD_Column_ID) || 
+//					po.is_ValueChanged(MSearchIndexColumn.COLUMNNAME_AD_Table_ID))) {
+//				//If the Omnisearch configuration has changed -> register/unregister the modified table
+//				IEventManager tempManager = eventManager;
+//				unbindEventManager(eventManager);
+//				bindEventManager(tempManager);
+//			}
+//		} else if (type.equals(IEventTopics.PO_AFTER_DELETE))
+//			OmnisearchHelper.deleteFromDocument(OmnisearchAbstractFactory.TEXTSEARCH_INDEX, po);
+//		else 
+//			OmnisearchHelper.updateDocument(OmnisearchAbstractFactory.TEXTSEARCH_INDEX, po, 
+//					type.equals(IEventTopics.PO_AFTER_NEW));
+//		
+//		if (fkTableNames.contains(po.get_TableName())) {
+//			OmnisearchHelper.updateParent(OmnisearchAbstractFactory.TEXTSEARCH_INDEX, po);
+//		}
 	}
 
 }

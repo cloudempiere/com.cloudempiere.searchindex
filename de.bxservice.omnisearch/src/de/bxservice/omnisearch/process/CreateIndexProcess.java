@@ -21,6 +21,7 @@
 **********************************************************************/
 package de.bxservice.omnisearch.process;
 
+import java.util.List;
 import java.util.logging.Level;
 
 import org.adempiere.exceptions.FillMandatoryException;
@@ -31,6 +32,8 @@ import org.compiere.util.Msg;
 import com.cloudempiere.omnisearch.indexprovider.ISearchIndexProvider;
 import com.cloudempiere.omnisearch.indexprovider.SearchIndexProviderFactory;
 import com.cloudempiere.omnisearch.model.MSearchIndexProvider;
+import com.cloudempiere.omnisearch.util.SearchIndexConfig;
+import com.cloudempiere.omnisearch.util.SearchIndexUtils;
 
 public class CreateIndexProcess extends SvrProcess {
 	
@@ -84,10 +87,8 @@ public class CreateIndexProcess extends SvrProcess {
 		MSearchIndexProvider providerDef = new MSearchIndexProvider(getCtx(), p_AD_SearchIndexProvider_ID, get_TrxName());		
 		SearchIndexProviderFactory factory = new SearchIndexProviderFactory();
 		ISearchIndexProvider provider = factory.getSearchIndexProvider(providerDef.getClassname());
-		
-		// TODO get configuration from AD_SearchIndex
-		
-		// TODO load data based on the configuration (table, columns)
+	    List<SearchIndexConfig> searchIndexConfigs = SearchIndexUtils.loadSearchIndexConfig(getCtx(), get_TrxName());
+	    System.out.println(SearchIndexUtils.loadSearchIndexDataWithJoins(getCtx(), searchIndexConfigs, MSG_InvalidArguments));
 		
 		// TODO call the search provider
 		
