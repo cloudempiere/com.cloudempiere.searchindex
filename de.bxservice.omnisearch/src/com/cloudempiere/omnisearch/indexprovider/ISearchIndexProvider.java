@@ -14,8 +14,14 @@
 package com.cloudempiere.omnisearch.indexprovider;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+
+import org.compiere.util.CLogger;
 
 import com.cloudempiere.omnisearch.model.MSearchIndexProvider;
+import com.cloudempiere.omnisearch.util.SearchIndexRecord;
 
 /**
  * 
@@ -26,6 +32,8 @@ import com.cloudempiere.omnisearch.model.MSearchIndexProvider;
  */
 public interface ISearchIndexProvider
 {
+	public static CLogger log = CLogger.getCLogger (ISearchIndexProvider.class);
+	
 	public void init(MSearchIndexProvider searchIndexProvider, String searchIndexName);
 	
 	public void deleteAllIndex();
@@ -38,6 +46,6 @@ public interface ISearchIndexProvider
 
 	public List<Object> searchIndexDocument(String queryString, int maxRow);
 
-	public void createIndex(int ad_table_id, int record_id, String ...values);
+	public void createIndex(Properties ctx, Map<Integer, Set<SearchIndexRecord>> indexRecordsMap, String trxName);
 	
 }

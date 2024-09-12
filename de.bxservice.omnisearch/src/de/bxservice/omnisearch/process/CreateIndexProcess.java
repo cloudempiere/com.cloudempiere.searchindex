@@ -22,8 +22,11 @@
 package de.bxservice.omnisearch.process;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 
+import org.adempiere.exceptions.AdempiereException;
 import org.adempiere.exceptions.FillMandatoryException;
 import org.compiere.process.ProcessInfoParameter;
 import org.compiere.process.SvrProcess;
@@ -33,6 +36,7 @@ import com.cloudempiere.omnisearch.indexprovider.ISearchIndexProvider;
 import com.cloudempiere.omnisearch.indexprovider.SearchIndexProviderFactory;
 import com.cloudempiere.omnisearch.model.MSearchIndexProvider;
 import com.cloudempiere.omnisearch.util.SearchIndexConfig;
+import com.cloudempiere.omnisearch.util.SearchIndexRecord;
 import com.cloudempiere.omnisearch.util.SearchIndexUtils;
 
 public class CreateIndexProcess extends SvrProcess {
@@ -42,16 +46,6 @@ public class CreateIndexProcess extends SvrProcess {
 	@Override
 	protected void prepare() {
 		ProcessInfoParameter[] para = getParameter();
-//		for (int i = 0; i < para.length; i++)
-//		{
-//			String name = para[i].getParameterName();
-//			if (para[i].getParameter() == null)
-//				;
-//			else if (name.equals("BXS_IndexType"))
-//				indexType = (String)para[i].getParameter();
-//			else
-//				log.log(Level.SEVERE, "Unknown Parameter: " + name);
-//		}
 		for (int i = 0; i < para.length; i++)
 		{
 			String name = para[i].getParameterName();
@@ -66,20 +60,6 @@ public class CreateIndexProcess extends SvrProcess {
 
 	@Override
 	protected String doIt() throws Exception {
-//		//Set default in case of null to avoid NPE
-//		if (indexType == null)
-//			indexType = OmnisearchAbstractFactory.TEXTSEARCH_INDEX;
-//
-//		//First populate the vector then create the index for faster performance
-//		//Creates the document
-//		log.log(Level.INFO, "Creating the document");
-//		OmnisearchHelper.recreateDocument(indexType, get_TrxName());
-//		
-//		//Creates the index
-//		log.log(Level.INFO, "Creating the index");
-//		OmnisearchHelper.getIndex(indexType).recreateIndex(get_TrxName());
-//		
-//        return "@OK@";
 		
 		if(p_AD_SearchIndexProvider_ID <= 0)
 			throw new FillMandatoryException("AD_SearchIndexProvider_ID");
@@ -87,10 +67,21 @@ public class CreateIndexProcess extends SvrProcess {
 		MSearchIndexProvider providerDef = new MSearchIndexProvider(getCtx(), p_AD_SearchIndexProvider_ID, get_TrxName());		
 		SearchIndexProviderFactory factory = new SearchIndexProviderFactory();
 		ISearchIndexProvider provider = factory.getSearchIndexProvider(providerDef.getClassname());
-	    List<SearchIndexConfig> searchIndexConfigs = SearchIndexUtils.loadSearchIndexConfig(getCtx(), get_TrxName());
-	    System.out.println(SearchIndexUtils.loadSearchIndexDataWithJoins(getCtx(), searchIndexConfigs, MSG_InvalidArguments));
 		
-		// TODO call the search provider
+		if(provider == null)
+			throw new AdempiereException(Msg.getMsg(getCtx(), "SearchIndexProviderNotFound"));
+		
+	    List<SearchIndexConfig> searchIndexConfigs = SearchIndexUtils.loadSearchIndexConfig(getCtx(), get_TrxName());
+	    
+	    if(searchIndexConfigs.size() <= 0)
+	    	throw new AdempiereException(Msg.getMsg(getCtx(), "SearchIndexConfigNotFound"));
+	    
+	    Map<Integer, Set<SearchIndexRecord>> indexRecordsMap = SearchIndexUtils.loadSearchIndexDataWithJoins(getCtx(), searchIndexConfigs, MSG_InvalidArguments);
+		
+	    if(indexRecordsMap.size() <= 0)
+	    	return Msg.getMsg(getCtx(), "NoRecordsFound");
+	    
+	    provider.createIndex(getCtx(), indexRecordsMap, get_TrxName());
 		
 		return Msg.getMsg(getCtx(), "Success");
 	}

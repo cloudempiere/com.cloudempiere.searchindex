@@ -12,12 +12,15 @@ public class SearchIndexTableConfig {
 	private int tableId;
 	/* TableName */
 	private String tableName;
+	/* Key Column Name */
+	private String keyColName;
 	/* Search Index Columns */
     private List<SearchIndexColumnConfig> columns;
 
-    public SearchIndexTableConfig(String tableName, int tableId) {
+    public SearchIndexTableConfig(String tableName, int tableId, String keyColName) {
     	this.tableId = tableId;
         this.tableName = tableName;
+        this.keyColName = keyColName;
         this.columns = new ArrayList<>();
     }
 
@@ -43,6 +46,14 @@ public class SearchIndexTableConfig {
 
 	public void setTableId(int tableId) {
 		this.tableId = tableId;
+	}
+
+	public String getKeyColName() {
+		return keyColName;
+	}
+
+	public void setKeyColName(String keyColName) {
+		this.keyColName = keyColName;
 	}
 
 }

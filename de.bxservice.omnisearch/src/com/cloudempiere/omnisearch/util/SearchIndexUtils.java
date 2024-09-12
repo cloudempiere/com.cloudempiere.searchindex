@@ -16,6 +16,7 @@ import org.cloudempiere.util.WebFormUtil;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
+import org.compiere.util.Util;
 
 /**
  * 
@@ -44,6 +45,7 @@ public class SearchIndexUtils {
         		+ "si.AD_SearchIndex_ID, "
         		+ "mainT.AD_Table_ID as AD_Table_ID_main, "
         		+ "mainT.TableName as TableName_main, "
+        		+ "mainKeyCol.ColumnName as ColumnName_mainkey , "
         		+ "tbl.AD_Table_ID, "
         		+ "tbl.TableName, "
         		+ "col.AD_Column_ID, "
@@ -53,28 +55,36 @@ public class SearchIndexUtils {
 				+ "FROM AD_SearchIndex si "
 				+ "JOIN AD_SearchIndexTable sit ON (si.AD_SearchIndex_ID = sit.AD_SearchIndex_ID) "
 				+ "JOIN AD_Table mainT ON (sit.AD_Table_ID = mainT.AD_Table_ID) "
+				+ "LEFT JOIN AD_Column mainKeyCol ON (mainT.AD_Table_ID = mainKeyCol.AD_Table_ID AND mainKeyCol.IsKey = 'Y') "
 				+ "JOIN AD_SearchIndexColumn sic ON (sit.AD_SearchIndexTable_ID = sic.AD_SearchIndexTable_ID) "
 				+ "JOIN AD_Table tbl ON (sic.AD_Table_ID = tbl.AD_Table_ID) "
 				+ "JOIN AD_Column col ON (sic.AD_Column_ID = col.AD_Column_ID) "
 				+ "LEFT JOIN AD_Column parentCol ON (sic.Parent_Column_ID = parentCol.AD_Column_ID) ";
 
-        PreparedStatement stmt = null;
+        PreparedStatement pstmt = null;
         ResultSet rs = null;
 
         try {
-            stmt = DB.prepareStatement(combinedQuery, trxName);
-            rs = stmt.executeQuery();
+            pstmt = DB.prepareStatement(combinedQuery, trxName);
+            rs = pstmt.executeQuery();
 
             while (rs.next()) {
             	int searchIndexId = rs.getInt("AD_SearchIndex_ID");
 				int mainTableId = rs.getInt("AD_Table_ID_main");
 				String mainTableName = rs.getString("TableName_main");
+				String mainKeyColumnName = rs.getString("ColumnName_mainkey");
 				int tableId = rs.getInt("AD_Table_ID");
 				String tableName = rs.getString("TableName");
 				int columnId = rs.getInt("AD_Column_ID");
 				String columnName = rs.getString("ColumnName");
 				int parentColId = rs.getInt("AD_Column_ID_parent");
 				String parentColName = rs.getString("ColumnName_parent");
+				
+				if(Util.isEmpty(mainKeyColumnName)) {
+					log.severe("No Key Column found for table: " + tableName);
+					return null;
+				}
+				// TODO also need to check for composite key tables - only single key column is allowed
 
                 SearchIndexConfig searchIndexConfig = searchIndexConfigs.stream()
                     .filter(config -> config.getSearchIndexId() == searchIndexId)
@@ -89,7 +99,7 @@ public class SearchIndexUtils {
                     .filter(config -> config.getTableId() == mainTableId)
                     .findFirst()
                     .orElseGet(() -> {
-                    	SearchIndexTableConfig newConfig = new SearchIndexTableConfig(mainTableName, mainTableId);
+                    	SearchIndexTableConfig newConfig = new SearchIndexTableConfig(mainTableName, mainTableId, mainKeyColumnName);
                         searchIndexConfig.addTableConfig(newConfig);
                         return newConfig;
                     });
@@ -99,9 +109,9 @@ public class SearchIndexUtils {
         } catch (Exception e) {
             log.log(Level.SEVERE, combinedQuery, e);
         } finally {
-            DB.close(rs, stmt);
+            DB.close(rs, pstmt);
             rs = null;
-            stmt = null;
+            pstmt = null;
         }
 
         return searchIndexConfigs;
@@ -122,15 +132,13 @@ public class SearchIndexUtils {
 	    for (SearchIndexConfig searchIndexConfig : searchIndexConfigs) {
 	    	Set<SearchIndexRecord> indexTableDataSet = new HashSet<>();
 	    	for (SearchIndexTableConfig tableConfig : searchIndexConfig.getTableConfigs()) {
-	    	
-		        String mainTableName = tableConfig.getTableName();
 	
 		        // FROM clause with joins
 		        StringBuilder fromClauseBuilder = new StringBuilder();
-		        fromClauseBuilder.append(" FROM ").append(mainTableName).append(" main");
+		        fromClauseBuilder.append(" FROM ").append(tableConfig.getTableName()).append(" main");
 		        // SELECT clause
 		        StringBuilder selectClauseBuilder = new StringBuilder();
-		        selectClauseBuilder.append("SELECT ");
+		        selectClauseBuilder.append("SELECT ").append("main.").append(tableConfig.getKeyColName()).append(" as Record_ID, ");
 	
 		        int joinIndex = 1;
 		        for (SearchIndexColumnConfig columnConfig : tableConfig.getColumns()) {
@@ -158,30 +166,31 @@ public class SearchIndexUtils {
 		        // TODO delete before commit - it is just for testing
 		        query += " FETCH FIRST 5 ROWS ONLY ";
 		        
-		        PreparedStatement stmt = null;
+		        PreparedStatement pstmt = null;
 		        ResultSet rs = null;
 	
 		        try {
-		            stmt = DB.prepareStatement(query, trxName);
-		            stmt.setInt(1, Env.getAD_Client_ID(ctx));
-		            rs = stmt.executeQuery();
-		            searchIndexRecord = new SearchIndexRecord(mainTableName);
+		            pstmt = DB.prepareStatement(query, trxName);
+		            pstmt.setInt(1, Env.getAD_Client_ID(ctx));
+		            rs = pstmt.executeQuery();
+		            searchIndexRecord = new SearchIndexRecord(tableConfig.getTableId(), tableConfig.getKeyColName());
 
 		            while (rs.next()) {
 		            	Map<String, Object> data = new HashMap<>();
+		            	data.put("Record_ID", rs.getObject("Record_ID"));
 	                    for (SearchIndexColumnConfig columnConfig : tableConfig.getColumns()) {
 	                        data.put(columnConfig.getColumnName(), rs.getObject(columnConfig.getColumnName()));
 	                    }
 	                    searchIndexRecord.addTableData(data);
 		            }
 		        } finally {
-		            DB.close(rs, stmt);
+		            DB.close(rs, pstmt);
 		        }
 		        if(searchIndexRecord != null)
 		        	indexTableDataSet.add(searchIndexRecord);
-	    	}
+	    	} // for getTableConfigs
 	    	indexDataMap.put(searchIndexConfig.getSearchIndexId(), indexTableDataSet);
-	    }
+	    } // for searchIndexConfigs
 
 	    return indexDataMap;
 	}

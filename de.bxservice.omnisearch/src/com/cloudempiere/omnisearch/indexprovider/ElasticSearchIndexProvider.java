@@ -1,8 +1,12 @@
 package com.cloudempiere.omnisearch.indexprovider;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 
 import com.cloudempiere.omnisearch.model.MSearchIndexProvider;
+import com.cloudempiere.omnisearch.util.SearchIndexRecord;
 
 /**
  * 
@@ -44,7 +48,7 @@ public class ElasticSearchIndexProvider implements ISearchIndexProvider {
 	}
 
 	@Override
-	public void createIndex(int ad_table_id, int record_id, String... values) {
+	public void createIndex(Properties ctx, Map<Integer, Set<SearchIndexRecord>> indexRecordsMap, String trxName) {
 
 	}
 

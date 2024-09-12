@@ -9,16 +9,25 @@ import java.util.Set;
  */
 public class SearchIndexRecord {
 
-    private String tableName;
+	/* AD_Table_ID */
+    private int tableId;
+    /* Key Column Name */
+    private String keyColName;
+    /* Data: ColumnName - Value */
     private Set<Map<String, Object>> tableData;
 
-    public SearchIndexRecord(String tableName) {
-        this.tableName = tableName;
+    public SearchIndexRecord(int tableId, String keyColName) {
+        this.tableId = tableId;
+        this.keyColName = keyColName;
         this.tableData = new HashSet<>();
     }
 
-    public String getTableName() {
-        return tableName;
+    public int getTableId() {
+        return tableId;
+    }
+    
+    public String getKeyColName() {
+    	return keyColName;
     }
 
     public Set<Map<String, Object>> getTableData() {
@@ -32,7 +41,7 @@ public class SearchIndexRecord {
     @Override
     public String toString() {
         return "SearchIndexRecord{" +
-                "tableName='" + tableName + '\'' +
+                "tableId='" + tableId + '\'' +
                 ", tableData=" + tableData +
                 '}';
     }
