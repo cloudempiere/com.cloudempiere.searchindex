@@ -18,6 +18,10 @@ import org.compiere.util.DB;
 import org.compiere.util.Env;
 import org.compiere.util.Util;
 
+import com.cloudempiere.omnisearch.indexprovider.ISearchIndexProvider;
+import com.cloudempiere.omnisearch.indexprovider.SearchIndexProviderFactory;
+import com.cloudempiere.omnisearch.model.MSearchIndexProvider;
+
 /**
  * 
  * Search Index utility methods
@@ -163,9 +167,6 @@ public class SearchIndexUtils {
 		        // Combine SELECT and FROM clauses
 		        String query = selectClauseBuilder.toString() + fromClauseBuilder.toString() + whereClauseBuilder.toString();
 		        
-		        // TODO delete before commit - it is just for testing
-		        query += " FETCH FIRST 5 ROWS ONLY ";
-		        
 		        PreparedStatement pstmt = null;
 		        ResultSet rs = null;
 	
@@ -193,6 +194,17 @@ public class SearchIndexUtils {
 	    } // for searchIndexConfigs
 
 	    return indexDataMap;
+	}
+	
+	/**
+	 * Get Search Index Provider
+	 * @param searchIndexProviderId - AD_SearchIndexProvider_ID
+	 * @return
+	 */
+	public static ISearchIndexProvider getSearchIndexProvider(Properties ctx, int searchIndexProviderId, String trxName) {
+		MSearchIndexProvider providerDef = new MSearchIndexProvider(ctx, searchIndexProviderId, trxName);		
+		SearchIndexProviderFactory factory = new SearchIndexProviderFactory();
+		return factory.getSearchIndexProvider(providerDef.getClassname());
 	}
 }
 

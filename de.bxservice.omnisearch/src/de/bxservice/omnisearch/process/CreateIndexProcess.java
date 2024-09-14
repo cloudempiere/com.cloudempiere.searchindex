@@ -33,8 +33,6 @@ import org.compiere.process.SvrProcess;
 import org.compiere.util.Msg;
 
 import com.cloudempiere.omnisearch.indexprovider.ISearchIndexProvider;
-import com.cloudempiere.omnisearch.indexprovider.SearchIndexProviderFactory;
-import com.cloudempiere.omnisearch.model.MSearchIndexProvider;
 import com.cloudempiere.omnisearch.util.SearchIndexConfig;
 import com.cloudempiere.omnisearch.util.SearchIndexRecord;
 import com.cloudempiere.omnisearch.util.SearchIndexUtils;
@@ -64,21 +62,16 @@ public class CreateIndexProcess extends SvrProcess {
 		if(p_AD_SearchIndexProvider_ID <= 0)
 			throw new FillMandatoryException("AD_SearchIndexProvider_ID");
 		
-		MSearchIndexProvider providerDef = new MSearchIndexProvider(getCtx(), p_AD_SearchIndexProvider_ID, get_TrxName());		
-		SearchIndexProviderFactory factory = new SearchIndexProviderFactory();
-		ISearchIndexProvider provider = factory.getSearchIndexProvider(providerDef.getClassname());
-		
+		ISearchIndexProvider provider = SearchIndexUtils.getSearchIndexProvider(getCtx(), p_AD_SearchIndexProvider_ID, get_TrxName());
 		if(provider == null)
 			throw new AdempiereException(Msg.getMsg(getCtx(), "SearchIndexProviderNotFound"));
 		
 	    List<SearchIndexConfig> searchIndexConfigs = SearchIndexUtils.loadSearchIndexConfig(getCtx(), get_TrxName());
-	    
 	    if(searchIndexConfigs.size() <= 0)
 	    	throw new AdempiereException(Msg.getMsg(getCtx(), "SearchIndexConfigNotFound"));
 	    
 	    Map<Integer, Set<SearchIndexRecord>> indexRecordsMap = SearchIndexUtils.loadSearchIndexDataWithJoins(getCtx(), searchIndexConfigs, MSG_InvalidArguments);
-		
-	    if(indexRecordsMap.size() <= 0)
+		if(indexRecordsMap.size() <= 0)
 	    	return Msg.getMsg(getCtx(), "NoRecordsFound");
 	    
 	    provider.createIndex(getCtx(), indexRecordsMap, get_TrxName());

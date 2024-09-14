@@ -21,6 +21,7 @@ import java.util.Set;
 import org.compiere.util.CLogger;
 
 import com.cloudempiere.omnisearch.model.MSearchIndexProvider;
+import com.cloudempiere.omnisearch.util.ISearchResult;
 import com.cloudempiere.omnisearch.util.SearchIndexRecord;
 
 /**
@@ -42,10 +43,12 @@ public interface ISearchIndexProvider
 
 	public Object searchIndexNoRestriction(String queryString);
 
-	public List<Object> searchIndexDocument(String queryString);
-
-	public List<Object> searchIndexDocument(String queryString, int maxRow);
+	public List<ISearchResult> searchIndexDocument(String queryString, boolean isAdvanced);
+	
+	public void setHeadline(ISearchResult result, String query);
 
 	public void createIndex(Properties ctx, Map<Integer, Set<SearchIndexRecord>> indexRecordsMap, String trxName);
+	
+	public boolean isIndexPopulated();
 	
 }

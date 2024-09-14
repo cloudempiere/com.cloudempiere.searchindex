@@ -2,6 +2,9 @@ package com.cloudempiere.omnisearch.indexprovider;
 
 import org.compiere.util.Util;
 
+import com.cloudempiere.omnisearch.elasticsearch.ElasticSearchIndexProvider;
+import com.cloudempiere.omnisearch.pgtextsearch.PGTextSearchIndexProvider;
+
 /**
  * 
  * Search Index Provider factory

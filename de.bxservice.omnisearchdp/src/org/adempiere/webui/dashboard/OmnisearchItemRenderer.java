@@ -35,7 +35,7 @@ import org.zkoss.zul.Listitem;
 import org.zkoss.zul.ListitemRenderer;
 import org.zkoss.zul.Vlayout;
 
-import de.bxservice.omnisearch.tools.TextSearchResult;
+import com.cloudempiere.omnisearch.pgtextsearch.TextSearchResult;
 
 public class OmnisearchItemRenderer implements ListitemRenderer<TextSearchResult>, EventListener<Event>  {
 

@@ -25,6 +25,8 @@ import java.util.ArrayList;
 
 import org.compiere.model.PO;
 
+import com.cloudempiere.omnisearch.pgtextsearch.TextSearchResult;
+
 public interface OmnisearchDocument {
 	
 	//Document setup

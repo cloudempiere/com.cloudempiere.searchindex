@@ -22,6 +22,8 @@
 package org.adempiere.webui.dashboard;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
 
 import org.adempiere.webui.component.Checkbox;
 import org.adempiere.webui.component.Textbox;
@@ -38,9 +40,9 @@ import org.zkoss.zul.Vbox;
 import org.zkoss.zul.Vlayout;
 import org.zkoss.zul.event.PagingEvent;
 
-import de.bxservice.omnisearch.tools.OmnisearchDocument;
-import de.bxservice.omnisearch.tools.OmnisearchHelper;
-import de.bxservice.omnisearch.tools.TextSearchResult;
+import com.cloudempiere.omnisearch.indexprovider.ISearchIndexProvider;
+import com.cloudempiere.omnisearch.util.ISearchResult;
+import com.cloudempiere.omnisearch.util.SearchIndexUtils;
 
 
 public class DPOmnisearchPanel extends DashboardPanel implements EventListener<Event> {
@@ -50,8 +52,9 @@ public class DPOmnisearchPanel extends DashboardPanel implements EventListener<E
 	 */
 	private static final long serialVersionUID = -8116512057982561129L;
 
-	private OmnisearchDocument document;
-	private ArrayList<TextSearchResult> results;
+	private Properties ctx;
+	private ISearchIndexProvider searchIndexProvider;
+	private List<ISearchResult> results;
 	
 	private OmnisearchItemRenderer renderer;
 	private Vlayout layout = new Vlayout();
@@ -64,7 +67,8 @@ public class DPOmnisearchPanel extends DashboardPanel implements EventListener<E
 	public DPOmnisearchPanel()
 	{
 		super();
-		document = OmnisearchHelper.getDocument();
+		ctx = Env.getCtx();
+		searchIndexProvider = SearchIndexUtils.getSearchIndexProvider(ctx, 1000004, null); // FIXME hardcoded PGTextSearchIndexProvider - need to get from the search index definition
 		
 		this.setSclass("dashboard-widget-max");
 		this.setHeight("500px");
@@ -74,7 +78,7 @@ public class DPOmnisearchPanel extends DashboardPanel implements EventListener<E
 
 	}
 	
-	void setModel(ArrayList<TextSearchResult> data) {
+	void setModel(List<ISearchResult> data) {
 		resultListbox.setModel(new ListModelArray<>(data));
 	}
 
@@ -94,7 +98,7 @@ public class DPOmnisearchPanel extends DashboardPanel implements EventListener<E
 		resultListbox.addEventListener("onPaging", this);
 			
 		noResultsLabel = new Label();
-		if (!document.isValidDocument()) {
+		if (!searchIndexProvider.isIndexPopulated()) {
 			noResultsLabel.setValue(Msg.getMsg(Env.getCtx(), "BXS_NoIndex"));
 			showResults(false);
 		} else {
@@ -142,10 +146,10 @@ public class DPOmnisearchPanel extends DashboardPanel implements EventListener<E
 			Textbox textbox = (Textbox) e.getTarget();
 			
 			if (resultListbox.getItems() != null) {
-				setModel(new ArrayList<TextSearchResult>());
+				setModel(new ArrayList<ISearchResult>());
 			}
 			
-			results = document.performQuery(textbox.getText(), cbAdvancedSearch.isChecked());
+			results = searchIndexProvider.searchIndexDocument(textbox.getText(), cbAdvancedSearch.isChecked());
 
 			if (results != null && results.size() > 0) {
 				
@@ -170,7 +174,7 @@ public class DPOmnisearchPanel extends DashboardPanel implements EventListener<E
 	            	end = results.size();
 				
 	            for(int i = start; i < end; i++)
-	            	document.setHeadline(results.get(i), searchTextbox.getText());
+	            	searchIndexProvider.setHeadline(results.get(i), searchTextbox.getText());
 	            
 				setModel(results);
 			}	

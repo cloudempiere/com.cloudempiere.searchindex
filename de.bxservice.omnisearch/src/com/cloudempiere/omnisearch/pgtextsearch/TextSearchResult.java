@@ -19,8 +19,9 @@
 * Contributors:                                                       *
 * - Diego Ruiz - BX Service GmbH                                      *
 **********************************************************************/
-package de.bxservice.omnisearch.tools;
+package com.cloudempiere.omnisearch.pgtextsearch;
 
+import com.cloudempiere.omnisearch.util.ISearchResult;
 import org.compiere.model.MTable;
 import org.compiere.model.MUserDefWin;
 import org.compiere.model.MWindow;
@@ -28,36 +29,43 @@ import org.compiere.model.PO;
 import org.compiere.util.Env;
 import org.compiere.util.Util;
 
-public class TextSearchResult {
+public class TextSearchResult implements ISearchResult {
 	
 	private int AD_Table_ID;
 	private int Record_ID;
 	private String htmlHeadline;
 	
+	@Override
 	public int getAD_Table_ID() {
 		return AD_Table_ID;
 	}
 	
+	@Override
 	public void setAD_Table_ID(int AD_Table_ID) {
 		this.AD_Table_ID = AD_Table_ID;
 	}
 	
+	@Override
 	public int getRecord_ID() {
 		return Record_ID;
 	}
 	
+	@Override
 	public void setRecord_ID(int Record_ID) {
 		this.Record_ID = Record_ID;
 	}
 	
+	@Override
 	public String getHtmlHeadline() {
 		return htmlHeadline;
 	}
 	
+	@Override
 	public void setHtmlHeadline(String htmlHeadline) {
 		this.htmlHeadline = htmlHeadline;
 	}
 	
+	@Override
 	public String getLabel() {
 		String windowName;
 		int windowID = Env.getZoomWindowID(getAD_Table_ID(), getRecord_ID());

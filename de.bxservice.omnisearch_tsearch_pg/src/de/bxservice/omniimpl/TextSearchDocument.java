@@ -41,9 +41,10 @@ import org.compiere.util.DB;
 import org.compiere.util.Env;
 import org.osgi.service.component.annotations.Component;
 
+import com.cloudempiere.omnisearch.pgtextsearch.TextSearchResult;
+
 import de.bxservice.omnisearch.tools.AbstractOmnisearchDocument;
 import de.bxservice.omnisearch.tools.OmnisearchDocument;
-import de.bxservice.omnisearch.tools.TextSearchResult;
 
 @Component(
 		service = OmnisearchDocument.class,
