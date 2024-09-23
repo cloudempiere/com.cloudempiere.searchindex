@@ -13,6 +13,9 @@ import java.util.Set;
 import java.util.logging.Level;
 
 import org.cloudempiere.util.WebFormUtil;
+import org.compiere.model.MLookup;
+import org.compiere.model.MLookupFactory;
+import org.compiere.model.MLookupInfo;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
@@ -53,7 +56,8 @@ public class SearchIndexUtils {
         		+ "tbl.AD_Table_ID, "
         		+ "tbl.TableName, "
         		+ "col.AD_Column_ID, "
-        		+ "col.ColumnName, "
+        		+ "col.ColumnName,"
+        		+ "sic.AD_Reference_ID, "
         		+ "parentCol.AD_Column_ID as AD_Column_ID_parent, "
         		+ "parentCol.ColumnName as ColumnName_parent "
 				+ "FROM AD_SearchIndex si "
@@ -83,6 +87,7 @@ public class SearchIndexUtils {
 				String columnName = rs.getString("ColumnName");
 				int parentColId = rs.getInt("AD_Column_ID_parent");
 				String parentColName = rs.getString("ColumnName_parent");
+				int referenceId = rs.getInt("AD_Reference_ID");
 				
 				if(Util.isEmpty(mainKeyColumnName)) {
 					log.severe("No Key Column found for table: " + tableName);
@@ -108,7 +113,16 @@ public class SearchIndexUtils {
                         return newConfig;
                     });
 
-                tableConfig.addColumn(new SearchIndexColumnConfig(tableId, tableName, columnId, columnName, parentColId, parentColName));
+                if(referenceId <= 0) {
+                	tableConfig.addColumn(new SearchIndexColumnConfig(tableId, tableName, columnId, columnName, parentColId, parentColName));
+                } else {
+                	MLookup lookup = MLookupFactory.get(ctx, 0, 0, columnId, referenceId);
+                	MLookupInfo lookupInfo = lookup.getLookupInfo();
+                	for(String lookupDisplayColumnName : lookupInfo.lookupDisplayColumns) {
+                		// FIXME - lookupInfo.KeyColumn is like tableName.ColumnName
+                		tableConfig.addColumn(new SearchIndexColumnConfig(tableId, lookupInfo.TableName, -1, lookupDisplayColumnName, -1, lookupInfo.KeyColumn));
+                	}
+                }
             }
         } catch (Exception e) {
             log.log(Level.SEVERE, combinedQuery, e);
@@ -148,8 +162,7 @@ public class SearchIndexUtils {
 		        for (SearchIndexColumnConfig columnConfig : tableConfig.getColumns()) {
 		            if (columnConfig.getTableId() == tableConfig.getTableId()) {
 		            	selectClauseBuilder.append("main.").append(columnConfig.getColumnName());
-		            }
-		            else {
+		            } else {
 		            	selectClauseBuilder.append("t").append(joinIndex).append(".").append(columnConfig.getColumnName());
 		            	fromClauseBuilder.append(" LEFT JOIN ").append(columnConfig.getTableName()).append(" t").append(joinIndex);
 			            fromClauseBuilder.append(" ON main.").append(columnConfig.getParentColumnName()).append(" = t").append(joinIndex).append(".").append(columnConfig.getParentColumnName());

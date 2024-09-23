@@ -79,6 +79,21 @@ public interface I_AD_SearchIndexColumn
 	  */
 	public int getAD_Org_ID();
 
+    /** Column name AD_Reference_ID */
+    public static final String COLUMNNAME_AD_Reference_ID = "AD_Reference_ID";
+
+	/** Set Reference.
+	  * System Reference (Pick List)
+	  */
+	public void setAD_Reference_ID (int AD_Reference_ID);
+
+	/** Get Reference.
+	  * System Reference (Pick List)
+	  */
+	public int getAD_Reference_ID();
+
+	public org.compiere.model.I_AD_Reference getAD_Reference() throws RuntimeException;
+
     /** Column name AD_SearchIndexColumn_ID */
     public static final String COLUMNNAME_AD_SearchIndexColumn_ID = "AD_SearchIndexColumn_ID";
 
@@ -104,13 +119,13 @@ public interface I_AD_SearchIndexColumn
     /** Column name AD_SearchIndexTable_ID */
     public static final String COLUMNNAME_AD_SearchIndexTable_ID = "AD_SearchIndexTable_ID";
 
-	/** Set Search Index Table.
-	  * Search Index Table definition.
+	/** Set Omnisearch Config.
+	  * Omnisearch configuration.
 	  */
 	public void setAD_SearchIndexTable_ID (int AD_SearchIndexTable_ID);
 
-	/** Get Search Index Table.
-	  * Search Index Table definition.
+	/** Get Omnisearch Config.
+	  * Omnisearch configuration.
 	  */
 	public int getAD_SearchIndexTable_ID();
 

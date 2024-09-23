@@ -31,7 +31,7 @@ public class X_AD_SearchIndexColumn extends PO implements I_AD_SearchIndexColumn
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = 20240826L;
+	private static final long serialVersionUID = 20240923L;
 
     /** Standard Constructor */
     public X_AD_SearchIndexColumn (Properties ctx, int AD_SearchIndexColumn_ID, String trxName)
@@ -117,6 +117,34 @@ public class X_AD_SearchIndexColumn extends PO implements I_AD_SearchIndexColumn
 		return ii.intValue();
 	}
 
+	public org.compiere.model.I_AD_Reference getAD_Reference() throws RuntimeException
+	{
+		return (org.compiere.model.I_AD_Reference)MTable.get(getCtx(), org.compiere.model.I_AD_Reference.Table_ID)
+			.getPO(getAD_Reference_ID(), get_TrxName());
+	}
+
+	/** Set Reference.
+		@param AD_Reference_ID System Reference (Pick List)
+	*/
+	public void setAD_Reference_ID (int AD_Reference_ID)
+	{
+		if (AD_Reference_ID < 1)
+			set_Value (COLUMNNAME_AD_Reference_ID, null);
+		else
+			set_Value (COLUMNNAME_AD_Reference_ID, Integer.valueOf(AD_Reference_ID));
+	}
+
+	/** Get Reference.
+		@return System Reference (Pick List)
+	  */
+	public int getAD_Reference_ID()
+	{
+		Integer ii = (Integer)get_Value(COLUMNNAME_AD_Reference_ID);
+		if (ii == null)
+			 return 0;
+		return ii.intValue();
+	}
+
 	/** Set Omnisearch Config Line.
 		@param AD_SearchIndexColumn_ID Omnisearch Config Line
 	*/
@@ -160,8 +188,8 @@ public class X_AD_SearchIndexColumn extends PO implements I_AD_SearchIndexColumn
 			.getPO(getAD_SearchIndexTable_ID(), get_TrxName());
 	}
 
-	/** Set Search Index Table.
-		@param AD_SearchIndexTable_ID Search Index Table definition.
+	/** Set Omnisearch Config.
+		@param AD_SearchIndexTable_ID Omnisearch configuration.
 	*/
 	public void setAD_SearchIndexTable_ID (int AD_SearchIndexTable_ID)
 	{
@@ -171,8 +199,8 @@ public class X_AD_SearchIndexColumn extends PO implements I_AD_SearchIndexColumn
 			set_ValueNoCheck (COLUMNNAME_AD_SearchIndexTable_ID, Integer.valueOf(AD_SearchIndexTable_ID));
 	}
 
-	/** Get Search Index Table.
-		@return Search Index Table definition.
+	/** Get Omnisearch Config.
+		@return Omnisearch configuration.
 	  */
 	public int getAD_SearchIndexTable_ID()
 	{
