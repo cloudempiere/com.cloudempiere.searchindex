@@ -207,9 +207,9 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
                     // Build the upsert query
                     StringBuilder upsertQuery = new StringBuilder();
                     upsertQuery.append("INSERT INTO adempiere.bxs_omnsearch ");
-                    upsertQuery.append("(ad_client_id, ad_table_id, record_id, bxs_omntsvector) VALUES (?, ?, ?, to_tsvector(");
+                    upsertQuery.append("(ad_client_id, ad_table_id, record_id, bxs_omntsvector) VALUES (?, ?, ?, to_tsvector('");
                     upsertQuery.append(getTSConfig());
-                    upsertQuery.append(", ?)) ");
+                    upsertQuery.append("', ?)) ");
                     upsertQuery.append("ON CONFLICT (ad_table_id, record_id) DO UPDATE SET bxs_omntsvector = EXCLUDED.bxs_omntsvector");
 
                     // Execute the query

@@ -17,14 +17,17 @@ public class SearchIndexColumnConfig {
 	private int parentColumnId;
 	/* Parent Column Name */
 	private String parentColumnName;
+	/* Parent Column Name for foreign key */
+	private String parentTableName;
 
-    public SearchIndexColumnConfig(int tableId, String tableName, int columnId, String columnName, int parentColumnId, String parentColumnName) {
+    public SearchIndexColumnConfig(int tableId, String tableName, int columnId, String columnName, int parentColumnId, String parentColumnName, String parentTableName) {
 		this.tableId = tableId;
 		this.tableName = tableName;
 		this.columnId = columnId;
 		this.columnName = columnName;
 		this.parentColumnId = parentColumnId;
 		this.parentColumnName = parentColumnName;
+		this.parentTableName = parentTableName;
     }
 
     public String getColumnName() {
@@ -73,6 +76,14 @@ public class SearchIndexColumnConfig {
 
 	public void setTableName(String tableName) {
 		this.tableName = tableName;
+	}
+
+	public String getParentTableName() {
+		return parentTableName;
+	}
+
+	public void setParentTableName(String parentTableName) {
+		this.parentTableName = parentTableName;
 	}
 
 }
