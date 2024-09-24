@@ -162,22 +162,29 @@ public class SearchIndexUtils {
 				StringBuilder selectClauseBuilder = new StringBuilder();
 				selectClauseBuilder.append("SELECT ").append("main.").append(tableConfig.getKeyColName()).append(" as Record_ID, ");
 				
+				Set<String> joinedTables = new HashSet<>();
+				
 				for (SearchIndexColumnConfig columnConfig : tableConfig.getColumns()) {
 				    String columnAlias = columnConfig.getTableName() + "_" + columnConfig.getColumnName();
 				    if (columnConfig.getTableId() == tableConfig.getTableId()) {
-				        selectClauseBuilder.append("main.").append(columnConfig.getColumnName()).append(" as ").append(columnAlias);
+				    	if(!Util.isEmpty(columnConfig.getColumnName())) {
+				    		selectClauseBuilder.append("main.").append(columnConfig.getColumnName()).append(" as ").append(columnAlias);
+				    	}
 				    } else {
 				        if (!Util.isEmpty(columnConfig.getTableName()) && !Util.isEmpty(columnConfig.getColumnName())) {
 				            selectClauseBuilder.append(columnConfig.getTableName()).append(".").append(columnConfig.getColumnName()).append(" as ").append(columnAlias);
 				        }
-				        fromClauseBuilder.append(" LEFT JOIN ").append(columnConfig.getTableName()).append(" ON ");
-				        if (!Util.isEmpty(columnConfig.getParentTableName())) { // foreign key column
-				            fromClauseBuilder.append(columnConfig.getParentTableName());
-				        } else {
-				            fromClauseBuilder.append("main");
+				        if (!joinedTables.contains(columnConfig.getTableName())) {
+					        fromClauseBuilder.append(" LEFT JOIN ").append(columnConfig.getTableName()).append(" ON ");
+					        if (!Util.isEmpty(columnConfig.getParentTableName()) && !tableConfig.getTableName().equals(columnConfig.getParentTableName())) { // foreign key column
+					            fromClauseBuilder.append(columnConfig.getParentTableName());
+					        } else {
+					            fromClauseBuilder.append("main");
+					        }
+					        fromClauseBuilder.append(".").append(columnConfig.getParentColumnName());
+					        fromClauseBuilder.append(" = ").append(columnConfig.getTableName()).append(".").append(columnConfig.getParentColumnName());
+					        joinedTables.add(columnConfig.getTableName());
 				        }
-				        fromClauseBuilder.append(".").append(columnConfig.getParentColumnName());
-				        fromClauseBuilder.append(" = ").append(columnConfig.getTableName()).append(".").append(columnConfig.getParentColumnName());
 				    }
 				    if(selectClauseBuilder.charAt(selectClauseBuilder.length() - 2) != ',') {
 				    	selectClauseBuilder.append(", ");
@@ -193,8 +200,6 @@ public class SearchIndexUtils {
 				// Combine SELECT and FROM clauses
 				String query = selectClauseBuilder.toString() + fromClauseBuilder.toString() + whereClauseBuilder.toString();
 				
-				query += "LIMIT 5 "; // TODO delete before commit
-		        
 		        PreparedStatement pstmt = null;
 		        ResultSet rs = null;
 	
