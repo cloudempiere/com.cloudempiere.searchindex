@@ -189,47 +189,41 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 		}
 	}
 
-    @Override
-    public void createIndex(Properties ctx, Map<Integer, Set<SearchIndexRecord>> indexRecordsMap, String trxName) {
-        if (indexRecordsMap == null) {
-            return;
-        }
+	@Override
+	public void createIndex(Properties ctx, Map<Integer, Set<SearchIndexRecord>> indexRecordsMap, String trxName) {
+		if (indexRecordsMap == null) {
+			return;
+		}
+	
+		String tsConfig = getTSConfig();
+		String upsertQuery = "INSERT INTO adempiere.bxs_omnsearch " +
+							 "(ad_client_id, ad_table_id, record_id, bxs_omntsvector) VALUES (?, ?, ?, to_tsvector(?::regconfig, ?::text)) " +
+							 "ON CONFLICT (ad_table_id, record_id) DO UPDATE SET bxs_omntsvector = EXCLUDED.bxs_omntsvector";
+	
+		try (PreparedStatement pstmt = DB.prepareStatement(upsertQuery, trxName)) {
+			for (Map.Entry<Integer, Set<SearchIndexRecord>> searchIndexRecordSet : indexRecordsMap.entrySet()) {
+				for (SearchIndexRecord searchIndexRecord : searchIndexRecordSet.getValue()) {
+					for (Map<String, Object> tableDataSet : searchIndexRecord.getTableData()) {
+						if (tableDataSet.get("Record_ID") == null)
+							continue;
+	
+						String documentContent = extractDocumentContent(tableDataSet);
+	
+						pstmt.setInt(1, Env.getAD_Client_ID(ctx));
+						pstmt.setInt(2, searchIndexRecord.getTableId());
+						pstmt.setInt(3, Integer.parseInt(tableDataSet.get("Record_ID").toString()));
+						pstmt.setString(4, tsConfig);
+						pstmt.setString(5, documentContent);
+						pstmt.addBatch();
+					}
+				}
+			}
+			pstmt.executeBatch();
 
-        for (Map.Entry<Integer, Set<SearchIndexRecord>> searchIndexRecordSet : indexRecordsMap.entrySet()) {
-            for (SearchIndexRecord searchIndexRecord : searchIndexRecordSet.getValue()) {
-                for (Map<String, Object> tableDataSet : searchIndexRecord.getTableData()) {
-                    if (tableDataSet.get("Record_ID") == null)
-                        continue;
-
-                    // Extract document content
-                    String documentContent = extractDocumentContent(tableDataSet);
-
-                    // Build the upsert query
-                    StringBuilder upsertQuery = new StringBuilder();
-                    upsertQuery.append("INSERT INTO adempiere.bxs_omnsearch ");
-                    upsertQuery.append("(ad_client_id, ad_table_id, record_id, bxs_omntsvector) VALUES (?, ?, ?, to_tsvector('");
-                    upsertQuery.append(getTSConfig());
-                    upsertQuery.append("', ?)) ");
-                    upsertQuery.append("ON CONFLICT (ad_table_id, record_id) DO UPDATE SET bxs_omntsvector = EXCLUDED.bxs_omntsvector");
-
-                    // Execute the query
-                    PreparedStatement pstmt = null;
-                    try {
-                        pstmt = DB.prepareStatement(upsertQuery.toString(), trxName);
-                        pstmt.setInt(1, Env.getAD_Client_ID(ctx));
-                        pstmt.setInt(2, searchIndexRecord.getTableId());
-                        pstmt.setInt(3, Integer.parseInt(tableDataSet.get("Record_ID").toString()));
-                        pstmt.setString(4, documentContent);
-                        pstmt.executeUpdate();
-                    } catch (Exception e) {
-                        throw new AdempiereException(e);
-                    } finally {
-                        DB.close(pstmt);
-                    }
-                }
-            }
-        }
-    }
+		} catch (Exception e) {
+			throw new AdempiereException(e);
+		}
+	}
 
 	@Override
 	public boolean isIndexPopulated() {
