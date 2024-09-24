@@ -13,12 +13,15 @@ public class SearchIndexRecord {
     private int tableId;
     /* Key Column Name */
     private String keyColName;
+	/* Index Table Name */
+	private String searchIndexName;
     /* Data: ColumnName - Value */
     private Set<Map<String, Object>> tableData;
 
-    public SearchIndexRecord(int tableId, String keyColName) {
+    public SearchIndexRecord(int tableId, String keyColName, String searchIndexName) {
         this.tableId = tableId;
         this.keyColName = keyColName;
+        this.searchIndexName = searchIndexName;
         this.tableData = new HashSet<>();
     }
 
@@ -38,7 +41,11 @@ public class SearchIndexRecord {
         tableData.add(data);
     }
 
-    @Override
+    public String getSearchIndexName() {
+		return searchIndexName;
+	}
+
+	@Override
     public String toString() {
         return "SearchIndexRecord{" +
                 "tableId='" + tableId + '\'' +

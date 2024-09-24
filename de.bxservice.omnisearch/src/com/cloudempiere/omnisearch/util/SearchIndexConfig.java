@@ -10,11 +10,14 @@ public class SearchIndexConfig {
 
 	/* AD_SearchIndex_ID */
 	private int searchIndexId;
+	/* SearchIndexName */
+	private String searchIndexName;
 	/* List of Search Index Tables */
     private List<SearchIndexTableConfig> tableConfigs;
 
-    public SearchIndexConfig(int searchIndexId) {
+    public SearchIndexConfig(int searchIndexId, String searchIndexName) {
     	this.searchIndexId = searchIndexId;
+    	this.searchIndexName = searchIndexName;
         this.tableConfigs = new ArrayList<>();
     }
 
@@ -32,6 +35,14 @@ public class SearchIndexConfig {
 
 	public void setSearchIndexId(int searchIndexId) {
 		this.searchIndexId = searchIndexId;
+	}
+
+	public String getSearchIndexName() {
+		return searchIndexName;
+	}
+
+	public void setSearchIndexName(String searchIndexName) {
+		this.searchIndexName = searchIndexName;
 	}
 
 }

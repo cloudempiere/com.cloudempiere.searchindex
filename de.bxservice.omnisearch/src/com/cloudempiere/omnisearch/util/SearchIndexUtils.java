@@ -59,7 +59,8 @@ public class SearchIndexUtils {
         		+ "col.ColumnName,"
         		+ "sic.AD_Reference_ID, "
         		+ "parentCol.AD_Column_ID as AD_Column_ID_parent, "
-        		+ "parentCol.ColumnName as ColumnName_parent "
+        		+ "parentCol.ColumnName as ColumnName_parent,"
+        		+ "si.SearchIndexName "
 				+ "FROM AD_SearchIndex si "
 				+ "JOIN AD_SearchIndexTable sit ON (si.AD_SearchIndex_ID = sit.AD_SearchIndex_ID AND sit.IsActive = 'Y') "
 				+ "JOIN AD_Table mainT ON (sit.AD_Table_ID = mainT.AD_Table_ID) "
@@ -90,6 +91,7 @@ public class SearchIndexUtils {
 				int parentColId = rs.getInt("AD_Column_ID_parent");
 				String parentColName = rs.getString("ColumnName_parent");
 				int referenceId = rs.getInt("AD_Reference_ID");
+				String searchIndexName = rs.getString("SearchIndexName");
 				
 				if(Util.isEmpty(mainKeyColumnName)) {
 					log.severe("No Key Column found for table: " + tableName);
@@ -101,7 +103,7 @@ public class SearchIndexUtils {
                     .filter(config -> config.getSearchIndexId() == searchIndexId)
                     .findFirst()
                     .orElseGet(() -> {
-                        SearchIndexConfig newConfig = new SearchIndexConfig(searchIndexId);
+                        SearchIndexConfig newConfig = new SearchIndexConfig(searchIndexId, searchIndexName);
                         searchIndexConfigs.add(newConfig);
                         return newConfig;
                     });
@@ -207,7 +209,7 @@ public class SearchIndexUtils {
 		            pstmt = DB.prepareStatement(query, trxName);
 		            pstmt.setInt(1, Env.getAD_Client_ID(ctx));
 		            rs = pstmt.executeQuery();
-		            searchIndexRecord = new SearchIndexRecord(tableConfig.getTableId(), tableConfig.getKeyColName());
+		            searchIndexRecord = new SearchIndexRecord(tableConfig.getTableId(), tableConfig.getKeyColName(), searchIndexConfig.getSearchIndexName());
 
 		            while (rs.next()) {
 		                Map<String, Object> data = new HashMap<>();

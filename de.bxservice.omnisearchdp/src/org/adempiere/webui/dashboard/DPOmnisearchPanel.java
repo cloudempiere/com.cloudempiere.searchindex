@@ -98,7 +98,7 @@ public class DPOmnisearchPanel extends DashboardPanel implements EventListener<E
 		resultListbox.addEventListener("onPaging", this);
 			
 		noResultsLabel = new Label();
-		if (!searchIndexProvider.isIndexPopulated()) {
+		if (!searchIndexProvider.isIndexPopulated("IDX_CRM")) { // FIXME hardcoded
 			noResultsLabel.setValue(Msg.getMsg(Env.getCtx(), "BXS_NoIndex"));
 			showResults(false);
 		} else {
@@ -149,7 +149,7 @@ public class DPOmnisearchPanel extends DashboardPanel implements EventListener<E
 				setModel(new ArrayList<ISearchResult>());
 			}
 			
-			results = searchIndexProvider.searchIndexDocument(textbox.getText(), cbAdvancedSearch.isChecked());
+			results = searchIndexProvider.searchIndexDocument("IDX_CRM", textbox.getText(), cbAdvancedSearch.isChecked()); // FIXME hardcoded
 
 			if (results != null && results.size() > 0) {
 				

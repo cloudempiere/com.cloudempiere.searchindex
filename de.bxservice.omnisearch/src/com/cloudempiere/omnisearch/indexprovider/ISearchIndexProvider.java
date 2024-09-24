@@ -37,18 +37,18 @@ public interface ISearchIndexProvider
 	
 	public void init(MSearchIndexProvider searchIndexProvider, String searchIndexName);
 	
-	public void deleteAllIndex();
+	public void deleteAllIndex(String searchIndexName);
 
-	public void deleteIndexByQuery(String query);
+	public void deleteIndexByQuery(String searchIndexName, String query);
 
-	public Object searchIndexNoRestriction(String queryString);
+	public Object searchIndexNoRestriction(String searchIndexName, String queryString);
 
-	public List<ISearchResult> searchIndexDocument(String queryString, boolean isAdvanced);
+	public List<ISearchResult> searchIndexDocument(String searchIndexName, String queryString, boolean isAdvanced);
 	
 	public void setHeadline(ISearchResult result, String query);
 
 	public void createIndex(Properties ctx, Map<Integer, Set<SearchIndexRecord>> indexRecordsMap, String trxName);
 	
-	public boolean isIndexPopulated();
+	public boolean isIndexPopulated(String searchIndexName);
 	
 }

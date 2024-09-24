@@ -26,22 +26,22 @@ public class ElasticSearchIndexProvider implements ISearchIndexProvider {
 	}
 
 	@Override
-	public void deleteAllIndex() {
+	public void deleteAllIndex(String searchIndexName) {
 
 	}
 
 	@Override
-	public void deleteIndexByQuery(String query) {
+	public void deleteIndexByQuery(String searchIndexName, String query) {
 
 	}
 
 	@Override
-	public Object searchIndexNoRestriction(String queryString) {
+	public Object searchIndexNoRestriction(String searchIndexName, String queryString) {
 		return null;
 	}
 
 	@Override
-	public List<ISearchResult> searchIndexDocument(String queryString, boolean isAdvanced) {
+	public List<ISearchResult> searchIndexDocument(String searchIndexName, String queryString, boolean isAdvanced) {
 		return null;
 	}
 
@@ -56,7 +56,7 @@ public class ElasticSearchIndexProvider implements ISearchIndexProvider {
 	}
 	
 	@Override
-	public boolean isIndexPopulated() {
+	public boolean isIndexPopulated(String searchIndexName) {
 		return false;
 	}
 

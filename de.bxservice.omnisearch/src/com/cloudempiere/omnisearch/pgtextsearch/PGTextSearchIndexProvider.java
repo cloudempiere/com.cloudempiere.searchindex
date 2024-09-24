@@ -2,6 +2,7 @@ package com.cloudempiere.omnisearch.pgtextsearch;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -14,7 +15,6 @@ import java.util.logging.Level;
 import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MClient;
 import org.compiere.model.MRole;
-import org.compiere.model.Query;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
 
@@ -33,23 +33,24 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
     }
 
     @Override
-    public void deleteAllIndex() {
-        String sql = "DELETE FROM BXS_omnSearch ";
+    public void deleteAllIndex(String searchIndexName) {
+        String sql = "DELETE FROM " + searchIndexName;
         DB.executeUpdate(sql, null);
     }
 
     @Override
-    public void deleteIndexByQuery(String query) {
-        String sql = "DELETE FROM BXS_omnSearch WHERE " + query;
+    public void deleteIndexByQuery(String searchIndexName, String query) {
+        String sql = "DELETE FROM " + searchIndexName + " WHERE " + query;
         DB.executeUpdate(sql, null);
     }
 
     @Override
-    public Object searchIndexNoRestriction(String queryString) {
+    public Object searchIndexNoRestriction(String searchIndexName, String queryString) {
         ArrayList<TextSearchResult> results = new ArrayList<>();
         StringBuilder sql = new StringBuilder();
         sql.append("SELECT DISTINCT ad_table_id, record_id ");
-        sql.append("FROM BXS_omnSearch ");
+        sql.append("FROM ");
+        sql.append(searchIndexName);
         sql.append(" WHERE to_tsvector('english', document) @@ to_tsquery('english', ?)");
 
         PreparedStatement pstmt = null;
@@ -73,14 +74,15 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
     }
 
     @Override
-    public List<ISearchResult> searchIndexDocument(String query, boolean isAdvanced) {
+    public List<ISearchResult> searchIndexDocument(String searchIndexName, String query, boolean isAdvanced) {
     	ArrayList<ISearchResult> results = new ArrayList<>();
 		indexQuery.clear();
 
 		StringBuilder sql = new StringBuilder();
 		sql.append("SELECT DISTINCT ad_table_id, record_id ");
-		sql.append("FROM BXS_omnSearch ");
-		sql.append("WHERE bxs_omntsvector @@ ");
+		sql.append("FROM ");
+		sql.append(searchIndexName);
+		sql.append(" WHERE idx_tsvector @@ ");
 
 		if (isAdvanced) 
 			sql.append("to_tsquery('" + convertQueryString(query) + "') ");
@@ -195,42 +197,83 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 			return;
 		}
 	
-		String tsConfig = getTSConfig();
-		String upsertQuery = "INSERT INTO adempiere.bxs_omnsearch " +
-							 "(ad_client_id, ad_table_id, record_id, bxs_omntsvector) VALUES (?, ?, ?, to_tsvector(?::regconfig, ?::text)) " +
-							 "ON CONFLICT (ad_table_id, record_id) DO UPDATE SET bxs_omntsvector = EXCLUDED.bxs_omntsvector";
+	    String tsConfig = getTSConfig();
+	    Map<String, PreparedStatement> preparedStatementMap = new HashMap<>();
 	
-		try (PreparedStatement pstmt = DB.prepareStatement(upsertQuery, trxName)) {
-			for (Map.Entry<Integer, Set<SearchIndexRecord>> searchIndexRecordSet : indexRecordsMap.entrySet()) {
-				for (SearchIndexRecord searchIndexRecord : searchIndexRecordSet.getValue()) {
-					for (Map<String, Object> tableDataSet : searchIndexRecord.getTableData()) {
-						if (tableDataSet.get("Record_ID") == null)
-							continue;
+	    try {
+	        for (Map.Entry<Integer, Set<SearchIndexRecord>> searchIndexRecordSet : indexRecordsMap.entrySet()) {
+	            for (SearchIndexRecord searchIndexRecord : searchIndexRecordSet.getValue()) {
+	                String tableName = searchIndexRecord.getSearchIndexName();
+	                String upsertQuery = "INSERT INTO " + tableName + " " +
+	                                     "(ad_client_id, ad_table_id, record_id, idx_tsvector) VALUES (?, ?, ?, to_tsvector(?::regconfig, ?::text)) " +
+	                                     "ON CONFLICT (ad_table_id, record_id) DO UPDATE SET idx_tsvector = EXCLUDED.idx_tsvector";
 	
-						String documentContent = extractDocumentContent(tableDataSet);
+	                PreparedStatement pstmt = preparedStatementMap.get(tableName);
+	                if (pstmt == null) {
+	                    pstmt = DB.prepareStatement(upsertQuery, trxName);
+	                    preparedStatementMap.put(tableName, pstmt);
+	                }
 	
-						pstmt.setInt(1, Env.getAD_Client_ID(ctx));
-						pstmt.setInt(2, searchIndexRecord.getTableId());
-						pstmt.setInt(3, Integer.parseInt(tableDataSet.get("Record_ID").toString()));
-						pstmt.setString(4, tsConfig);
-						pstmt.setString(5, documentContent);
-						pstmt.addBatch();
-					}
-				}
-			}
-			pstmt.executeBatch();
-
-		} catch (Exception e) {
-			throw new AdempiereException(e);
-		}
+	                for (Map<String, Object> tableDataSet : searchIndexRecord.getTableData()) {
+	                    if (tableDataSet.get("Record_ID") == null)
+	                        continue;
+	
+	                    String documentContent = extractDocumentContent(tableDataSet);
+	
+	                    int idx = 1;
+	                    pstmt.setInt(idx++, Env.getAD_Client_ID(ctx));
+	                    pstmt.setInt(idx++, searchIndexRecord.getTableId());
+	                    pstmt.setInt(idx++, Integer.parseInt(tableDataSet.get("Record_ID").toString()));
+	                    pstmt.setString(idx++, tsConfig);
+	                    pstmt.setString(idx++, documentContent);
+	                    pstmt.addBatch();
+	                }
+	            }
+	        }
+	
+	        for (PreparedStatement pstmt : preparedStatementMap.values()) {
+	            pstmt.executeBatch();
+	            pstmt.close();
+	        }
+	
+	    } catch (Exception e) {
+	        throw new AdempiereException(e);
+	    } finally {
+	        for (PreparedStatement pstmt : preparedStatementMap.values()) {
+	            try {
+	                if (pstmt != null && !pstmt.isClosed()) {
+	                    pstmt.close();
+	                }
+	            } catch (SQLException e) {
+	                log.severe(e.getMessage());
+	            }
+	        }
+	    }
 	}
 
 	@Override
-	public boolean isIndexPopulated() {
-		String whereClause = "AD_CLIENT_ID IN (0,?)";
-		int count = new Query(Env.getCtx(), "BXS_omnSearch", whereClause, null)
-			.setParameters(Env.getAD_Client_ID(Env.getCtx()))
-			.count();
+	public boolean isIndexPopulated(String searchIndexName) {
+		int count = 0;
+		String sqlSelect = "SELECT COUNT(1) "
+				+ "FROM " + searchIndexName
+				+ " WHERE AD_Client_ID IN (0,?)";
+		
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		
+		try {
+			
+			pstmt = DB.prepareStatement(sqlSelect, null);
+			pstmt.setInt(1, Env.getAD_Client_ID(Env.getCtx()));
+			rs = pstmt.executeQuery();
+			if(rs.next()) {
+				count = rs.getInt(1);
+			}
+		} catch (Exception e) {
+			log.severe(e.getMessage());
+		} finally {
+			DB.close(rs, pstmt);
+		}
 		return count > 0;
 	}
     
