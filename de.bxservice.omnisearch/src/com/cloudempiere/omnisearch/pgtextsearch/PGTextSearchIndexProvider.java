@@ -75,6 +75,10 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 
     @Override
     public List<ISearchResult> searchIndexDocument(String searchIndexName, String query, boolean isAdvanced) {
+    	
+    	// TODO if searchIndexName is null, it should search across all tables
+    	// or, should receive a list of search index tables...
+    	
     	ArrayList<ISearchResult> results = new ArrayList<>();
 		indexQuery.clear();
 

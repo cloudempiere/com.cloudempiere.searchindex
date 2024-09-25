@@ -23,6 +23,7 @@ package org.adempiere.webui.dashboard;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import org.adempiere.webui.apps.graph.WNoData;
@@ -55,6 +56,7 @@ public class DPOmnisearchPanel extends DashboardPanel implements EventListener<E
 	private Properties ctx;
 	private ISearchIndexProvider searchIndexProvider;
 	private List<ISearchResult> results;
+	private Map<String, String> transactionCodeMap;
 	
 	private OmnisearchItemRenderer renderer;
 	private Vlayout layout = new Vlayout();
@@ -70,6 +72,7 @@ public class DPOmnisearchPanel extends DashboardPanel implements EventListener<E
 		super();
 		ctx = Env.getCtx();
 		searchIndexProvider = SearchIndexUtils.getSearchIndexProvider(ctx, 1000004, null); // FIXME hardcoded PGTextSearchIndexProvider - need to get from the search index definition
+		transactionCodeMap = SearchIndexUtils.getTransactionCodesByClient(ctx, Env.getAD_Client_ID(ctx), 1000004, null); // FIXME hardcoded PGTextSearchIndexProvider - need to get from the search index definition
 		
 		this.setSclass("dashboard-widget-max");
 		this.setHeight("500px");
@@ -143,12 +146,20 @@ public class DPOmnisearchPanel extends DashboardPanel implements EventListener<E
 	public void onEvent(Event e) throws Exception {
 		if (Events.ON_OK.equals(e.getName()) && e.getTarget() instanceof Textbox) {
 			Textbox textbox = (Textbox) e.getTarget();
+			String searchText = textbox.getText();
+			String searchIndexName = "";
 			
 			if (resultListbox.getItems() != null) {
 				setModel(new ArrayList<ISearchResult>());
 			}
 			
-			results = searchIndexProvider.searchIndexDocument("IDX_SalesOrder", textbox.getText(), cbAdvancedSearch.isChecked()); // FIXME hardcoded
+			if(searchText.startsWith("/")) {
+				String searchIndexKey = searchText.substring(1, searchText.indexOf(" "));
+				searchIndexName = transactionCodeMap.get(searchIndexKey);
+				searchText = searchText.substring(searchText.indexOf(" ") + 1);
+			}
+			
+			results = searchIndexProvider.searchIndexDocument(searchIndexName, searchText, cbAdvancedSearch.isChecked()); // FIXME hardcoded
 
 			if (results != null && results.size() > 0) {
 				

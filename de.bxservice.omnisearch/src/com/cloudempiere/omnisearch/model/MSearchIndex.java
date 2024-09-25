@@ -4,7 +4,10 @@
 package com.cloudempiere.omnisearch.model;
 
 import java.sql.ResultSet;
+import java.util.List;
 import java.util.Properties;
+
+import org.compiere.model.Query;
 
 /**
  * 
@@ -25,7 +28,6 @@ public class MSearchIndex extends X_AD_SearchIndex {
 	 */
 	public MSearchIndex(Properties ctx, int AD_SearchIndex_ID, String trxName) {
 		super(ctx, AD_SearchIndex_ID, trxName);
-		// TODO Auto-generated constructor stub
 	}
 
 	/**
@@ -36,7 +38,6 @@ public class MSearchIndex extends X_AD_SearchIndex {
 	 */
 	public MSearchIndex(Properties ctx, int AD_SearchIndex_ID, String trxName, String... virtualColumns) {
 		super(ctx, AD_SearchIndex_ID, trxName, virtualColumns);
-		// TODO Auto-generated constructor stub
 	}
 
 	/**
@@ -46,7 +47,19 @@ public class MSearchIndex extends X_AD_SearchIndex {
 	 */
 	public MSearchIndex(Properties ctx, ResultSet rs, String trxName) {
 		super(ctx, rs, trxName);
-		// TODO Auto-generated constructor stub
 	}
 
+	/**
+	 * Get search index by client
+	 * @param ctx
+	 * @param clientId
+	 * @param trxName
+	 * @return
+	 */
+	public static MSearchIndex[] getByClient(Properties ctx, int clientId, String trxName) {
+		List<MSearchIndex> list = new Query(ctx, Table_Name, COLUMNNAME_AD_Client_ID + "=?", trxName)
+				.setParameters(clientId)
+				.list();
+		return list.toArray(new MSearchIndex[list.size()]);
+	}
 }

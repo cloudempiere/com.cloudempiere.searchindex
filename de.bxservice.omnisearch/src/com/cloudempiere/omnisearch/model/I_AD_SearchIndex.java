@@ -165,6 +165,19 @@ public interface I_AD_SearchIndex
 	/** Get Search Index Name	  */
 	public String getSearchIndexName();
 
+    /** Column name TransactionCode */
+    public static final String COLUMNNAME_TransactionCode = "TransactionCode";
+
+	/** Set Transaction Code.
+	  * The transaction code represents the search definition
+	  */
+	public void setTransactionCode (String TransactionCode);
+
+	/** Get Transaction Code.
+	  * The transaction code represents the search definition
+	  */
+	public String getTransactionCode();
+
     /** Column name Updated */
     public static final String COLUMNNAME_Updated = "Updated";
 

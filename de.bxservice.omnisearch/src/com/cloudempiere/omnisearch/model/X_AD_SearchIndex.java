@@ -31,7 +31,7 @@ public class X_AD_SearchIndex extends PO implements I_AD_SearchIndex, I_Persiste
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = 20240823L;
+	private static final long serialVersionUID = 20240925L;
 
     /** Standard Constructor */
     public X_AD_SearchIndex (Properties ctx, int AD_SearchIndex_ID, String trxName)
@@ -194,5 +194,21 @@ public class X_AD_SearchIndex extends PO implements I_AD_SearchIndex, I_Persiste
 	public String getSearchIndexName()
 	{
 		return (String)get_Value(COLUMNNAME_SearchIndexName);
+	}
+
+	/** Set Transaction Code.
+		@param TransactionCode The transaction code represents the search definition
+	*/
+	public void setTransactionCode (String TransactionCode)
+	{
+		set_Value (COLUMNNAME_TransactionCode, TransactionCode);
+	}
+
+	/** Get Transaction Code.
+		@return The transaction code represents the search definition
+	  */
+	public String getTransactionCode()
+	{
+		return (String)get_Value(COLUMNNAME_TransactionCode);
 	}
 }

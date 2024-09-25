@@ -273,5 +273,34 @@ public class SearchIndexUtils {
         }
         return parts[1];
     }
+	
+	/**
+	 * Get Transaction Code from Search Index
+	 * @param ctx
+	 * @param clientId - AD_Client_ID
+	 * @param searchIndexProviderId - AD_SearchIndexProvider_ID
+	 * @param trxName
+	 * @return
+	 */
+	public static Map<String, String> getTransactionCodesByClient(Properties ctx, int clientId, int searchIndexProviderId, String trxName) {
+		Map<String, String> transactionCodeMap = new HashMap<>();
+		String sql = "SELECT TransactionCode, SearchIndexName FROM AD_SearchIndex WHERE IsActive = 'Y' AND AD_Client_ID = ? AND AD_SearchIndexProvider_ID = ? ";
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		try {
+			pstmt = DB.prepareStatement(sql, trxName);
+			pstmt.setInt(1, clientId);
+			pstmt.setInt(2, searchIndexProviderId);
+			rs = pstmt.executeQuery();
+			while (rs.next()) {
+				transactionCodeMap.put(rs.getString("TransactionCode"), rs.getString("SearchIndexName"));
+			}
+		} catch (SQLException e) {
+			log.log(Level.SEVERE, sql, e);
+		} finally {
+			DB.close(rs, pstmt);
+		}
+		return transactionCodeMap;
+	}
 }
 
