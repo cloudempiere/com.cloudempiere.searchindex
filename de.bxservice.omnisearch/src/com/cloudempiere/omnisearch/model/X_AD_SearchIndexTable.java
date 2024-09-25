@@ -31,7 +31,7 @@ public class X_AD_SearchIndexTable extends PO implements I_AD_SearchIndexTable, 
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = 20240823L;
+	private static final long serialVersionUID = 20240925L;
 
     /** Standard Constructor */
     public X_AD_SearchIndexTable (Properties ctx, int AD_SearchIndexTable_ID, String trxName)
@@ -212,5 +212,21 @@ public class X_AD_SearchIndexTable extends PO implements I_AD_SearchIndexTable, 
 	public String getName()
 	{
 		return (String)get_Value(COLUMNNAME_Name);
+	}
+
+	/** Set Sql WHERE.
+		@param WhereClause Fully qualified SQL WHERE clause
+	*/
+	public void setWhereClause (String WhereClause)
+	{
+		set_Value (COLUMNNAME_WhereClause, WhereClause);
+	}
+
+	/** Get Sql WHERE.
+		@return Fully qualified SQL WHERE clause
+	  */
+	public String getWhereClause()
+	{
+		return (String)get_Value(COLUMNNAME_WhereClause);
 	}
 }

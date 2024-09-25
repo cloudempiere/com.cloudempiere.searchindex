@@ -60,7 +60,8 @@ public class SearchIndexUtils {
         		+ "sic.AD_Reference_ID, "
         		+ "parentCol.AD_Column_ID as AD_Column_ID_parent, "
         		+ "parentCol.ColumnName as ColumnName_parent,"
-        		+ "si.SearchIndexName "
+        		+ "si.SearchIndexName,"
+        		+ "sit.WhereClause "
 				+ "FROM AD_SearchIndex si "
 				+ "JOIN AD_SearchIndexTable sit ON (si.AD_SearchIndex_ID = sit.AD_SearchIndex_ID AND sit.IsActive = 'Y') "
 				+ "JOIN AD_Table mainT ON (sit.AD_Table_ID = mainT.AD_Table_ID) "
@@ -92,6 +93,7 @@ public class SearchIndexUtils {
 				String parentColName = rs.getString("ColumnName_parent");
 				int referenceId = rs.getInt("AD_Reference_ID");
 				String searchIndexName = rs.getString("SearchIndexName");
+				String whereClause = rs.getString("WhereClause");
 				
 				if(Util.isEmpty(mainKeyColumnName)) {
 					log.severe("No Key Column found for table: " + tableName);
@@ -112,7 +114,7 @@ public class SearchIndexUtils {
                     .filter(config -> config.getTableId() == mainTableId)
                     .findFirst()
                     .orElseGet(() -> {
-                    	SearchIndexTableConfig newConfig = new SearchIndexTableConfig(mainTableName, mainTableId, mainKeyColumnName);
+                    	SearchIndexTableConfig newConfig = new SearchIndexTableConfig(mainTableName, mainTableId, mainKeyColumnName, whereClause);
                         searchIndexConfig.addTableConfig(newConfig);
                         return newConfig;
                     });
@@ -198,6 +200,14 @@ public class SearchIndexUtils {
 				// WHERE clause
 				StringBuilder whereClauseBuilder = new StringBuilder();
 				whereClauseBuilder.append(" WHERE main.AD_Client_ID = ? AND main.IsActive = 'Y' ");
+				String dynamicWhere = tableConfig.getSqlWhere();
+				if(!Util.isEmpty(dynamicWhere)) {
+					if (!dynamicWhere.trim().toUpperCase().startsWith("AND")) {
+					    whereClauseBuilder.append("AND ");
+					}
+					whereClauseBuilder.append(dynamicWhere);
+					whereClauseBuilder.append(" ");
+				}
 				
 				// Combine SELECT and FROM clauses
 				String query = selectClauseBuilder.toString() + fromClauseBuilder.toString() + whereClauseBuilder.toString();
