@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import org.adempiere.webui.apps.graph.WNoData;
 import org.adempiere.webui.component.Checkbox;
 import org.adempiere.webui.component.Textbox;
 import org.compiere.util.Env;
@@ -33,7 +34,6 @@ import org.zkoss.zk.ui.event.Event;
 import org.zkoss.zk.ui.event.EventListener;
 import org.zkoss.zk.ui.event.Events;
 import org.zkoss.zul.Div;
-import org.zkoss.zul.Label;
 import org.zkoss.zul.ListModelArray;
 import org.zkoss.zul.Listbox;
 import org.zkoss.zul.Vbox;
@@ -62,7 +62,8 @@ public class DPOmnisearchPanel extends DashboardPanel implements EventListener<E
 	private Textbox searchTextbox = new Textbox();
 	private Checkbox cbAdvancedSearch = new Checkbox();
 	private Listbox resultListbox = null;
-	private Label   noResultsLabel = null;
+	private WNoData noRecordsWidget = new WNoData("FindZeroRecords", "WidgetNoData.png");
+	private WNoData noIndexWidget = new WNoData("BXS_NoIndex", "WidgetError.png");
 		
 	public DPOmnisearchPanel()
 	{
@@ -88,7 +89,7 @@ public class DPOmnisearchPanel extends DashboardPanel implements EventListener<E
 		searchTextbox.setHflex("1");
 		searchTextbox.setSclass("z-textbox");
 		
-		cbAdvancedSearch.setLabel(Msg.getMsg(Env.getCtx(), "BXS_AdvancedQuery"));
+		cbAdvancedSearch.setLabel(Msg.getMsg(ctx, "BXS_AdvancedQuery"));
 		
 		resultListbox = new Listbox();
 		resultListbox.setMold("paging");
@@ -96,24 +97,21 @@ public class DPOmnisearchPanel extends DashboardPanel implements EventListener<E
 		resultListbox.setVflex("1");
 		resultListbox.setHflex("1");
 		resultListbox.addEventListener("onPaging", this);
-			
-		noResultsLabel = new Label();
-		if (!searchIndexProvider.isIndexPopulated("IDX_CRM")) { // FIXME hardcoded
-			noResultsLabel.setValue(Msg.getMsg(Env.getCtx(), "BXS_NoIndex"));
-			showResults(false);
+
+		if (!searchIndexProvider.isIndexPopulated("IDX_SalesOrder")) { // FIXME hardcoded
+			showResults(false, ErrorLabel.NO_INDEX);
 		} else {
-			noResultsLabel.setValue(Msg.getMsg(Env.getCtx(), "FindZeroRecords"));
-			showResults(true);
+			showResults(true, null);
 		}
 
 		Vbox box = new Vbox();
 		box.setVflex("1");
 		box.setHflex("1");
-		box.setStyle("margin:5px 5px;");
 		box.appendChild(searchTextbox);
 		box.appendChild(cbAdvancedSearch);
 		box.appendChild(resultListbox);
-		box.appendChild(noResultsLabel);
+		box.appendChild(noRecordsWidget);
+		box.appendChild(noIndexWidget);
 		div.appendChild(box);
 
 		//  ActionListener
@@ -129,15 +127,16 @@ public class DPOmnisearchPanel extends DashboardPanel implements EventListener<E
 		div.setParent(layout);
 		div.setVflex("1");
 		div.setHflex("1");
-		div.setStyle("margin:5px 5px; overflow:auto;");
-				
+		div.setStyle("overflow: auto;");
 	}
 	
-	public void showResults(boolean show) {
-		if (noResultsLabel != null && resultListbox != null) {
+	public void showResults(boolean show, ErrorLabel error) {
+		if (resultListbox != null)
 			resultListbox.setVisible(show);
-			noResultsLabel.setVisible(!show);
-		}
+		if (noRecordsWidget != null)
+			noRecordsWidget.setVisible(!show && error == ErrorLabel.NO_RESULTS);
+		if (noIndexWidget != null)
+			noIndexWidget.setVisible(!show && error == ErrorLabel.NO_INDEX);
 	}
 
 	@Override
@@ -149,18 +148,17 @@ public class DPOmnisearchPanel extends DashboardPanel implements EventListener<E
 				setModel(new ArrayList<ISearchResult>());
 			}
 			
-			results = searchIndexProvider.searchIndexDocument("IDX_CRM", textbox.getText(), cbAdvancedSearch.isChecked()); // FIXME hardcoded
+			results = searchIndexProvider.searchIndexDocument("IDX_SalesOrder", textbox.getText(), cbAdvancedSearch.isChecked()); // FIXME hardcoded
 
 			if (results != null && results.size() > 0) {
 				
-				showResults(true);
+				showResults(true, null);
 				setModel(results);
 				renderer = new OmnisearchItemRenderer();
 				resultListbox.setItemRenderer(renderer);
 		
 			} else {
-				noResultsLabel.setValue(Msg.getMsg(Env.getCtx(), "FindZeroRecords"));
-				showResults(false);
+				showResults(false, ErrorLabel.NO_RESULTS);
 			}
 		} else if ("onPaging".equals(e.getName()) && (e.getTarget() instanceof Listbox)) {
 			PagingEvent ee = (PagingEvent) e;
@@ -179,6 +177,10 @@ public class DPOmnisearchPanel extends DashboardPanel implements EventListener<E
 				setModel(results);
 			}	
 		}
+	}
+
+	private enum ErrorLabel {
+		NO_RESULTS, NO_INDEX
 	}
 
 }
