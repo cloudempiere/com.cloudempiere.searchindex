@@ -255,7 +255,9 @@ public class SearchIndexUtils {
 	public static ISearchIndexProvider getSearchIndexProvider(Properties ctx, int searchIndexProviderId, String trxName) {
 		MSearchIndexProvider providerDef = new MSearchIndexProvider(ctx, searchIndexProviderId, trxName);		
 		SearchIndexProviderFactory factory = new SearchIndexProviderFactory();
-		return factory.getSearchIndexProvider(providerDef.getClassname());
+		ISearchIndexProvider provider = factory.getSearchIndexProvider(providerDef.getClassname());
+		provider.init(providerDef);
+		return provider;
 	}
 	
 	/**

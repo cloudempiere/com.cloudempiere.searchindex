@@ -7,7 +7,6 @@ import java.util.Set;
 
 import com.cloudempiere.omnisearch.indexprovider.ISearchIndexProvider;
 import com.cloudempiere.omnisearch.model.MSearchIndexProvider;
-import com.cloudempiere.omnisearch.pgtextsearch.TextSearchResult;
 import com.cloudempiere.omnisearch.util.ISearchResult;
 import com.cloudempiere.omnisearch.util.SearchIndexRecord;
 
@@ -21,7 +20,7 @@ import com.cloudempiere.omnisearch.util.SearchIndexRecord;
 public class ElasticSearchIndexProvider implements ISearchIndexProvider {
 
 	@Override
-	public void init(MSearchIndexProvider searchIndexProvider, String searchIndexName) {
+	public void init(MSearchIndexProvider searchIndexProvider) {
 		
 	}
 

@@ -17,6 +17,7 @@ import org.compiere.model.MClient;
 import org.compiere.model.MRole;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
+import org.compiere.util.Util;
 
 import com.cloudempiere.omnisearch.indexprovider.ISearchIndexProvider;
 import com.cloudempiere.omnisearch.model.MSearchIndexProvider;
@@ -26,10 +27,11 @@ import com.cloudempiere.omnisearch.util.SearchIndexRecord;
 public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 
 	private HashMap<Integer, String> indexQuery = new HashMap<>();
+	private MSearchIndexProvider searchIndexProvider;
 	
     @Override
-    public void init(MSearchIndexProvider searchIndexProvider, String searchIndexName) {
-        // Initialize any necessary configurations or connections
+    public void init(MSearchIndexProvider searchIndexProvider) {
+    	this.searchIndexProvider = searchIndexProvider;
     }
 
     @Override
@@ -73,35 +75,47 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
         return results;
     }
 
-    @Override
-    public List<ISearchResult> searchIndexDocument(String searchIndexName, String query, boolean isAdvanced) {
-    	
-    	// TODO if searchIndexName is null, it should search across all tables
-    	// or, should receive a list of search index tables...
-    	
-    	ArrayList<ISearchResult> results = new ArrayList<>();
+	@Override
+	public List<ISearchResult> searchIndexDocument(String searchIndexName, String query, boolean isAdvanced) {
+		ArrayList<ISearchResult> results = new ArrayList<>();
 		indexQuery.clear();
 
 		StringBuilder sql = new StringBuilder();
-		sql.append("SELECT DISTINCT ad_table_id, record_id ");
-		sql.append("FROM ");
-		sql.append(searchIndexName);
-		sql.append(" WHERE idx_tsvector @@ ");
+		List<String> tablesToSearch = new ArrayList<>();
 
-		if (isAdvanced) 
-			sql.append("to_tsquery('" + convertQueryString(query) + "') ");
-		else
-			sql.append("plainto_tsquery('" + query + "') ");
+		if (Util.isEmpty(searchIndexName)) {
+			tablesToSearch.addAll(getAllSearchIndexTables());
+		} else {
+			tablesToSearch.add(searchIndexName);
+		}
 
-		sql.append("AND AD_CLIENT_ID IN (0,?) ");
-		
+		for (int i = 0; i < tablesToSearch.size(); i++) {
+			String tableName = tablesToSearch.get(i);
+			sql.append("SELECT DISTINCT ad_table_id, record_id ");
+			sql.append("FROM ");
+			sql.append(tableName);
+			sql.append(" WHERE idx_tsvector @@ ");
+
+			if (isAdvanced) 
+				sql.append("to_tsquery('" + convertQueryString(query) + "') ");
+			else
+				sql.append("plainto_tsquery('" + query + "') ");
+
+			sql.append("AND AD_CLIENT_ID IN (0,?) ");
+
+			if (i < tablesToSearch.size() - 1) {
+				sql.append(" UNION ");
+			}
+		}
+
 		MRole role = MRole.getDefault(Env.getCtx(), false);
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
-		try
-		{
+		try {
 			pstmt = DB.prepareStatement(sql.toString(), null);
-			pstmt.setInt(1, Env.getAD_Client_ID(Env.getCtx()));
+			for (int i = 0; i < tablesToSearch.size(); i++) {
+				pstmt.setInt(i + 1, Env.getAD_Client_ID(Env.getCtx()));
+			}
 			rs = pstmt.executeQuery();
 
 			TextSearchResult result = null;
@@ -127,20 +141,41 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 				}
 				i++;
 			}
-		}
-		catch (Exception e)
-		{
+		} catch (Exception e) {
 			log.log(Level.SEVERE, sql.toString(), e);
-		}
-		finally
-		{
+		} finally {
 			DB.close(rs, pstmt);
 			rs = null;
 			pstmt = null;
 		}
 
 		return results;
-    }
+	}
+
+	/**
+	 * Get all search index tables.
+	 * @return
+	 */
+	private List<String> getAllSearchIndexTables() {
+		List<String> tables = new ArrayList<>();
+		String sql = "SELECT SearchIndexName FROM AD_SearchIndex WHERE IsActive = 'Y' AND AD_Client_ID IN (0,?) AND AD_SearchIndexProvider_ID = ?";
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		try {
+			pstmt = DB.prepareStatement(sql, null);
+			pstmt.setInt(1, Env.getAD_Client_ID(Env.getCtx()));
+			pstmt.setInt(2, searchIndexProvider.getAD_SearchIndexProvider_ID());
+			rs = pstmt.executeQuery();
+			while (rs.next()) {
+				tables.add(rs.getString(1));
+			}
+		} catch (Exception e) {
+			log.severe(e.getMessage());
+		} finally {
+			DB.close(rs, pstmt);
+		}
+		return tables;
+	}
     
     @Override
 	public void setHeadline(ISearchResult result, String query) {

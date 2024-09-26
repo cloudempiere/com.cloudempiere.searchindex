@@ -35,7 +35,7 @@ public interface ISearchIndexProvider
 {
 	public static CLogger log = CLogger.getCLogger (ISearchIndexProvider.class);
 	
-	public void init(MSearchIndexProvider searchIndexProvider, String searchIndexName);
+	public void init(MSearchIndexProvider searchIndexProvider);
 	
 	public void deleteAllIndex(String searchIndexName);
 

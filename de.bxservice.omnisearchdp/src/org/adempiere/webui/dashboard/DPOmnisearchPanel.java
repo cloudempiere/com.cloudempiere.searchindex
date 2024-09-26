@@ -28,12 +28,14 @@ import java.util.Properties;
 
 import org.adempiere.webui.apps.graph.WNoData;
 import org.adempiere.webui.component.Checkbox;
-import org.adempiere.webui.component.Textbox;
+import org.adempiere.webui.component.Combobox;
 import org.compiere.util.Env;
 import org.compiere.util.Msg;
 import org.zkoss.zk.ui.event.Event;
 import org.zkoss.zk.ui.event.EventListener;
 import org.zkoss.zk.ui.event.Events;
+import org.zkoss.zk.ui.event.InputEvent;
+import org.zkoss.zul.Comboitem;
 import org.zkoss.zul.Div;
 import org.zkoss.zul.ListModelArray;
 import org.zkoss.zul.Listbox;
@@ -61,7 +63,7 @@ public class DPOmnisearchPanel extends DashboardPanel implements EventListener<E
 	private OmnisearchItemRenderer renderer;
 	private Vlayout layout = new Vlayout();
 	private Div div = new Div();
-	private Textbox searchTextbox = new Textbox();
+	private Combobox searchCombobox = new Combobox();
 	private Checkbox cbAdvancedSearch = new Checkbox();
 	private Listbox resultListbox = null;
 	private WNoData noRecordsWidget = new WNoData("FindZeroRecords", "WidgetNoData.png");
@@ -87,10 +89,24 @@ public class DPOmnisearchPanel extends DashboardPanel implements EventListener<E
 	}
 
 	private void initComponent() {
+		// Add predefined options to the Combobox
+		Comboitem itemO = new Comboitem("/order");
+		Comboitem itemS = new Comboitem("/crm");
+		searchCombobox.appendChild(itemO);
+		searchCombobox.appendChild(itemS);
 		
-		searchTextbox.addEventListener(Events.ON_OK, this);
-		searchTextbox.setHflex("1");
-		searchTextbox.setSclass("z-textbox");
+		searchCombobox.addEventListener(Events.ON_OK, this);
+		searchCombobox.setHflex("1");
+		searchCombobox.setSclass("z-combobox");
+		searchCombobox.setAutodrop(true);
+		searchCombobox.setButtonVisible(false);
+		
+		// Add input event listener for filtering
+		searchCombobox.addEventListener(Events.ON_CHANGING, event -> {
+			InputEvent inputEvent = (InputEvent) event;
+			String value = inputEvent.getValue();
+			filterComboboxItems(value);
+		});
 		
 		cbAdvancedSearch.setLabel(Msg.getMsg(ctx, "BXS_AdvancedQuery"));
 		
@@ -100,23 +116,23 @@ public class DPOmnisearchPanel extends DashboardPanel implements EventListener<E
 		resultListbox.setVflex("1");
 		resultListbox.setHflex("1");
 		resultListbox.addEventListener("onPaging", this);
-
+	
 		if (!searchIndexProvider.isIndexPopulated("IDX_SalesOrder")) { // FIXME hardcoded
 			showResults(false, ErrorLabel.NO_INDEX);
 		} else {
 			showResults(true, null);
 		}
-
+	
 		Vbox box = new Vbox();
 		box.setVflex("1");
 		box.setHflex("1");
-		box.appendChild(searchTextbox);
+		box.appendChild(searchCombobox);
 		box.appendChild(cbAdvancedSearch);
 		box.appendChild(resultListbox);
 		box.appendChild(noRecordsWidget);
 		box.appendChild(noIndexWidget);
 		div.appendChild(box);
-
+	
 		//  ActionListener
 		cbAdvancedSearch.setChecked(false);
 	}
@@ -144,9 +160,9 @@ public class DPOmnisearchPanel extends DashboardPanel implements EventListener<E
 
 	@Override
 	public void onEvent(Event e) throws Exception {
-		if (Events.ON_OK.equals(e.getName()) && e.getTarget() instanceof Textbox) {
-			Textbox textbox = (Textbox) e.getTarget();
-			String searchText = textbox.getText();
+		if (Events.ON_OK.equals(e.getName()) && e.getTarget() instanceof Combobox) {
+			Combobox combobox = (Combobox) e.getTarget();
+			String searchText = combobox.getValue();
 			String searchIndexName = "";
 			
 			if (resultListbox.getItems() != null) {
@@ -176,18 +192,34 @@ public class DPOmnisearchPanel extends DashboardPanel implements EventListener<E
 			int pgno = ee.getActivePage();
 			
 			if (pgno != 0 && results != null) {
-	            int start = pgno * 10;
-	            int end = (pgno*10) + 10;
-	            
-	            if (end > results.size()) 
-	            	end = results.size();
+				int start = pgno * 10;
+				int end = (pgno*10) + 10;
 				
-	            for(int i = start; i < end; i++)
-	            	searchIndexProvider.setHeadline(results.get(i), searchTextbox.getText());
-	            
+				if (end > results.size()) 
+					end = results.size();
+				
+				for(int i = start; i < end; i++)
+					searchIndexProvider.setHeadline(results.get(i), searchCombobox.getValue());
+				
 				setModel(results);
 			}	
 		}
+	}
+
+	private void filterComboboxItems(String value) {
+		if (value == null || value.isEmpty()) {
+			searchCombobox.open();
+			return;
+		}
+		
+		for (Comboitem item : searchCombobox.getItems()) {
+			if (item.getLabel().toLowerCase().contains(value.toLowerCase())) {
+				item.setVisible(true);
+			} else {
+				item.setVisible(false);
+			}
+		}
+		searchCombobox.open();
 	}
 
 	private enum ErrorLabel {
