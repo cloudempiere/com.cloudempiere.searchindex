@@ -19,7 +19,7 @@
 * Contributors:                                                       *
 * - Diego Ruiz - BX Service GmbH                                      *
 **********************************************************************/
-package org.adempiere.webui.dashboard;
+package com.cloudempiere.omnisearch.ui;
 
 import java.util.HashMap;
 import java.util.Map;
