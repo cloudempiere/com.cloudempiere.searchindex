@@ -44,7 +44,7 @@ public class DPOmnisearchPanel extends DashboardPanel implements EventListener<E
 	public DPOmnisearchPanel() {
 		super();
 		ctx = Env.getCtx();
-		searchIndexProvider = SearchIndexUtils.getSearchIndexProvider(ctx, 1000004, null); // FIXME hardcoded PGTextSearchIndexProvider - need to get from the search index definition
+		searchIndexProvider = SearchIndexUtils.getSearchIndexProvider(ctx, 1000004, null, null); // FIXME hardcoded PGTextSearchIndexProvider - need to get from the search index definition
 
 		omnisearchUI = new ZkOmnisearchUI(ctx, searchIndexProvider, new DefaultSearchResultRenderer());
 		omnisearchUI.setParent(this);

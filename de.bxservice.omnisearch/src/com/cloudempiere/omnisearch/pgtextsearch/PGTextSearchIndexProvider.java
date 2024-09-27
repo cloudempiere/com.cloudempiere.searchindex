@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.logging.Level;
 
 import org.adempiere.exceptions.AdempiereException;
+import org.adempiere.util.IProcessUI;
 import org.compiere.model.MClient;
 import org.compiere.model.MRole;
 import org.compiere.util.DB;
@@ -28,17 +29,26 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 
 	private HashMap<Integer, String> indexQuery = new HashMap<>();
 	private MSearchIndexProvider searchIndexProvider;
+	private IProcessUI processUI;
 	
     @Override
-    public void init(MSearchIndexProvider searchIndexProvider) {
+    public void init(MSearchIndexProvider searchIndexProvider, IProcessUI processUI) {
     	this.searchIndexProvider = searchIndexProvider;
+    	this.processUI = processUI;
     }
 
-    @Override
-    public void deleteAllIndex(String searchIndexName) {
-        String sql = "DELETE FROM " + searchIndexName;
-        DB.executeUpdate(sql, null);
-    }
+	@Override
+	public void deleteAllIndex(String trxName) {
+		updateProcessUIStatus("Preparing data to be deleted..."); // TODO translate
+		List<String> tables = getAllSearchIndexTables();
+		int i = 0;
+		for (String tableName : tables) {
+			String sql = "TRUNCATE TABLE " + tableName + " RESTART IDENTITY CASCADE";
+			DB.executeUpdate(sql, trxName);
+			updateProcessUIStatus("Deleted " + i + "/" + tables.size()); // TODO translate
+			i++;
+		}
+	}
 
     @Override
     public void deleteIndexByQuery(String searchIndexName, String query) {
@@ -178,7 +188,7 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 	}
     
     @Override
-	public void setHeadline(ISearchResult result, String query) {
+	public void setHeadline(ISearchResult result, String query) { // TODO validate if this method must be in the SearchIndexProvider interface
 		
 		if (result.getHtmlHeadline() != null && !result.getHtmlHeadline().isEmpty())
 			return;
@@ -252,11 +262,14 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 	                    pstmt = DB.prepareStatement(upsertQuery, trxName);
 	                    preparedStatementMap.put(tableName, pstmt);
 	                }
-	
+	                
+	                int i = 0;
 	                for (Map<String, Object> tableDataSet : searchIndexRecord.getTableData()) {
 	                    if (tableDataSet.get("Record_ID") == null)
 	                        continue;
-	
+	                    
+	                    updateProcessUIStatus("Preparing " + tableName + "(" + i + "/" + searchIndexRecord.getTableData().size() + ")"); // TODO translate
+	                    
 	                    String documentContent = extractDocumentContent(tableDataSet);
 	
 	                    int idx = 1;
@@ -266,10 +279,12 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 	                    pstmt.setString(idx++, tsConfig);
 	                    pstmt.setString(idx++, documentContent);
 	                    pstmt.addBatch();
+	                    i++;
 	                }
 	            }
 	        }
 	
+	        updateProcessUIStatus("Inserting data..."); // TODO translate
 	        for (PreparedStatement pstmt : preparedStatementMap.values()) {
 	            pstmt.executeBatch();
 	            pstmt.close();
@@ -288,6 +303,12 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 	            }
 	        }
 	    }
+	}
+	
+	@Override
+	public void reCreateIndex(Properties ctx, Map<Integer, Set<SearchIndexRecord>> indexRecordsMap, String trxName) {
+		deleteAllIndex(trxName);
+		createIndex(ctx, indexRecordsMap, trxName);
 	}
 
 	@Override
@@ -361,5 +382,15 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 			queryString =  queryString.replace(" ", "&"); //If the query does not include &, handle spaces as & strings
 		
 		return queryString;
+	}
+	
+	/**
+	 * Update the process UI status
+	 * @param message
+	 */
+	private void updateProcessUIStatus(String message) {
+		if (processUI != null) {
+			processUI.statusUpdate(message);
+		}
 	}
 }

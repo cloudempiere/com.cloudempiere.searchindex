@@ -63,8 +63,10 @@ public class ZkOmnisearchUI extends Div implements EventListener<Event> {
 	private void initComponent() {
 		// TODO fix hardcoded options (load from search index)
 		Comboitem itemO = new Comboitem("/order");
+		Comboitem itemP = new Comboitem("/product");
 		Comboitem itemS = new Comboitem("/crm");
 		searchCombobox.appendChild(itemO);
+		searchCombobox.appendChild(itemP);
 		searchCombobox.appendChild(itemS);
 
 		searchCombobox.addEventListener(Events.ON_OK, this);
@@ -142,7 +144,7 @@ public class ZkOmnisearchUI extends Div implements EventListener<Event> {
 			}
 
 			if (searchText.startsWith("/")) {
-				String searchIndexKey = searchText.substring(1, searchText.indexOf(" "));
+				String searchIndexKey = searchText.substring(1, searchText.indexOf(" ")); // FIXME error for empty string: begin 1, end -1, length 6
 				searchIndexName = transactionCodeMap.get(searchIndexKey);
 				searchText = searchText.substring(searchText.indexOf(" ") + 1);
 			}

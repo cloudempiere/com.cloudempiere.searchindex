@@ -12,6 +12,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.logging.Level;
 
+import org.adempiere.util.IProcessUI;
 import org.cloudempiere.util.WebFormUtil;
 import org.compiere.model.MLookup;
 import org.compiere.model.MLookupFactory;
@@ -252,11 +253,11 @@ public class SearchIndexUtils {
 	 * @param searchIndexProviderId - AD_SearchIndexProvider_ID
 	 * @return
 	 */
-	public static ISearchIndexProvider getSearchIndexProvider(Properties ctx, int searchIndexProviderId, String trxName) {
+	public static ISearchIndexProvider getSearchIndexProvider(Properties ctx, int searchIndexProviderId, IProcessUI processUI, String trxName) {
 		MSearchIndexProvider providerDef = new MSearchIndexProvider(ctx, searchIndexProviderId, trxName);		
 		SearchIndexProviderFactory factory = new SearchIndexProviderFactory();
 		ISearchIndexProvider provider = factory.getSearchIndexProvider(providerDef.getClassname());
-		provider.init(providerDef);
+		provider.init(providerDef, processUI);
 		return provider;
 	}
 	

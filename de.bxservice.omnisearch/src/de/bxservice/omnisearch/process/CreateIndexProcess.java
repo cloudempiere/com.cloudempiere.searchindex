@@ -62,10 +62,13 @@ public class CreateIndexProcess extends SvrProcess {
 		if(p_AD_SearchIndexProvider_ID <= 0)
 			throw new FillMandatoryException("AD_SearchIndexProvider_ID");
 		
-		ISearchIndexProvider provider = SearchIndexUtils.getSearchIndexProvider(getCtx(), p_AD_SearchIndexProvider_ID, get_TrxName());
+		ISearchIndexProvider provider = SearchIndexUtils.getSearchIndexProvider(getCtx(), p_AD_SearchIndexProvider_ID, processUI, get_TrxName());
 		if(provider == null)
 			throw new AdempiereException(Msg.getMsg(getCtx(), "SearchIndexProviderNotFound"));
 		
+		if (processUI != null) {
+			processUI.statusUpdate("Collecting data...");  // TODO translate
+		}
 	    List<SearchIndexConfig> searchIndexConfigs = SearchIndexUtils.loadSearchIndexConfig(getCtx(), get_TrxName());
 	    if(searchIndexConfigs.size() <= 0)
 	    	throw new AdempiereException(Msg.getMsg(getCtx(), "SearchIndexConfigNotFound"));
@@ -74,8 +77,8 @@ public class CreateIndexProcess extends SvrProcess {
 		if(indexRecordsMap.size() <= 0)
 	    	return Msg.getMsg(getCtx(), "NoRecordsFound");
 	    
-	    provider.createIndex(getCtx(), indexRecordsMap, get_TrxName());
+	    provider.reCreateIndex(getCtx(), indexRecordsMap, get_TrxName());
 		
-		return Msg.getMsg(getCtx(), "Success");
+		return Msg.getMsg(getCtx(), "Success"); // FIXME no error message
 	}
 }

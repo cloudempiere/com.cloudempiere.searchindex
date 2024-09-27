@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+import org.adempiere.util.IProcessUI;
+
 import com.cloudempiere.omnisearch.indexprovider.ISearchIndexProvider;
 import com.cloudempiere.omnisearch.model.MSearchIndexProvider;
 import com.cloudempiere.omnisearch.util.ISearchResult;
@@ -20,12 +22,12 @@ import com.cloudempiere.omnisearch.util.SearchIndexRecord;
 public class ElasticSearchIndexProvider implements ISearchIndexProvider {
 
 	@Override
-	public void init(MSearchIndexProvider searchIndexProvider) {
+	public void init(MSearchIndexProvider searchIndexProvider, IProcessUI processUI) {
 		
 	}
 
 	@Override
-	public void deleteAllIndex(String searchIndexName) {
+	public void deleteAllIndex(String trxName) {
 
 	}
 
@@ -52,6 +54,11 @@ public class ElasticSearchIndexProvider implements ISearchIndexProvider {
 	@Override
 	public void createIndex(Properties ctx, Map<Integer, Set<SearchIndexRecord>> indexRecordsMap, String trxName) {
 
+	}
+	
+	@Override
+	public void reCreateIndex(Properties ctx, Map<Integer, Set<SearchIndexRecord>> indexRecordsMap, String trxName) {
+		
 	}
 	
 	@Override

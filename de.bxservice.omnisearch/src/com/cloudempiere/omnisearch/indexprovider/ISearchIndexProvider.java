@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+import org.adempiere.util.IProcessUI;
 import org.compiere.util.CLogger;
 
 import com.cloudempiere.omnisearch.model.MSearchIndexProvider;
@@ -35,9 +36,9 @@ public interface ISearchIndexProvider
 {
 	public static CLogger log = CLogger.getCLogger (ISearchIndexProvider.class);
 	
-	public void init(MSearchIndexProvider searchIndexProvider);
+	public void init(MSearchIndexProvider searchIndexProvider, IProcessUI processUI);
 	
-	public void deleteAllIndex(String searchIndexName);
+	public void deleteAllIndex(String trxName);
 
 	public void deleteIndexByQuery(String searchIndexName, String query);
 
@@ -48,6 +49,8 @@ public interface ISearchIndexProvider
 	public void setHeadline(ISearchResult result, String query);
 
 	public void createIndex(Properties ctx, Map<Integer, Set<SearchIndexRecord>> indexRecordsMap, String trxName);
+	
+	public void reCreateIndex(Properties ctx, Map<Integer, Set<SearchIndexRecord>> indexRecordsMap, String trxName);
 	
 	public boolean isIndexPopulated(String searchIndexName);
 	
