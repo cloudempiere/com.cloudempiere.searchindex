@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" name="com.cloudempiere.searchindex.TextSearchIndex">
+   <implementation class="com.cloudempiere.searchindex.TextSearchIndex"/>
+   <service>
+      <provide interface="com.cloudempiere.searchindex.tools.SearchIndexIndex"/>
+   </service>
+   <property name="indexType" type="String" value="TS"/>
+</scr:component>
