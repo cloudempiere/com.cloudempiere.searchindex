@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.cloudempiere.searchindex.model;
 
 import java.sql.ResultSet;

@@ -37,7 +37,7 @@ import com.cloudempiere.searchindex.util.SearchIndexConfig;
 import com.cloudempiere.searchindex.util.SearchIndexRecord;
 import com.cloudempiere.searchindex.util.SearchIndexUtils;
 
-public class CreateIndexProcess extends SvrProcess {
+public class CreateSearchIndex extends SvrProcess {
 	
 	protected int p_AD_SearchIndexProvider_ID = 0;
 	

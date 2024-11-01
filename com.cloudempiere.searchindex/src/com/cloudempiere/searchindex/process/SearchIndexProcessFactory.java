@@ -31,8 +31,8 @@ public class SearchIndexProcessFactory implements IProcessFactory {
 
 	@Override
 	public ProcessCall newProcessInstance(String className) {
-		if (CreateIndexProcess.class.getName().equals(className)) {
-			return new CreateIndexProcess();
+		if (CreateSearchIndex.class.getName().equals(className)) {
+			return new CreateSearchIndex();
 		}
 
 		return null;
