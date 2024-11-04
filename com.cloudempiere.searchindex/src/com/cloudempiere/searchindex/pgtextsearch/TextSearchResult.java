@@ -17,7 +17,8 @@
 * MA 02110-1301, USA.                                                 *
 *                                                                     *
 * Contributors:                                                       *
-* - Diego Ruiz - BX Service GmbH                                      *
+* - Diego Ruiz, BX Service GmbH                                       *
+* - Peter Takacs, Cloudempiere                                        *
 **********************************************************************/
 package com.cloudempiere.searchindex.pgtextsearch;
 

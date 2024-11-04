@@ -17,7 +17,8 @@
 * MA 02110-1301, USA.                                                 *
 *                                                                     *
 * Contributors:                                                       *
-* - Diego Ruiz - BX Service GmbH                                      *
+* - Diego Ruiz, BX Service GmbH                                       *
+* - Peter Takacs, Cloudempiere                                        *
 **********************************************************************/
 package com.cloudempiere.searchindex.ui.dashboard;
 
@@ -44,7 +45,7 @@ public class DPSearchIndexPanel extends DashboardPanel implements EventListener<
 	public DPSearchIndexPanel() {
 		super();
 		ctx = Env.getCtx();
-		searchIndexProvider = SearchIndexUtils.getSearchIndexProvider(ctx, 1000004, null, null); // FIXME hardcoded PGTextSearchIndexProvider - need to get from the search index definition
+		searchIndexProvider = SearchIndexUtils.getSearchIndexProvider(ctx, 1000001, null, null); // FIXME hardcoded PGTextSearchIndexProvider - need to get from the search index definition
 
 		searchIndexUI = new ZkSearchIndexUI(ctx, searchIndexProvider, new DefaultSearchResultRenderer());
 		searchIndexUI.setParent(this);
