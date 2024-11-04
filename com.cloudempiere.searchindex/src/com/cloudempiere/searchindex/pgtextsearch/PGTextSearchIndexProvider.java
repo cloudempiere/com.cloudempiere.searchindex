@@ -421,4 +421,12 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 			processUI.statusUpdate(message);
 		}
 	}
+
+	@Override
+	public int getAD_SearchIndexProvider_ID() {
+		if(searchIndexProvider != null) {
+			return searchIndexProvider.getAD_SearchIndexProvider_ID();
+		}
+		return 0;
+	}
 }

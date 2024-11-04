@@ -31,7 +31,7 @@ public class X_AD_SearchIndex extends PO implements I_AD_SearchIndex, I_Persiste
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = 20240925L;
+	private static final long serialVersionUID = 20241104L;
 
     /** Standard Constructor */
     public X_AD_SearchIndex (Properties ctx, int AD_SearchIndex_ID, String trxName)
@@ -40,6 +40,7 @@ public class X_AD_SearchIndex extends PO implements I_AD_SearchIndex, I_Persiste
       /** if (AD_SearchIndex_ID == 0)
         {
 			setAD_SearchIndex_ID (0);
+			setAD_SearchIndexProvider_ID (0);
 			setName (null);
         } */
     }
@@ -51,6 +52,7 @@ public class X_AD_SearchIndex extends PO implements I_AD_SearchIndex, I_Persiste
       /** if (AD_SearchIndex_ID == 0)
         {
 			setAD_SearchIndex_ID (0);
+			setAD_SearchIndexProvider_ID (0);
 			setName (null);
         } */
     }
@@ -84,7 +86,7 @@ public class X_AD_SearchIndex extends PO implements I_AD_SearchIndex, I_Persiste
     }
 
 	/** Set Search Index.
-		@param AD_SearchIndex_ID Search Index Definition
+		@param AD_SearchIndex_ID Search Index
 	*/
 	public void setAD_SearchIndex_ID (int AD_SearchIndex_ID)
 	{
@@ -95,8 +97,7 @@ public class X_AD_SearchIndex extends PO implements I_AD_SearchIndex, I_Persiste
 	}
 
 	/** Get Search Index.
-		@return Search Index Definition
-	  */
+		@return Search Index	  */
 	public int getAD_SearchIndex_ID()
 	{
 		Integer ii = (Integer)get_Value(COLUMNNAME_AD_SearchIndex_ID);
@@ -110,7 +111,7 @@ public class X_AD_SearchIndex extends PO implements I_AD_SearchIndex, I_Persiste
 	*/
 	public void setAD_SearchIndex_UU (String AD_SearchIndex_UU)
 	{
-		set_Value (COLUMNNAME_AD_SearchIndex_UU, AD_SearchIndex_UU);
+		set_ValueNoCheck (COLUMNNAME_AD_SearchIndex_UU, AD_SearchIndex_UU);
 	}
 
 	/** Get AD_SearchIndex_UU.
@@ -127,19 +128,18 @@ public class X_AD_SearchIndex extends PO implements I_AD_SearchIndex, I_Persiste
 	}
 
 	/** Set Search Index Provider.
-		@param AD_SearchIndexProvider_ID Search Index Provider Definition
+		@param AD_SearchIndexProvider_ID Search Index Provider
 	*/
 	public void setAD_SearchIndexProvider_ID (int AD_SearchIndexProvider_ID)
 	{
 		if (AD_SearchIndexProvider_ID < 1)
-			set_Value (COLUMNNAME_AD_SearchIndexProvider_ID, null);
+			set_ValueNoCheck (COLUMNNAME_AD_SearchIndexProvider_ID, null);
 		else
-			set_Value (COLUMNNAME_AD_SearchIndexProvider_ID, Integer.valueOf(AD_SearchIndexProvider_ID));
+			set_ValueNoCheck (COLUMNNAME_AD_SearchIndexProvider_ID, Integer.valueOf(AD_SearchIndexProvider_ID));
 	}
 
 	/** Get Search Index Provider.
-		@return Search Index Provider Definition
-	  */
+		@return Search Index Provider	  */
 	public int getAD_SearchIndexProvider_ID()
 	{
 		Integer ii = (Integer)get_Value(COLUMNNAME_AD_SearchIndexProvider_ID);
@@ -185,7 +185,6 @@ public class X_AD_SearchIndex extends PO implements I_AD_SearchIndex, I_Persiste
 	*/
 	public void setSearchIndexName (String SearchIndexName)
 	{
-
 		set_Value (COLUMNNAME_SearchIndexName, SearchIndexName);
 	}
 

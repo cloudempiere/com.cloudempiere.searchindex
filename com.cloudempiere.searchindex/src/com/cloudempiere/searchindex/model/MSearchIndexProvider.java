@@ -22,7 +22,10 @@
 package com.cloudempiere.searchindex.model;
 
 import java.sql.ResultSet;
+import java.util.List;
 import java.util.Properties;
+
+import org.compiere.model.Query;
 
 /**
  * 
@@ -64,4 +67,17 @@ public class MSearchIndexProvider extends X_AD_SearchIndexProvider {
 		super(ctx, rs, trxName);
 	}
 
+	/**
+	 * Get Search Index Providers by Client
+	 * @param ctx
+	 * @param clientId - AD_Client_ID
+	 * @param trxName
+	 * @return
+	 */
+	public static MSearchIndexProvider[] getByClient(Properties ctx, int clientId, String trxName) {
+		List<MSearchIndexProvider> list = new Query(ctx, Table_Name, COLUMNNAME_AD_Client_ID + "=?", trxName)
+				.setParameters(clientId)
+				.list();
+		return list.toArray(new MSearchIndexProvider[list.size()]);
+	}
 }

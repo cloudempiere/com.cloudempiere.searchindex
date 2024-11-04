@@ -63,4 +63,6 @@ public interface ISearchIndexProvider
 	
 	public boolean isIndexPopulated(String searchIndexName);
 	
+	public int getAD_SearchIndexProvider_ID();
+	
 }

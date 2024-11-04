@@ -22,6 +22,7 @@
 **********************************************************************/
 package com.cloudempiere.searchindex.ui.dashboard;
 
+import java.util.List;
 import java.util.Properties;
 
 import org.adempiere.webui.dashboard.DashboardPanel;
@@ -39,15 +40,14 @@ public class DPSearchIndexPanel extends DashboardPanel implements EventListener<
 	private static final long serialVersionUID = -8116512057982561129L;
 
 	private Properties ctx;
-	private ISearchIndexProvider searchIndexProvider;
+	private List<ISearchIndexProvider> searchIndexProviderList;
 	private ZkSearchIndexUI searchIndexUI;
 
 	public DPSearchIndexPanel() {
 		super();
 		ctx = Env.getCtx();
-		searchIndexProvider = SearchIndexUtils.getSearchIndexProvider(ctx, 1000001, null, null); // FIXME hardcoded PGTextSearchIndexProvider - need to get from the search index definition
-
-		searchIndexUI = new ZkSearchIndexUI(ctx, searchIndexProvider, new DefaultSearchResultRenderer());
+		searchIndexProviderList = SearchIndexUtils.getSearchIndexProvidersByClient(ctx, Env.getAD_Client_ID(ctx), null, null);
+		searchIndexUI = new ZkSearchIndexUI(ctx, searchIndexProviderList, new DefaultSearchResultRenderer());
 		searchIndexUI.setParent(this);
 	}
 

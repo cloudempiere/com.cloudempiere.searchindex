@@ -87,4 +87,8 @@ public class ElasticSearchIndexProvider implements ISearchIndexProvider {
 		return false;
 	}
 
+	@Override
+	public int getAD_SearchIndexProvider_ID() {
+		return 0;
+	}
 }

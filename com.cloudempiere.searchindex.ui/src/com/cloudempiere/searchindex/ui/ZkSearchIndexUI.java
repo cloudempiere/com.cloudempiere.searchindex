@@ -56,8 +56,8 @@ public class ZkSearchIndexUI extends Div implements EventListener<Event> {
 	private static final long serialVersionUID = 565544798736411334L;
 	
 	private Properties ctx;
-	private ISearchIndexProvider searchIndexProvider;
-	private List<ISearchResult> results;
+	private List<ISearchIndexProvider> searchIndexProviderList;
+	private List<ISearchResult> results = new ArrayList<>();
 	private ISearchResultRenderer resultRenderer;
 	private Combobox searchCombobox = new Combobox();
 	private Checkbox cbAdvancedSearch = new Checkbox();
@@ -68,9 +68,9 @@ public class ZkSearchIndexUI extends Div implements EventListener<Event> {
 	private WNoData noIndexWidget = new WNoData("BXS_NoIndex", "WidgetError.png");
 	private Map<String, String> transactionCodeMap;
 
-	public ZkSearchIndexUI(Properties ctx, ISearchIndexProvider searchIndexProvider, ISearchResultRenderer resultRenderer) {
+	public ZkSearchIndexUI(Properties ctx, List<ISearchIndexProvider> searchIndexProviderList, ISearchResultRenderer resultRenderer) {
 		this.ctx = ctx;
-		this.searchIndexProvider = searchIndexProvider;
+		this.searchIndexProviderList = searchIndexProviderList;
 		this.resultRenderer = resultRenderer;
 		this.transactionCodeMap = SearchIndexUtils.getTransactionCodesByClient(ctx, Env.getAD_Client_ID(ctx), 1000001, null); // FIXME hardcoded PGTextSearchIndexProvider - need to get from the search index definition
 		
@@ -112,10 +112,20 @@ public class ZkSearchIndexUI extends Div implements EventListener<Event> {
 		resultListbox.setHflex("1");
 		resultListbox.addEventListener("onPaging", this);
 
-		if (!searchIndexProvider.isIndexPopulated("IDX_SalesOrder")) { // FIXME hardcoded
-			showResults(false, ErrorLabel.NO_INDEX);
-		} else {
+		boolean showResults = false;
+		outerLoop:
+		for(ISearchIndexProvider searchIndexProvider : searchIndexProviderList) {
+			for(String searchIndexName : SearchIndexUtils.getSearchIndexNamesForProvider(ctx, searchIndexProvider.getAD_SearchIndexProvider_ID(), null)) {
+				if (searchIndexProvider.isIndexPopulated(searchIndexName)) {
+					showResults = true;
+					break outerLoop;
+				}
+			}
+		}
+		if (showResults) {
 			showResults(true, null);
+		} else {
+			showResults(false, ErrorLabel.NO_INDEX);
 		}
 
 		Vbox box = new Vbox();
@@ -171,9 +181,11 @@ public class ZkSearchIndexUI extends Div implements EventListener<Event> {
 				searchText = searchText.substring(searchText.indexOf(" ") + 1);
 			}
 
-			results = searchIndexProvider.searchIndexDocument(searchIndexName, searchText, cbAdvancedSearch.isChecked()); // FIXME hardcoded
+			for(ISearchIndexProvider searchIndexProvider : searchIndexProviderList) {
+				results.addAll(searchIndexProvider.searchIndexDocument(searchIndexName, searchText, cbAdvancedSearch.isChecked()));
+			}
 
-			if (results != null && results.size() > 0) {
+			if (results.size() > 0) {
 				showResults(true, null);
 				setModel(results);
 				resultRenderer.renderResults(results, resultListbox);
@@ -191,8 +203,9 @@ public class ZkSearchIndexUI extends Div implements EventListener<Event> {
 				if (end > results.size())
 					end = results.size();
 
-				for (int i = start; i < end; i++)
-					searchIndexProvider.setHeadline(results.get(i), searchCombobox.getValue());
+//				TODO test and fix:
+//				for (int i = start; i < end; i++)
+//					searchIndexProviderList.setHeadline(results.get(i), searchCombobox.getValue());
 
 				setModel(results);
 			}

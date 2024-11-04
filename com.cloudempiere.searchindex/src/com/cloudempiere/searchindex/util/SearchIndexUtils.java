@@ -271,7 +271,23 @@ public class SearchIndexUtils {
 	}
 	
 	/**
-	 * Get Search Index Provider
+	 * Get and initialise Search Index Providers by Client
+	 * @param clientId - AD_Client_ID
+	 * @return
+	 */
+	public static List<ISearchIndexProvider> getSearchIndexProvidersByClient(Properties ctx, int clientId, IProcessUI processUI, String trxName) {
+		List<ISearchIndexProvider> providerList = new ArrayList<>();
+		SearchIndexProviderFactory factory = new SearchIndexProviderFactory();
+		for(MSearchIndexProvider providerDef : MSearchIndexProvider.getByClient(ctx, clientId, trxName)) {		
+			ISearchIndexProvider provider = factory.getSearchIndexProvider(providerDef.getClassname());
+			provider.init(providerDef, processUI);
+			providerList.add(provider);
+		}
+		return providerList;
+	}
+	
+	/**
+	 * Get and initialise Search Index Provider
 	 * @param searchIndexProviderId - AD_SearchIndexProvider_ID
 	 * @return
 	 */
@@ -281,6 +297,31 @@ public class SearchIndexUtils {
 		ISearchIndexProvider provider = factory.getSearchIndexProvider(providerDef.getClassname());
 		provider.init(providerDef, processUI);
 		return provider;
+	}
+	
+	/**
+	 * Get Search Index Names for Provider
+	 * @param searchIndexProviderId - AD_SearchIndexProvider_ID
+	 * @return
+	 */
+	public static String[] getSearchIndexNamesForProvider(Properties ctx, int searchIndexProviderId, String trxName) {
+		String sql = "SELECT SearchIndexName FROM AD_SearchIndex WHERE IsActive = 'Y' AND AD_SearchIndexProvider_ID = ? ";
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		List<String> searchIndexNames = new ArrayList<>();
+		try {
+			pstmt = DB.prepareStatement(sql, trxName);
+			pstmt.setInt(1, searchIndexProviderId);
+			rs = pstmt.executeQuery();
+			while (rs.next()) {
+				searchIndexNames.add(rs.getString("SearchIndexName"));
+			}
+		} catch (SQLException e) {
+			log.log(Level.SEVERE, sql, e);
+		} finally {
+			DB.close(rs, pstmt);
+		}
+		return searchIndexNames.toArray(new String[searchIndexNames.size()]);
 	}
 	
 	/**
