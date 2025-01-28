@@ -80,4 +80,18 @@ public class MSearchIndexProvider extends X_AD_SearchIndexProvider {
 				.list();
 		return list.toArray(new MSearchIndexProvider[list.size()]);
 	}
+	
+	/**
+	 * Get AD_SearchIndexProvider_ID by Classname
+	 * @param classname
+	 * @return
+	 */
+	public static int getAD_SearchIndexProvider_ID(Properties ctx, String classname) {
+		StringBuilder whereClause = new StringBuilder(COLUMNNAME_Classname).append("=?");
+		return new Query(ctx, Table_Name, whereClause.toString(), null)
+				.setParameters(classname)
+				.setOnlyActiveRecords(true)
+				.setClient_ID()
+				.firstId();
+	}
 }

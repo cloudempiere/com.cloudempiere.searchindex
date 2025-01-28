@@ -280,8 +280,10 @@ public class SearchIndexUtils {
 		SearchIndexProviderFactory factory = new SearchIndexProviderFactory();
 		for(MSearchIndexProvider providerDef : MSearchIndexProvider.getByClient(ctx, clientId, trxName)) {		
 			ISearchIndexProvider provider = factory.getSearchIndexProvider(providerDef.getClassname());
-			provider.init(providerDef, processUI);
-			providerList.add(provider);
+			if (provider != null) {
+				provider.init(providerDef, processUI);
+				providerList.add(provider);
+			}
 		}
 		return providerList;
 	}
@@ -295,7 +297,8 @@ public class SearchIndexUtils {
 		MSearchIndexProvider providerDef = new MSearchIndexProvider(ctx, searchIndexProviderId, trxName);		
 		SearchIndexProviderFactory factory = new SearchIndexProviderFactory();
 		ISearchIndexProvider provider = factory.getSearchIndexProvider(providerDef.getClassname());
-		provider.init(providerDef, processUI);
+		if (provider != null)
+			provider.init(providerDef, processUI);
 		return provider;
 	}
 	

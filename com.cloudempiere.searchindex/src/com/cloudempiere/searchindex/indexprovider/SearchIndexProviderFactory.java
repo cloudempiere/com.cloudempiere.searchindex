@@ -40,9 +40,9 @@ public class SearchIndexProviderFactory {
 			return null;
 		else
 			classname = classname.trim();
-		if(classname.equals("com.cloudempiere.searchindex.indexprovider.ElasticSearchIndexProvider"))
+		if(classname.equals("com.cloudempiere.searchindex.elasticsearch.ElasticSearchIndexProvider"))
 			return new ElasticSearchIndexProvider();
-		if(classname.equals("com.cloudempiere.searchindex.indexprovider.PGTextSearchIndexProvider"))
+		if(classname.equals("com.cloudempiere.searchindex.pgtextsearch.PGTextSearchIndexProvider"))
 			return new PGTextSearchIndexProvider();
 		return null;
 	}

@@ -45,6 +45,7 @@ import org.zkoss.zul.Vlayout;
 import org.zkoss.zul.event.PagingEvent;
 
 import com.cloudempiere.searchindex.indexprovider.ISearchIndexProvider;
+import com.cloudempiere.searchindex.model.MSearchIndexProvider;
 import com.cloudempiere.searchindex.ui.searchresult.ISearchResultRenderer;
 import com.cloudempiere.searchindex.util.ISearchResult;
 import com.cloudempiere.searchindex.util.SearchIndexUtils;
@@ -65,14 +66,18 @@ public class ZkSearchIndexUI extends Div implements EventListener<Event> {
 	private Div div = new Div();
 	private Vlayout layout = new Vlayout();
 	private WNoData noRecordsWidget = new WNoData("FindZeroRecords", "WidgetNoData.png");
-	private WNoData noIndexWidget = new WNoData("BXS_NoIndex", "WidgetError.png");
+	private WNoData noIndexWidget = new WNoData("NoIndex", "WidgetError.png");
 	private Map<String, String> transactionCodeMap;
 
 	public ZkSearchIndexUI(Properties ctx, List<ISearchIndexProvider> searchIndexProviderList, ISearchResultRenderer resultRenderer) {
 		this.ctx = ctx;
 		this.searchIndexProviderList = searchIndexProviderList;
 		this.resultRenderer = resultRenderer;
-		this.transactionCodeMap = SearchIndexUtils.getTransactionCodesByClient(ctx, Env.getAD_Client_ID(ctx), 1000001, null); // FIXME hardcoded PGTextSearchIndexProvider - need to get from the search index definition
+		this.transactionCodeMap = SearchIndexUtils.getTransactionCodesByClient(
+				ctx, 
+				Env.getAD_Client_ID(ctx), 
+				MSearchIndexProvider.getAD_SearchIndexProvider_ID(ctx, "com.cloudempiere.searchindex.pgtextsearch.PGTextSearchIndexProvider"), // TODO implement a way to be able to switch between providers when searching 
+				null);
 		
 		
 		this.setSclass("dashboard-widget-max");
@@ -83,13 +88,10 @@ public class ZkSearchIndexUI extends Div implements EventListener<Event> {
 	}
 
 	private void initComponent() {
-		// TODO fix hardcoded options (load from search index)
-		Comboitem itemO = new Comboitem("/order");
-		Comboitem itemP = new Comboitem("/product");
-		Comboitem itemS = new Comboitem("/crm");
-		searchCombobox.appendChild(itemO);
-		searchCombobox.appendChild(itemP);
-		searchCombobox.appendChild(itemS);
+		for(String transactionCode : transactionCodeMap.keySet()) {
+			Comboitem item = new Comboitem("/" + transactionCode);
+			searchCombobox.appendChild(item);
+		}
 
 		searchCombobox.addEventListener(Events.ON_OK, this);
 		searchCombobox.setHflex("1");
@@ -104,7 +106,7 @@ public class ZkSearchIndexUI extends Div implements EventListener<Event> {
 			filterComboboxItems(value);
 		});
 
-		cbAdvancedSearch.setLabel(Msg.getMsg(ctx, "BXS_AdvancedQuery"));
+		cbAdvancedSearch.setLabel(Msg.getMsg(ctx, "AdvancedQuery"));
 
 		resultListbox.setMold("paging");
 		resultListbox.setPageSize(10);
