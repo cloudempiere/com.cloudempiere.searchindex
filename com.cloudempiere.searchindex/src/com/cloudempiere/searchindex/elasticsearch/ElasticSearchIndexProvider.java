@@ -27,6 +27,7 @@ import java.util.Properties;
 import java.util.Set;
 
 import org.adempiere.util.IProcessUI;
+import org.compiere.model.PO;
 
 import com.cloudempiere.searchindex.indexprovider.ISearchIndexProvider;
 import com.cloudempiere.searchindex.model.MSearchIndexProvider;
@@ -53,7 +54,7 @@ public class ElasticSearchIndexProvider implements ISearchIndexProvider {
 	}
 
 	@Override
-	public void deleteIndexByQuery(String searchIndexName, String query) {
+	public void deleteIndexByQuery(String searchIndexName, String query, Object[] params, String trxName) {
 
 	}
 
@@ -75,6 +76,16 @@ public class ElasticSearchIndexProvider implements ISearchIndexProvider {
 	@Override
 	public void createIndex(Properties ctx, Map<Integer, Set<SearchIndexRecord>> indexRecordsMap, String trxName) {
 
+	}
+	
+	@Override
+	public void createIndex(String trxName, String indexTableName, int tableId, int recordId, int[] columnIDs) {
+		
+	}
+	
+	@Override
+	public void updateIndex(Properties ctx, PO po, String indexTableName, int[] columnIdList, String trxName) {
+		
 	}
 	
 	@Override

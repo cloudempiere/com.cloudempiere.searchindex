@@ -21,9 +21,13 @@
  **********************************************************************/
 package com.cloudempiere.searchindex.model;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Properties;
+import java.util.logging.Level;
 
+import org.compiere.util.DB;
 import org.compiere.util.Msg;
 
 /**
@@ -89,6 +93,36 @@ public class MSearchIndexColumn extends X_AD_SearchIndexColumn {
 		}
 			
 		return true;
+	}
+	
+	/**
+	 * Get AD_SearchIndex
+	 * @return
+	 */
+	public MSearchIndex getSearchIndex() {
+		MSearchIndex searchIndex = null;
+		StringBuilder sql = new StringBuilder("SELECT si.* ")
+			.append("FROM ").append(MSearchIndexTable.Table_Name).append(" sit ")
+			.append("JOIN ").append(MSearchIndex.Table_Name).append(" si ")
+				.append("ON sit.").append(MSearchIndexTable.COLUMNNAME_AD_SearchIndex_ID)
+				.append(" = si.").append(MSearchIndex.COLUMNNAME_AD_SearchIndex_ID)
+			.append("WHERE sit.").append(MSearchIndexTable.COLUMNNAME_AD_SearchIndexTable_ID).append(" = ?");
+		
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		try {
+			pstmt = DB.prepareStatement(sql.toString(), get_TrxName());
+			pstmt.setInt(1, getAD_SearchIndexTable_ID());
+			rs = pstmt.executeQuery();
+			if(rs.next()) {
+				searchIndex = new MSearchIndex(getCtx(), rs, get_TrxName());
+			}
+		} catch (SQLException e) {
+			log.log(Level.SEVERE, "Error while getting Search Index", e);
+		} finally {
+			DB.close(rs, pstmt);
+		}
+		return searchIndex;
 	}
 
 }

@@ -35,7 +35,7 @@ public class MSearchIndexTable extends X_AD_SearchIndexTable {
 
 	/** Generated serial version ID */
 	private static final long serialVersionUID = -2412775728559620890L;
-
+	
 	/**
 	 * @param ctx
 	 * @param AD_SearchIndexTable_ID
@@ -62,7 +62,6 @@ public class MSearchIndexTable extends X_AD_SearchIndexTable {
 	 */
 	public MSearchIndexTable(Properties ctx, ResultSet rs, String trxName) {
 		super(ctx, rs, trxName);
-		// TODO Auto-generated constructor stub
 	}
 
 }

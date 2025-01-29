@@ -28,6 +28,7 @@ import java.util.Properties;
 import java.util.Set;
 
 import org.adempiere.util.IProcessUI;
+import org.compiere.model.PO;
 import org.compiere.util.CLogger;
 
 import com.cloudempiere.searchindex.model.MSearchIndexProvider;
@@ -49,7 +50,7 @@ public interface ISearchIndexProvider
 	
 	public void deleteAllIndex(String trxName);
 
-	public void deleteIndexByQuery(String searchIndexName, String query);
+	public void deleteIndexByQuery(String searchIndexName, String query, Object[] params, String trxName);
 
 	public Object searchIndexNoRestriction(String searchIndexName, String queryString);
 
@@ -58,6 +59,10 @@ public interface ISearchIndexProvider
 	public void setHeadline(ISearchResult result, String query);
 
 	public void createIndex(Properties ctx, Map<Integer, Set<SearchIndexRecord>> indexRecordsMap, String trxName);
+	
+	public void createIndex(String trxName, String indexTableName, int tableId, int recordId, int[] columnIDs);
+	
+	public void updateIndex(Properties ctx, PO po, String indexTableName, int[] columnIdList, String trxName);
 	
 	public void reCreateIndex(Properties ctx, Map<Integer, Set<SearchIndexRecord>> indexRecordsMap, String trxName);
 	

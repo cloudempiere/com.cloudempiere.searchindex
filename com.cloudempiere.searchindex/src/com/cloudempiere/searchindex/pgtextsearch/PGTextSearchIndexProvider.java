@@ -36,7 +36,10 @@ import java.util.logging.Level;
 import org.adempiere.exceptions.AdempiereException;
 import org.adempiere.util.IProcessUI;
 import org.compiere.model.MClient;
+import org.compiere.model.MColumn;
 import org.compiere.model.MRole;
+import org.compiere.model.MTable;
+import org.compiere.model.PO;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
 import org.compiere.util.Util;
@@ -71,7 +74,7 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 		List<String> tables = getAllSearchIndexTables();
 		int i = 0;
 		for (String tableName : tables) {
-			String sql = "TRUNCATE TABLE " + tableName + " RESTART IDENTITY CASCADE";
+			String sql = "TRUNCATE TABLE " + tableName + " RESTART IDENTITY";
 			DB.executeUpdate(sql, trxName);
 			updateProcessUIStatus("Deleted " + i + "/" + tables.size()); // TODO translate
 			i++;
@@ -79,14 +82,34 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 	}
 
     @Override
-    public void deleteIndexByQuery(String searchIndexName, String query) {
-        String sql = "DELETE FROM " + searchIndexName + " WHERE " + query;
-        DB.executeUpdate(sql, null);
+    public void deleteIndexByQuery(String searchIndexName, String query, Object[] params, String trxName) {
+    	if (Util.isEmpty(searchIndexName)) {
+    		updateProcessUIStatus("Preparing data to be deleted..."); // TODO translate
+    		List<String> tables = getAllSearchIndexTables();
+    		String sql;
+    		int i = 0;
+    		for (String tableName : tables) {
+    			if (Util.isEmpty(query))
+    				sql = "TRUNCATE TABLE " + tableName + " RESTART IDENTITY";
+    			else
+    				sql = "DELETE FROM " + tableName + " WHERE " + query;
+    			DB.executeUpdate(sql, params, false, trxName, 0);
+    			updateProcessUIStatus("Deleted " + i + "/" + tables.size()); // TODO translate
+    			i++;
+    		}
+    	} else {
+	        String sql;
+	        if (Util.isEmpty(query))
+				sql = "TRUNCATE TABLE " + searchIndexName + " RESTART IDENTITY";
+			else
+				sql = "DELETE FROM " + searchIndexName + " WHERE " + query;
+	        DB.executeUpdate(sql, params, false, trxName, 0);
+    	}
     }
 
     @Override
     public Object searchIndexNoRestriction(String searchIndexName, String queryString) {
-        ArrayList<TextSearchResult> results = new ArrayList<>();
+        ArrayList<PGTextSearchResult> results = new ArrayList<>();
         StringBuilder sql = new StringBuilder();
         sql.append("SELECT DISTINCT ad_table_id, record_id ");
         sql.append("FROM ");
@@ -100,7 +123,7 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
             pstmt.setString(1, queryString);
             rs = pstmt.executeQuery();
             while (rs.next()) {
-                TextSearchResult result = new TextSearchResult();
+                PGTextSearchResult result = new PGTextSearchResult();
                 result.setAD_Table_ID(rs.getInt("ad_table_id"));
                 result.setRecord_ID(rs.getInt("record_id"));
                 results.add(result);
@@ -156,7 +179,7 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 			}
 			rs = pstmt.executeQuery();
 
-			TextSearchResult result = null;
+			PGTextSearchResult result = null;
 			int i = 0;
 			while (rs.next()) {
 				int AD_Table_ID = rs.getInt(1);
@@ -169,7 +192,7 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 				if (AD_Window_ID > 0 && !role.isRecordAccess(AD_Table_ID, recordID, true))
 					continue;
 				
-				result = new TextSearchResult();
+				result = new PGTextSearchResult();
 				result.setAD_Table_ID(AD_Table_ID);
 				result.setRecord_ID(recordID);
 				results.add(result);
@@ -334,6 +357,115 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 	}
 	
 	@Override
+	public void createIndex(String trxName, String indexTableName, int tableId, int recordId, int[] columnIDs) {
+		if (columnIDs == null || columnIDs.length <= 0)
+			return;
+
+		log.log(Level.INFO, "Indexing " + tableId + " " + columnIDs);
+
+		StringBuilder upsertQuery = new StringBuilder();
+	    upsertQuery.append("INSERT INTO ");
+	    upsertQuery.append(indexTableName);
+	    upsertQuery.append(" (ad_client_id, ad_table_id, record_id, idx_tsvector) ");
+
+	    String selectQuery = getSelectQuery(tableId, columnIDs, false, recordId > 0);
+
+	    if (selectQuery == null) {
+	        log.log(Level.WARNING, "A table with more than one key column cannot be indexed");
+	    } else {
+	        upsertQuery.append(selectQuery);
+	        upsertQuery.append(" ON CONFLICT (AD_Table_ID, Record_ID) DO UPDATE SET idx_tsvector = EXCLUDED.idx_tsvector ");
+
+	        Object[] params = null;
+	        if (recordId > 0)
+	            params = new Object[]{Env.getAD_Client_ID(Env.getCtx()), recordId};
+	        else if (Env.getAD_Client_ID(Env.getCtx()) > 0)
+	            params = new Object[]{Env.getAD_Client_ID(Env.getCtx())};
+
+	        try {
+	            DB.executeUpdateEx(upsertQuery.toString(), params, trxName);
+	        } catch (Exception e) {
+	            log.log(Level.SEVERE, upsertQuery.toString());
+	            throw new AdempiereException(e);
+	        }
+	    }
+	}
+	
+	@Override
+	public void updateIndex(Properties ctx, PO po, String indexTableName, int[] columnIDs, String trxName) {
+		/*
+		 * index table name
+		 * indexed column IDs
+		 */
+		StringBuilder updateQuery = new StringBuilder();
+		updateQuery.append("UPDATE ");
+		updateQuery.append(indexTableName);
+		updateQuery.append(" SET ");
+		updateQuery.append("idx_tsvector ");
+		
+		updateQuery.append(" = (");
+		MTable table = MTable.get(Env.getCtx(), po.get_Table_ID());
+		String mainTableAlias = "a";
+		
+		updateQuery.append("SELECT ");
+		updateQuery.append("to_tsvector(");
+		updateQuery.append("'" + getTSConfig() + "', "); //Language Parameter config
+
+		//Columns that want to be indexed
+		MColumn column = null;
+		//TableName, List of validations after the ON clause
+		ArrayList<String> joinClauses = null;
+		for (int i = 0; i < columnIDs.length; i++) {
+			column = MColumn.get(Env.getCtx(), columnIDs[i]);
+			String foreignTableName = column.getReferenceTableName();
+
+			if (foreignTableName != null) {
+				String foreignAlias = "a" + i;
+				MTable foreignTable = MTable.get(Env.getCtx(), foreignTableName);
+
+				if (joinClauses == null)
+					joinClauses = new ArrayList<>();
+
+				joinClauses.add(getJoinClause(foreignTable, mainTableAlias, foreignAlias, column));
+				updateQuery.append(getForeignValues(foreignTable, foreignAlias));
+
+			} else {
+				updateQuery.append("COALESCE(");
+				updateQuery.append(mainTableAlias);
+				updateQuery.append(".");
+				updateQuery.append(column.getColumnName());
+			}
+
+			if (i < columnIDs.length -1)
+				updateQuery.append(",'') || ' ' || "); //space between words
+			else
+				updateQuery.append(",'') ");
+		}
+		updateQuery.append(") ");
+
+		updateQuery.append(" FROM ");
+		updateQuery.append(table.getTableName());
+		updateQuery.append(" " + mainTableAlias);
+
+		if (joinClauses != null && joinClauses.size() > 0) {
+			for (String joinClause : joinClauses)
+				updateQuery.append(joinClause);
+		}
+
+		updateQuery.append(" WHERE " + mainTableAlias + ".AD_Client_ID = ?");
+		updateQuery.append(" AND ");
+		updateQuery.append(mainTableAlias + ".");
+		updateQuery.append(table.getKeyColumns()[0]); //Record_ID
+		updateQuery.append(" = ? )");
+		
+		updateQuery.append(" WHERE AD_Table_ID = ? AND Record_ID = ?");
+		
+		DB.executeUpdateEx(updateQuery.toString(), 
+				new Object[] {Env.getAD_Client_ID(Env.getCtx()), po.get_ID(), po.get_Table_ID(), po.get_ID()}, 
+				trxName);
+	}
+	
+	@Override
 	public void reCreateIndex(Properties ctx, Map<Integer, Set<SearchIndexRecord>> indexRecordsMap, String trxName) {
 		deleteAllIndex(trxName);
 		createIndex(ctx, indexRecordsMap, trxName);
@@ -428,5 +560,153 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 			return searchIndexProvider.getAD_SearchIndexProvider_ID();
 		}
 		return 0;
+	}
+	
+	/**
+	 * Gets the values of the identifiers columns when a FK is selected as Index
+	 */
+	private String getForeignValues(MTable table, String tableAlias) {
+
+		String[] identifierColumns = table.getIdentifierColumns(); 
+
+		if (identifierColumns != null && identifierColumns.length > 0) {
+			StringBuilder foreingColumns = new StringBuilder();
+
+			for (int i = 0; i < identifierColumns.length; i++) {
+				foreingColumns.append("COALESCE(");
+				foreingColumns.append(tableAlias);
+				foreingColumns.append(".");
+				foreingColumns.append(identifierColumns[i]);
+
+				if (i < identifierColumns.length -1)
+					foreingColumns.append(",'') || ' ' || "); //space between words
+			}
+
+			return foreingColumns.toString();
+		}
+		else
+			return null;
+	}
+
+	private String getJoinClause(MTable foreignTable, String tableAlias, String foreignTableAlias, MColumn currentColumn) {
+
+		if (foreignTable == null || currentColumn == null)
+			return null;
+
+		StringBuilder joinClause = new StringBuilder();
+		joinClause.append(" LEFT JOIN ");
+		joinClause.append(foreignTable.getTableName());
+		joinClause.append(" " + foreignTableAlias);
+		joinClause.append(" ON ");
+		joinClause.append(tableAlias);
+		joinClause.append(".");
+		joinClause.append(currentColumn.getColumnName());
+		joinClause.append(" = ");
+		joinClause.append(foreignTableAlias);
+		joinClause.append(".");
+		joinClause.append(foreignTable.getKeyColumns()[0]);
+
+		return joinClause.toString();
+	}
+	
+	private String getSelectQuery(int AD_Table_ID, int[] columnIDs, boolean isSearch, boolean isSingleRecord) {
+
+		MTable table = MTable.get(Env.getCtx(), AD_Table_ID);
+		String mainTableAlias = "a";
+		StringBuilder selectQuery = new StringBuilder();
+		selectQuery.append("SELECT ");
+		
+		if (!isSearch) {
+			selectQuery.append(mainTableAlias + ".AD_Client_ID"); //AD_Client_ID
+			selectQuery.append(", ");
+			selectQuery.append(AD_Table_ID); //AD_Table_ID
+			selectQuery.append(", ");
+
+			if (table.getKeyColumns() != null && table.getKeyColumns().length == 1) 
+				selectQuery.append(table.getKeyColumns()[0]); //Record_ID
+			else
+				return null;
+
+			selectQuery.append(", ");
+			
+			selectQuery.append("to_tsvector(");
+			selectQuery.append("'" + getTSConfig() + "', "); //Language Parameter config		
+		}
+
+		//Columns that want to be indexed
+		MColumn column = null;
+		//TableName, List of validations after the ON clause
+		ArrayList<String> joinClauses = null;
+		for (int i = 0; i < columnIDs.length; i++) {
+			int AD_Column_ID = columnIDs[i];
+			column = MColumn.get(Env.getCtx(), AD_Column_ID);
+			String foreignTableName = column.getReferenceTableName();
+
+			if (foreignTableName != null) {
+				String foreignAlias = "a" + i;
+				MTable foreignTable = MTable.get(Env.getCtx(), foreignTableName);
+
+				if (joinClauses == null)
+					joinClauses = new ArrayList<>();
+
+				joinClauses.add(getJoinClause(foreignTable, mainTableAlias, foreignAlias, column));
+				selectQuery.append(getForeignValues(foreignTable, foreignAlias));
+
+			} else {
+				selectQuery.append("COALESCE(");
+				selectQuery.append(mainTableAlias);
+				selectQuery.append(".");
+				selectQuery.append(column.getColumnName());
+			}
+
+			if (i < columnIDs.length -1)
+				selectQuery.append(",'') || ' ' || "); //space between words
+			else
+				selectQuery.append(",'') ");
+		}
+
+		if (isSearch)
+			selectQuery.append(" AS body, q ");
+		else
+			selectQuery.append(") ");
+
+		selectQuery.append(" FROM ");
+		selectQuery.append(table.getTableName());
+		selectQuery.append(" " + mainTableAlias);
+
+		if (joinClauses != null && joinClauses.size() > 0) {
+			for (String joinClause : joinClauses)
+				selectQuery.append(joinClause);
+		}
+
+		if (isSearch) {
+	    	selectQuery.append(",");
+	    	selectQuery.append("to_tsquery(?) q");
+	    	selectQuery.append(" WHERE " + mainTableAlias + ".AD_Client_ID = ?");
+	    	selectQuery.append(" AND ");
+	    	selectQuery.append(mainTableAlias + ".");
+			selectQuery.append(table.getKeyColumns()[0]); //Record_ID
+			selectQuery.append(" = ? ) AS foo WHERE body @@ q");
+		} else {
+			String whereClause = null;
+			//If System -> All clients
+			if (Env.getAD_Client_ID(Env.getCtx()) != 0) {
+				whereClause = " WHERE " + mainTableAlias + ".AD_Client_ID = ? ";
+			}
+			if (isSingleRecord) {
+				if (whereClause != null)
+					whereClause = whereClause + " AND ";
+				else
+					whereClause = " WHERE ";
+
+				whereClause = whereClause + mainTableAlias + "." 
+						+ table.getKeyColumns()[0] //Record_ID
+								+ " = ? ";
+			}
+			if (whereClause != null)
+				selectQuery.append(whereClause);
+		}
+
+		return selectQuery.toString();
 	}
 }

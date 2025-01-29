@@ -31,7 +31,7 @@ import org.compiere.util.Util;
 
 import com.cloudempiere.searchindex.util.ISearchResult;
 
-public class TextSearchResult implements ISearchResult {
+public class PGTextSearchResult implements ISearchResult {
 	
 	private int AD_Table_ID;
 	private int Record_ID;

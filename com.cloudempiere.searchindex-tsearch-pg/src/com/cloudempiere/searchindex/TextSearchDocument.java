@@ -41,7 +41,7 @@ import org.compiere.util.DB;
 import org.compiere.util.Env;
 import org.osgi.service.component.annotations.Component;
 
-import com.cloudempiere.searchindex.pgtextsearch.TextSearchResult;
+import com.cloudempiere.searchindex.pgtextsearch.PGTextSearchResult;
 import com.cloudempiere.searchindex.tools.AbstractSearchIndexDocument;
 import com.cloudempiere.searchindex.tools.SearchIndexDocument;
 
@@ -377,9 +377,9 @@ public class TextSearchDocument extends AbstractSearchIndexDocument {
 	}
 
 	@Override
-	public ArrayList<TextSearchResult> performQuery(String query, boolean isAdvanced) {
+	public ArrayList<PGTextSearchResult> performQuery(String query, boolean isAdvanced) {
 
-		ArrayList<TextSearchResult> results = new ArrayList<>();
+		ArrayList<PGTextSearchResult> results = new ArrayList<>();
 		indexQuery.clear();
 
 		StringBuilder sql = new StringBuilder();
@@ -403,7 +403,7 @@ public class TextSearchDocument extends AbstractSearchIndexDocument {
 			pstmt.setInt(1, Env.getAD_Client_ID(Env.getCtx()));
 			rs = pstmt.executeQuery();
 
-			TextSearchResult result = null;
+			PGTextSearchResult result = null;
 			int i = 0;
 			while (rs.next()) {
 				int AD_Table_ID = rs.getInt(1);
@@ -416,7 +416,7 @@ public class TextSearchDocument extends AbstractSearchIndexDocument {
 				if (AD_Window_ID > 0 && !role.isRecordAccess(AD_Table_ID, recordID, true))
 					continue;
 				
-				result = new TextSearchResult();
+				result = new PGTextSearchResult();
 				result.setAD_Table_ID(AD_Table_ID);
 				result.setRecord_ID(recordID);
 				results.add(result);
@@ -442,7 +442,7 @@ public class TextSearchDocument extends AbstractSearchIndexDocument {
 	}
 
 	@Override
-	public void setHeadline(TextSearchResult result, String query) {
+	public void setHeadline(PGTextSearchResult result, String query) {
 		
 		if (result.getHtmlHeadline() != null && !result.getHtmlHeadline().isEmpty())
 			return;

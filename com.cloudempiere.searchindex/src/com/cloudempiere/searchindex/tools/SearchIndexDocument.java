@@ -26,7 +26,7 @@ import java.util.ArrayList;
 
 import org.compiere.model.PO;
 
-import com.cloudempiere.searchindex.pgtextsearch.TextSearchResult;
+import com.cloudempiere.searchindex.pgtextsearch.PGTextSearchResult;
 
 public interface SearchIndexDocument {
 	
@@ -42,6 +42,6 @@ public interface SearchIndexDocument {
 	boolean isValidDocument();
 	
 	//Queries
-	ArrayList<TextSearchResult> performQuery(String query, boolean isAdvanced);
-	void setHeadline(TextSearchResult result, String query);
+	ArrayList<PGTextSearchResult> performQuery(String query, boolean isAdvanced);
+	void setHeadline(PGTextSearchResult result, String query);
 }

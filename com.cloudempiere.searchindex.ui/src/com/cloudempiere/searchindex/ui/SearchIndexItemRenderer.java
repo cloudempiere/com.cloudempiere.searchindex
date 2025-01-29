@@ -36,15 +36,15 @@ import org.zkoss.zul.Listitem;
 import org.zkoss.zul.ListitemRenderer;
 import org.zkoss.zul.Vlayout;
 
-import com.cloudempiere.searchindex.pgtextsearch.TextSearchResult;
+import com.cloudempiere.searchindex.pgtextsearch.PGTextSearchResult;
 
-public class SearchIndexItemRenderer implements ListitemRenderer<TextSearchResult>, EventListener<Event>  {
+public class SearchIndexItemRenderer implements ListitemRenderer<PGTextSearchResult>, EventListener<Event>  {
 
 	boolean showHeadline = true;
-	private Map<Html, TextSearchResult> mapCellColumn = new HashMap<Html, TextSearchResult>();
+	private Map<Html, PGTextSearchResult> mapCellColumn = new HashMap<Html, PGTextSearchResult>();
 	
 	@Override
-	public void render(Listitem item, TextSearchResult result, int index)
+	public void render(Listitem item, PGTextSearchResult result, int index)
 			throws Exception {
 
 		Listcell cell = new Listcell();
@@ -88,7 +88,7 @@ public class SearchIndexItemRenderer implements ListitemRenderer<TextSearchResul
 	@Override
 	public void onEvent(Event e) throws Exception {
 		if (Events.ON_CLICK.equals(e.getName()) && (e.getTarget() instanceof Html)) {
-			TextSearchResult row = mapCellColumn.get(e.getTarget());
+			PGTextSearchResult row = mapCellColumn.get(e.getTarget());
 			zoom(row.getRecord_ID(), row.getAD_Table_ID());
 		}
 	} 
