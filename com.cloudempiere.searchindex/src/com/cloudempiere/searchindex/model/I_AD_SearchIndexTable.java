@@ -32,8 +32,8 @@ public interface I_AD_SearchIndexTable
     /** TableName=AD_SearchIndexTable */
     public static final String Table_Name = "AD_SearchIndexTable";
 
-    /** AD_Table_ID=1001835 */
-    public static final int Table_ID = MTable.getTable_ID(Table_Name);
+    /** AD_Table_ID=800160 */
+    public static final int Table_ID = 800160;
 
     KeyNamePair Model = new KeyNamePair(Table_ID, Table_Name);
 
@@ -67,14 +67,10 @@ public interface I_AD_SearchIndexTable
     /** Column name AD_SearchIndex_ID */
     public static final String COLUMNNAME_AD_SearchIndex_ID = "AD_SearchIndex_ID";
 
-	/** Set Search Index.
-	  * Search Index Definition
-	  */
+	/** Set Search Index	  */
 	public void setAD_SearchIndex_ID (int AD_SearchIndex_ID);
 
-	/** Get Search Index.
-	  * Search Index Definition
-	  */
+	/** Get Search Index	  */
 	public int getAD_SearchIndex_ID();
 
 	public I_AD_SearchIndex getAD_SearchIndex() throws RuntimeException;
@@ -82,23 +78,19 @@ public interface I_AD_SearchIndexTable
     /** Column name AD_SearchIndexTable_ID */
     public static final String COLUMNNAME_AD_SearchIndexTable_ID = "AD_SearchIndexTable_ID";
 
-	/** Set Search Index Config.
-	  * Search Index configuration.
-	  */
+	/** Set Search Index Table	  */
 	public void setAD_SearchIndexTable_ID (int AD_SearchIndexTable_ID);
 
-	/** Get Search Index Config.
-	  * Search Index configuration.
-	  */
+	/** Get Search Index Table	  */
 	public int getAD_SearchIndexTable_ID();
 
     /** Column name AD_SearchIndexTable_UU */
     public static final String COLUMNNAME_AD_SearchIndexTable_UU = "AD_SearchIndexTable_UU";
 
-	/** Set AD_OmnSearchConfig_UU	  */
+	/** Set AD_SearchIndexTable_UU	  */
 	public void setAD_SearchIndexTable_UU (String AD_SearchIndexTable_UU);
 
-	/** Get AD_OmnSearchConfig_UU	  */
+	/** Get AD_SearchIndexTable_UU	  */
 	public String getAD_SearchIndexTable_UU();
 
     /** Column name AD_Table_ID */

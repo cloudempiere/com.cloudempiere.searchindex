@@ -32,8 +32,8 @@ public interface I_AD_SearchIndexColumn
     /** TableName=AD_SearchIndexColumn */
     public static final String Table_Name = "AD_SearchIndexColumn";
 
-    /** AD_Table_ID=1001836 */
-    public static final int Table_ID = MTable.getTable_ID(Table_Name);
+    /** AD_Table_ID=800161 */
+    public static final int Table_ID = 800161;
 
     KeyNamePair Model = new KeyNamePair(Table_ID, Table_Name);
 
@@ -94,39 +94,46 @@ public interface I_AD_SearchIndexColumn
 
 	public org.compiere.model.I_AD_Reference getAD_Reference() throws RuntimeException;
 
+    /** Column name AD_Reference_Value_ID */
+    public static final String COLUMNNAME_AD_Reference_Value_ID = "AD_Reference_Value_ID";
+
+	/** Set Reference Key.
+	  * Required to specify, if data type is Table or List
+	  */
+	public void setAD_Reference_Value_ID (int AD_Reference_Value_ID);
+
+	/** Get Reference Key.
+	  * Required to specify, if data type is Table or List
+	  */
+	public int getAD_Reference_Value_ID();
+
+	public org.compiere.model.I_AD_Reference getAD_Reference_Value() throws RuntimeException;
+
     /** Column name AD_SearchIndexColumn_ID */
     public static final String COLUMNNAME_AD_SearchIndexColumn_ID = "AD_SearchIndexColumn_ID";
 
-	/** Set Search Index Config Line.
-	  * Search Index Config Line
-	  */
+	/** Set Search Index Column	  */
 	public void setAD_SearchIndexColumn_ID (int AD_SearchIndexColumn_ID);
 
-	/** Get Search Index Config Line.
-	  * Search Index Config Line
-	  */
+	/** Get Search Index Column	  */
 	public int getAD_SearchIndexColumn_ID();
 
     /** Column name AD_SearchIndexColumn_UU */
     public static final String COLUMNNAME_AD_SearchIndexColumn_UU = "AD_SearchIndexColumn_UU";
 
-	/** Set AD_OmnSearchConfigLine_UU	  */
+	/** Set AD_SearchIndexColumn_UU	  */
 	public void setAD_SearchIndexColumn_UU (String AD_SearchIndexColumn_UU);
 
-	/** Get AD_OmnSearchConfigLine_UU	  */
+	/** Get AD_SearchIndexColumn_UU	  */
 	public String getAD_SearchIndexColumn_UU();
 
     /** Column name AD_SearchIndexTable_ID */
     public static final String COLUMNNAME_AD_SearchIndexTable_ID = "AD_SearchIndexTable_ID";
 
-	/** Set Search Index Config.
-	  * Search Index configuration.
-	  */
+	/** Set Search Index Table	  */
 	public void setAD_SearchIndexTable_ID (int AD_SearchIndexTable_ID);
 
-	/** Get Search Index Config.
-	  * Search Index configuration.
-	  */
+	/** Get Search Index Table	  */
 	public int getAD_SearchIndexTable_ID();
 
 	public I_AD_SearchIndexTable getAD_SearchIndexTable() throws RuntimeException;

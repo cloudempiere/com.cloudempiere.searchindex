@@ -32,8 +32,8 @@ public interface I_AD_SearchIndexProvider
     /** TableName=AD_SearchIndexProvider */
     public static final String Table_Name = "AD_SearchIndexProvider";
 
-    /** AD_Table_ID=1001838 */
-    public static final int Table_ID = MTable.getTable_ID(Table_Name);
+    /** AD_Table_ID=800158 */
+    public static final int Table_ID = 800158;
 
     KeyNamePair Model = new KeyNamePair(Table_ID, Table_Name);
 
@@ -67,14 +67,10 @@ public interface I_AD_SearchIndexProvider
     /** Column name AD_SearchIndexProvider_ID */
     public static final String COLUMNNAME_AD_SearchIndexProvider_ID = "AD_SearchIndexProvider_ID";
 
-	/** Set Search Index Provider.
-	  * Search Index Provider Definition
-	  */
+	/** Set Search Index Provider	  */
 	public void setAD_SearchIndexProvider_ID (int AD_SearchIndexProvider_ID);
 
-	/** Get Search Index Provider.
-	  * Search Index Provider Definition
-	  */
+	/** Get Search Index Provider	  */
 	public int getAD_SearchIndexProvider_ID();
 
     /** Column name AD_SearchIndexProvider_UU */

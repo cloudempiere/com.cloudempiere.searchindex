@@ -79,8 +79,10 @@ public class SearchIndexUtils {
         		+ "tbl.AD_Table_ID, "
         		+ "tbl.TableName, "
         		+ "col.AD_Column_ID, "
-        		+ "col.ColumnName,"
+        		+ "col.ColumnName, "
+        		+ "col.IsParent, "
         		+ "sic.AD_Reference_ID, "
+        		+ "sic.AD_Reference_Value_ID, "
         		+ "parentCol.AD_Column_ID as AD_Column_ID_parent, "
         		+ "parentCol.ColumnName as ColumnName_parent,"
         		+ "si.SearchIndexName,"
@@ -112,9 +114,11 @@ public class SearchIndexUtils {
 				String tableName = rs.getString("TableName");
 				int columnId = rs.getInt("AD_Column_ID");
 				String columnName = rs.getString("ColumnName");
+				boolean isParent = rs.getBoolean("IsParent");
 				int parentColId = rs.getInt("AD_Column_ID_parent");
 				String parentColName = rs.getString("ColumnName_parent");
 				int referenceId = rs.getInt("AD_Reference_ID");
+				int referenceValueId = rs.getInt("AD_Reference_Value_ID");
 				String searchIndexName = rs.getString("SearchIndexName");
 				String whereClause = rs.getString("WhereClause");
 				
@@ -147,7 +151,11 @@ public class SearchIndexUtils {
                 } else {
                 	// join the parent table
                 	tableConfig.addColumn(new SearchIndexColumnConfig(tableId, tableName, -1, columnName, parentColId, parentColName, null));
-                	MLookup lookup = MLookupFactory.get(ctx, 0, 0, columnId, referenceId);
+                	MLookup lookup = MLookupFactory.get (ctx, 0,
+        					columnId, referenceId,
+        					Env.getLanguage(ctx), columnName,
+        					referenceValueId,
+        					isParent, null);
                 	MLookupInfo lookupInfo = lookup.getLookupInfo();
                 	// join the FK table 
                 	for(String lookupDisplayColumnName : lookupInfo.lookupDisplayColumns) {

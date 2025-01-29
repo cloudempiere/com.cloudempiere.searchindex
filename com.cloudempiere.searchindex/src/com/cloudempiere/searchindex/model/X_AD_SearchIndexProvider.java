@@ -31,7 +31,7 @@ public class X_AD_SearchIndexProvider extends PO implements I_AD_SearchIndexProv
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = 20240823L;
+	private static final long serialVersionUID = 20250129L;
 
     /** Standard Constructor */
     public X_AD_SearchIndexProvider (Properties ctx, int AD_SearchIndexProvider_ID, String trxName)
@@ -84,7 +84,7 @@ public class X_AD_SearchIndexProvider extends PO implements I_AD_SearchIndexProv
     }
 
 	/** Set Search Index Provider.
-		@param AD_SearchIndexProvider_ID Search Index Provider Definition
+		@param AD_SearchIndexProvider_ID Search Index Provider
 	*/
 	public void setAD_SearchIndexProvider_ID (int AD_SearchIndexProvider_ID)
 	{
@@ -95,8 +95,7 @@ public class X_AD_SearchIndexProvider extends PO implements I_AD_SearchIndexProv
 	}
 
 	/** Get Search Index Provider.
-		@return Search Index Provider Definition
-	  */
+		@return Search Index Provider	  */
 	public int getAD_SearchIndexProvider_ID()
 	{
 		Integer ii = (Integer)get_Value(COLUMNNAME_AD_SearchIndexProvider_ID);
@@ -110,7 +109,7 @@ public class X_AD_SearchIndexProvider extends PO implements I_AD_SearchIndexProv
 	*/
 	public void setAD_SearchIndexProvider_UU (String AD_SearchIndexProvider_UU)
 	{
-		set_Value (COLUMNNAME_AD_SearchIndexProvider_UU, AD_SearchIndexProvider_UU);
+		set_ValueNoCheck (COLUMNNAME_AD_SearchIndexProvider_UU, AD_SearchIndexProvider_UU);
 	}
 
 	/** Get AD_SearchIndexProvider_UU.

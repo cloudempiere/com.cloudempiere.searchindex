@@ -32,8 +32,8 @@ public interface I_AD_SearchIndex
     /** TableName=AD_SearchIndex */
     public static final String Table_Name = "AD_SearchIndex";
 
-    /** AD_Table_ID=1001850 */
-    public static final int Table_ID = MTable.getTable_ID(Table_Name);
+    /** AD_Table_ID=800159 */
+    public static final int Table_ID = 800159;
 
     KeyNamePair Model = new KeyNamePair(Table_ID, Table_Name);
 

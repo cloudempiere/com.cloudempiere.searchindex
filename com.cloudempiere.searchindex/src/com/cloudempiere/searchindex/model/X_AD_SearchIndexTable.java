@@ -31,7 +31,7 @@ public class X_AD_SearchIndexTable extends PO implements I_AD_SearchIndexTable, 
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = 20240925L;
+	private static final long serialVersionUID = 20250129L;
 
     /** Standard Constructor */
     public X_AD_SearchIndexTable (Properties ctx, int AD_SearchIndexTable_ID, String trxName)
@@ -96,7 +96,7 @@ public class X_AD_SearchIndexTable extends PO implements I_AD_SearchIndexTable, 
 	}
 
 	/** Set Search Index.
-		@param AD_SearchIndex_ID Search Index Definition
+		@param AD_SearchIndex_ID Search Index
 	*/
 	public void setAD_SearchIndex_ID (int AD_SearchIndex_ID)
 	{
@@ -107,8 +107,7 @@ public class X_AD_SearchIndexTable extends PO implements I_AD_SearchIndexTable, 
 	}
 
 	/** Get Search Index.
-		@return Search Index Definition
-	  */
+		@return Search Index	  */
 	public int getAD_SearchIndex_ID()
 	{
 		Integer ii = (Integer)get_Value(COLUMNNAME_AD_SearchIndex_ID);
@@ -117,8 +116,8 @@ public class X_AD_SearchIndexTable extends PO implements I_AD_SearchIndexTable, 
 		return ii.intValue();
 	}
 
-	/** Set Search Index Config.
-		@param AD_SearchIndexTable_ID Search Index configuration.
+	/** Set Search Index Table.
+		@param AD_SearchIndexTable_ID Search Index Table
 	*/
 	public void setAD_SearchIndexTable_ID (int AD_SearchIndexTable_ID)
 	{
@@ -128,9 +127,8 @@ public class X_AD_SearchIndexTable extends PO implements I_AD_SearchIndexTable, 
 			set_ValueNoCheck (COLUMNNAME_AD_SearchIndexTable_ID, Integer.valueOf(AD_SearchIndexTable_ID));
 	}
 
-	/** Get Search Index Config.
-		@return Search Index configuration.
-	  */
+	/** Get Search Index Table.
+		@return Search Index Table	  */
 	public int getAD_SearchIndexTable_ID()
 	{
 		Integer ii = (Integer)get_Value(COLUMNNAME_AD_SearchIndexTable_ID);
@@ -139,16 +137,16 @@ public class X_AD_SearchIndexTable extends PO implements I_AD_SearchIndexTable, 
 		return ii.intValue();
 	}
 
-	/** Set AD_OmnSearchConfig_UU.
-		@param AD_SearchIndexTable_UU AD_OmnSearchConfig_UU
+	/** Set AD_SearchIndexTable_UU.
+		@param AD_SearchIndexTable_UU AD_SearchIndexTable_UU
 	*/
 	public void setAD_SearchIndexTable_UU (String AD_SearchIndexTable_UU)
 	{
-		set_Value (COLUMNNAME_AD_SearchIndexTable_UU, AD_SearchIndexTable_UU);
+		set_ValueNoCheck (COLUMNNAME_AD_SearchIndexTable_UU, AD_SearchIndexTable_UU);
 	}
 
-	/** Get AD_OmnSearchConfig_UU.
-		@return AD_OmnSearchConfig_UU	  */
+	/** Get AD_SearchIndexTable_UU.
+		@return AD_SearchIndexTable_UU	  */
 	public String getAD_SearchIndexTable_UU()
 	{
 		return (String)get_Value(COLUMNNAME_AD_SearchIndexTable_UU);
@@ -166,9 +164,9 @@ public class X_AD_SearchIndexTable extends PO implements I_AD_SearchIndexTable, 
 	public void setAD_Table_ID (int AD_Table_ID)
 	{
 		if (AD_Table_ID < 1)
-			set_Value (COLUMNNAME_AD_Table_ID, null);
+			set_ValueNoCheck (COLUMNNAME_AD_Table_ID, null);
 		else
-			set_Value (COLUMNNAME_AD_Table_ID, Integer.valueOf(AD_Table_ID));
+			set_ValueNoCheck (COLUMNNAME_AD_Table_ID, Integer.valueOf(AD_Table_ID));
 	}
 
 	/** Get Table.

@@ -31,7 +31,7 @@ public class X_AD_SearchIndex extends PO implements I_AD_SearchIndex, I_Persiste
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = 20241104L;
+	private static final long serialVersionUID = 20250129L;
 
     /** Standard Constructor */
     public X_AD_SearchIndex (Properties ctx, int AD_SearchIndex_ID, String trxName)

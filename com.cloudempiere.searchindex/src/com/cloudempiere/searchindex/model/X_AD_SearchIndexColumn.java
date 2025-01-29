@@ -31,7 +31,7 @@ public class X_AD_SearchIndexColumn extends PO implements I_AD_SearchIndexColumn
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = 20240923L;
+	private static final long serialVersionUID = 20250129L;
 
     /** Standard Constructor */
     public X_AD_SearchIndexColumn (Properties ctx, int AD_SearchIndexColumn_ID, String trxName)
@@ -145,8 +145,36 @@ public class X_AD_SearchIndexColumn extends PO implements I_AD_SearchIndexColumn
 		return ii.intValue();
 	}
 
-	/** Set Search Index Config Line.
-		@param AD_SearchIndexColumn_ID Search Index Config Line
+	public org.compiere.model.I_AD_Reference getAD_Reference_Value() throws RuntimeException
+	{
+		return (org.compiere.model.I_AD_Reference)MTable.get(getCtx(), org.compiere.model.I_AD_Reference.Table_ID)
+			.getPO(getAD_Reference_Value_ID(), get_TrxName());
+	}
+
+	/** Set Reference Key.
+		@param AD_Reference_Value_ID Required to specify, if data type is Table or List
+	*/
+	public void setAD_Reference_Value_ID (int AD_Reference_Value_ID)
+	{
+		if (AD_Reference_Value_ID < 1)
+			set_Value (COLUMNNAME_AD_Reference_Value_ID, null);
+		else
+			set_Value (COLUMNNAME_AD_Reference_Value_ID, Integer.valueOf(AD_Reference_Value_ID));
+	}
+
+	/** Get Reference Key.
+		@return Required to specify, if data type is Table or List
+	  */
+	public int getAD_Reference_Value_ID()
+	{
+		Integer ii = (Integer)get_Value(COLUMNNAME_AD_Reference_Value_ID);
+		if (ii == null)
+			 return 0;
+		return ii.intValue();
+	}
+
+	/** Set Search Index Column.
+		@param AD_SearchIndexColumn_ID Search Index Column
 	*/
 	public void setAD_SearchIndexColumn_ID (int AD_SearchIndexColumn_ID)
 	{
@@ -156,9 +184,8 @@ public class X_AD_SearchIndexColumn extends PO implements I_AD_SearchIndexColumn
 			set_ValueNoCheck (COLUMNNAME_AD_SearchIndexColumn_ID, Integer.valueOf(AD_SearchIndexColumn_ID));
 	}
 
-	/** Get Search Index Config Line.
-		@return Search Index Config Line
-	  */
+	/** Get Search Index Column.
+		@return Search Index Column	  */
 	public int getAD_SearchIndexColumn_ID()
 	{
 		Integer ii = (Integer)get_Value(COLUMNNAME_AD_SearchIndexColumn_ID);
@@ -167,16 +194,16 @@ public class X_AD_SearchIndexColumn extends PO implements I_AD_SearchIndexColumn
 		return ii.intValue();
 	}
 
-	/** Set AD_OmnSearchConfigLine_UU.
-		@param AD_SearchIndexColumn_UU AD_OmnSearchConfigLine_UU
+	/** Set AD_SearchIndexColumn_UU.
+		@param AD_SearchIndexColumn_UU AD_SearchIndexColumn_UU
 	*/
 	public void setAD_SearchIndexColumn_UU (String AD_SearchIndexColumn_UU)
 	{
-		set_Value (COLUMNNAME_AD_SearchIndexColumn_UU, AD_SearchIndexColumn_UU);
+		set_ValueNoCheck (COLUMNNAME_AD_SearchIndexColumn_UU, AD_SearchIndexColumn_UU);
 	}
 
-	/** Get AD_OmnSearchConfigLine_UU.
-		@return AD_OmnSearchConfigLine_UU	  */
+	/** Get AD_SearchIndexColumn_UU.
+		@return AD_SearchIndexColumn_UU	  */
 	public String getAD_SearchIndexColumn_UU()
 	{
 		return (String)get_Value(COLUMNNAME_AD_SearchIndexColumn_UU);
@@ -188,8 +215,8 @@ public class X_AD_SearchIndexColumn extends PO implements I_AD_SearchIndexColumn
 			.getPO(getAD_SearchIndexTable_ID(), get_TrxName());
 	}
 
-	/** Set Search Index Config.
-		@param AD_SearchIndexTable_ID Search Index configuration.
+	/** Set Search Index Table.
+		@param AD_SearchIndexTable_ID Search Index Table
 	*/
 	public void setAD_SearchIndexTable_ID (int AD_SearchIndexTable_ID)
 	{
@@ -199,9 +226,8 @@ public class X_AD_SearchIndexColumn extends PO implements I_AD_SearchIndexColumn
 			set_ValueNoCheck (COLUMNNAME_AD_SearchIndexTable_ID, Integer.valueOf(AD_SearchIndexTable_ID));
 	}
 
-	/** Get Search Index Config.
-		@return Search Index configuration.
-	  */
+	/** Get Search Index Table.
+		@return Search Index Table	  */
 	public int getAD_SearchIndexTable_ID()
 	{
 		Integer ii = (Integer)get_Value(COLUMNNAME_AD_SearchIndexTable_ID);
@@ -222,9 +248,9 @@ public class X_AD_SearchIndexColumn extends PO implements I_AD_SearchIndexColumn
 	public void setAD_Table_ID (int AD_Table_ID)
 	{
 		if (AD_Table_ID < 1)
-			set_Value (COLUMNNAME_AD_Table_ID, null);
+			set_ValueNoCheck (COLUMNNAME_AD_Table_ID, null);
 		else
-			set_Value (COLUMNNAME_AD_Table_ID, Integer.valueOf(AD_Table_ID));
+			set_ValueNoCheck (COLUMNNAME_AD_Table_ID, Integer.valueOf(AD_Table_ID));
 	}
 
 	/** Get Table.
