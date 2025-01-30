@@ -10,9 +10,8 @@ Require-Bundle: org.adempiere.base;bundle-version="10.0.0",
 Bundle-Activator: com.cloudempiere.searchindex.Activator
 Service-Component: OSGI-INF/*.xml
 Export-Package: com.cloudempiere.searchindex.indexprovider,
+ com.cloudempiere.searchindex.indexprovider.pgtextsearch,
  com.cloudempiere.searchindex.model,
- com.cloudempiere.searchindex.pgtextsearch,
- com.cloudempiere.searchindex.tools,
  com.cloudempiere.searchindex.util
 Bundle-ActivationPolicy: lazy
 Automatic-Module-Name: com.cloudempiere.searchindex

@@ -20,50 +20,69 @@
 * - Diego Ruiz, BX Service GmbH                                       *
 * - Peter Takacs, Cloudempiere                                        *
 **********************************************************************/
-package com.cloudempiere.searchindex.util;
-
-import java.util.ArrayList;
-import java.util.List;
+package com.cloudempiere.searchindex.util.pojo;
 
 /**
- * Simplified class for AD_SearchIndexTable
+ * Simplified class for AD_SearchIndexColumn
  */
-public class SearchIndexTableConfig {
+public class SearchIndexColumnConfig {
 
 	/* AD_Table_ID */
 	private int tableId;
 	/* TableName */
 	private String tableName;
-	/* Key Column Name */
-	private String keyColName;
-	/* WhereClause */
-	private String sqlWhere;
-	/* Search Index Columns */
-    private List<SearchIndexColumnConfig> columns;
+	/* AD_Column_ID */
+	private int columnId;
+	/* ColumnName */
+	private String columnName;
+	/* ParentColumn_ID */
+	private int parentColumnId;
+	/* Parent Column Name */
+	private String parentColumnName;
+	/* Parent Column Name for foreign key */
+	private String parentTableName;
 
-    public SearchIndexTableConfig(String tableName, int tableId, String keyColName, String sqlWhere) {
-    	this.tableId = tableId;
-        this.tableName = tableName;
-        this.keyColName = keyColName;
-        this.sqlWhere = sqlWhere;
-        this.columns = new ArrayList<>();
+    public SearchIndexColumnConfig(int tableId, String tableName, int columnId, String columnName, int parentColumnId, String parentColumnName, String parentTableName) {
+		this.tableId = tableId;
+		this.tableName = tableName;
+		this.columnId = columnId;
+		this.columnName = columnName;
+		this.parentColumnId = parentColumnId;
+		this.parentColumnName = parentColumnName;
+		this.parentTableName = parentTableName;
     }
 
-    public String getTableName() {
-        return tableName;
+    public String getColumnName() {
+        return columnName;
     }
 
-    public void setTableName(String tableName) {
-        this.tableName = tableName;
+    public void setColumnName(String columnName) {
+        this.columnName = columnName;
     }
 
-    public List<SearchIndexColumnConfig> getColumns() {
-        return columns;
-    }
+	public String getParentColumnName() {
+		return parentColumnName;
+	}
 
-    public void addColumn(SearchIndexColumnConfig column) {
-        this.columns.add(column);
-    }
+	public void setParentColumnName(String parentColumnName) {
+		this.parentColumnName = parentColumnName;
+	}
+
+	public int getColumnId() {
+		return columnId;
+	}
+
+	public void setColumnId(int columnId) {
+		this.columnId = columnId;
+	}
+
+	public int getParentColumnId() {
+		return parentColumnId;
+	}
+
+	public void setParentColumnId(int parentColumnId) {
+		this.parentColumnId = parentColumnId;
+	}
 
 	public int getTableId() {
 		return tableId;
@@ -73,20 +92,20 @@ public class SearchIndexTableConfig {
 		this.tableId = tableId;
 	}
 
-	public String getKeyColName() {
-		return keyColName;
+	public String getTableName() {
+		return tableName;
 	}
 
-	public void setKeyColName(String keyColName) {
-		this.keyColName = keyColName;
+	public void setTableName(String tableName) {
+		this.tableName = tableName;
 	}
 
-	public String getSqlWhere() {
-		return sqlWhere;
+	public String getParentTableName() {
+		return parentTableName;
 	}
 
-	public void setSqlWhere(String sqlWhere) {
-		this.sqlWhere = sqlWhere;
+	public void setParentTableName(String parentTableName) {
+		this.parentTableName = parentTableName;
 	}
 
 }

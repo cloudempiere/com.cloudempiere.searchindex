@@ -19,7 +19,7 @@
  * Contributors:                                                       *
  * - Peter Takacs, Cloudempiere                                        *
  **********************************************************************/
-package com.cloudempiere.searchindex.elasticsearch;
+package com.cloudempiere.searchindex.indexprovider.elasticsearch;
 
 import java.util.List;
 import java.util.Map;
@@ -27,12 +27,11 @@ import java.util.Properties;
 import java.util.Set;
 
 import org.adempiere.util.IProcessUI;
-import org.compiere.model.PO;
 
 import com.cloudempiere.searchindex.indexprovider.ISearchIndexProvider;
 import com.cloudempiere.searchindex.model.MSearchIndexProvider;
 import com.cloudempiere.searchindex.util.ISearchResult;
-import com.cloudempiere.searchindex.util.SearchIndexRecord;
+import com.cloudempiere.searchindex.util.pojo.SearchIndexRecord;
 
 /**
  * 
@@ -49,52 +48,43 @@ public class ElasticSearchIndexProvider implements ISearchIndexProvider {
 	}
 
 	@Override
-	public void deleteAllIndex(String trxName) {
-
-	}
-
-	@Override
-	public void deleteIndexByQuery(String searchIndexName, String query, Object[] params, String trxName) {
-
-	}
-
-	@Override
-	public Object searchIndexNoRestriction(String searchIndexName, String queryString) {
-		return null;
-	}
-
-	@Override
-	public List<ISearchResult> searchIndexDocument(String searchIndexName, String queryString, boolean isAdvanced) {
-		return null;
-	}
-
-	@Override
-	public void setHeadline(ISearchResult result, String query) {
-		
-	}
-	
-	@Override
 	public void createIndex(Properties ctx, Map<Integer, Set<SearchIndexRecord>> indexRecordsMap, String trxName) {
+		
+	}
 
-	}
-	
 	@Override
-	public void createIndex(String trxName, String indexTableName, int tableId, int recordId, int[] columnIDs) {
+	public void updateIndex(Properties ctx, Map<Integer, Set<SearchIndexRecord>> indexRecordsMap, String trxName) {
 		
 	}
-	
+
 	@Override
-	public void updateIndex(Properties ctx, PO po, String indexTableName, int[] columnIdList, String trxName) {
+	public void deleteAllIndex(Properties ctx, String trxName) {
 		
 	}
-	
+
+	@Override
+	public void deleteIndexByQuery(Properties ctx, String searchIndexName, String query, Object[] params, String trxName) {
+		
+	}
+
 	@Override
 	public void reCreateIndex(Properties ctx, Map<Integer, Set<SearchIndexRecord>> indexRecordsMap, String trxName) {
 		
 	}
-	
+
 	@Override
-	public boolean isIndexPopulated(String searchIndexName) {
+	public List<ISearchResult> getSearchResults(Properties ctx, String searchIndexName, String queryString,
+			boolean isAdvanced, String trxName) {
+		return null;
+	}
+
+	@Override
+	public void setHeadline(Properties ctx, ISearchResult result, String query, String trxname) {
+		
+	}
+
+	@Override
+	public boolean isIndexPopulated(Properties ctx, String searchIndexName, String trxName) {
 		return false;
 	}
 

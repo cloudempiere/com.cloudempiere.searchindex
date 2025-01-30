@@ -19,7 +19,7 @@
  * Contributors:                                                       *
  * - Diego Ruiz - BX Service GmbH                                      *
  **********************************************************************/
-package com.cloudempiere.searchindex.pgtextsearch;
+package com.cloudempiere.searchindex.indexprovider.pgtextsearch;
 
 import java.util.Properties;
 import java.util.Set;
@@ -41,8 +41,7 @@ import com.cloudempiere.searchindex.indexprovider.ISearchIndexProvider;
 import com.cloudempiere.searchindex.model.MSearchIndex;
 import com.cloudempiere.searchindex.model.MSearchIndexColumn;
 import com.cloudempiere.searchindex.model.MSearchIndexTable;
-import com.cloudempiere.searchindex.tools.SearchIndexAbstractFactory;
-import com.cloudempiere.searchindex.tools.SearchIndexHelper;
+import com.cloudempiere.searchindex.util.SearchIndexConfigBuilder;
 import com.cloudempiere.searchindex.util.SearchIndexUtils;
 
 @Component( reference = @Reference( name = "IEventManager", bind = "bindEventManager", unbind="unbindEventManager", 
@@ -94,6 +93,8 @@ public class PGTextSearchEventHandler extends AbstractEventHandler {
 		ctx = Env.getCtx();
 		trxName = po.get_TrxName();
 		MSearchIndex[] searchIndexArr;
+		
+		// Find existing search indexes for the record
 		if (type.equals(IEventTopics.PO_AFTER_NEW)) {
 			searchIndexArr = MSearchIndex.getForTable(ctx, po, indexedTables, trxName);
 		} else {
@@ -102,7 +103,17 @@ public class PGTextSearchEventHandler extends AbstractEventHandler {
 		
 		for (MSearchIndex searchIndex : searchIndexArr) {
 			ISearchIndexProvider provider = SearchIndexUtils.getSearchIndexProvider(ctx, searchIndex.getAD_SearchIndexProvider_ID(), null, trxName);
+			int tableId = po.get_Table_ID();
+			int recordId = po.get_ID() > 0 ? po.get_ID() : po.get_IDOld();
 			
+			// Initialise builder
+			SearchIndexConfigBuilder builder = new SearchIndexConfigBuilder()
+					.setCtx(ctx)
+					.setTrxName(trxName)
+					.setSearchIndexId(searchIndex.getAD_SearchIndex_ID())
+					.setRecord(tableId, recordId);
+			
+			// TODO handle changes in search index configuration
 			if (po instanceof MSearchIndexColumn) {
 				if (type.equals(IEventTopics.PO_AFTER_NEW) ||
 						type.equals(IEventTopics.PO_AFTER_DELETE) ||
@@ -119,24 +130,26 @@ public class PGTextSearchEventHandler extends AbstractEventHandler {
 				if (provider != null) {
 					StringBuilder whereClause = new StringBuilder();
 					whereClause.append(" AD_Client_ID=? AND AD_Table_ID=? AND Record_ID=?");
-					Object[] params = new Object[] { po.getAD_Client_ID(), po.get_Table_ID(), po.get_ID() > 0 ? po.get_ID() : po.get_IDOld() };
-					provider.deleteIndexByQuery("", whereClause.toString(), params, trxName);
+					Object[] params = new Object[] { po.getAD_Client_ID(), tableId, recordId };
+					provider.deleteIndexByQuery(ctx, null, whereClause.toString(), params, trxName);
 				}
 			} else if (type.equals(IEventTopics.PO_AFTER_CHANGE)) {
 				if (provider != null) {
-					provider.updateIndex(ctx, po, searchIndex.getSearchIndexName(), searchIndex.getColumnIdList(), trxName);
+					provider.updateIndex(ctx, builder.build().getData(false), trxName);
 				}
 			} else if (type.equals(IEventTopics.PO_AFTER_NEW)) {
 				if (provider != null) {
-					provider.createIndex(trxName, searchIndex.getSearchIndexName(), po.get_Table_ID(), po.get_ID(), searchIndex.getColumnIdList());
+					provider.createIndex(ctx, builder.build().getData(false), trxName);
 				}
+			} else {
+				log.warning("Unsupportet event type");
 			}
 		}
 		
-		// FIXME
-		if (fkTables.contains(po.get_TableName())) {
-			SearchIndexHelper.updateParent(SearchIndexAbstractFactory.TEXTSEARCH_INDEX, po);
-		}
+		// FIXME: support foreign tables
+//		if (fkTables.contains(po.get_TableName())) {
+//			SearchIndexHelper.updateParent(SearchIndexAbstractFactory.TEXTSEARCH_INDEX, po);
+//		}
 	}
 
 }

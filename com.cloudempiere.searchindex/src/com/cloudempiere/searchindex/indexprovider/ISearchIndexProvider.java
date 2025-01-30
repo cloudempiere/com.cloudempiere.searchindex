@@ -28,12 +28,11 @@ import java.util.Properties;
 import java.util.Set;
 
 import org.adempiere.util.IProcessUI;
-import org.compiere.model.PO;
 import org.compiere.util.CLogger;
 
 import com.cloudempiere.searchindex.model.MSearchIndexProvider;
 import com.cloudempiere.searchindex.util.ISearchResult;
-import com.cloudempiere.searchindex.util.SearchIndexRecord;
+import com.cloudempiere.searchindex.util.pojo.SearchIndexRecord;
 
 /**
  * 
@@ -47,27 +46,84 @@ public interface ISearchIndexProvider
 	public static CLogger log = CLogger.getCLogger (ISearchIndexProvider.class);
 	
 	public void init(MSearchIndexProvider searchIndexProvider, IProcessUI processUI);
-	
-	public void deleteAllIndex(String trxName);
 
-	public void deleteIndexByQuery(String searchIndexName, String query, Object[] params, String trxName);
-
-	public Object searchIndexNoRestriction(String searchIndexName, String queryString);
-
-	public List<ISearchResult> searchIndexDocument(String searchIndexName, String queryString, boolean isAdvanced);
-	
-	public void setHeadline(ISearchResult result, String query);
-
+	/**
+	 * Create index
+	 * @param ctx
+	 * @param indexRecordsMap - key is AD_SearchIndex_ID
+	 * @param trxName
+	 */
 	public void createIndex(Properties ctx, Map<Integer, Set<SearchIndexRecord>> indexRecordsMap, String trxName);
 	
-	public void createIndex(String trxName, String indexTableName, int tableId, int recordId, int[] columnIDs);
+	/**
+	 * Update index
+	 * @param ctx
+	 * @param po
+	 * @param indexTableName
+	 * @param columnIDs
+	 * @param trxName
+	 */
+	public void updateIndex(Properties ctx, Map<Integer, Set<SearchIndexRecord>> indexRecordsMap, String trxName);
 	
-	public void updateIndex(Properties ctx, PO po, String indexTableName, int[] columnIdList, String trxName);
-	
+	/**
+	 * Delete index
+	 * @param ctx
+	 * @param indexRecordsMap - key is AD_SearchIndex_ID
+	 * @param trxName
+	 */
+	public void deleteAllIndex(Properties ctx, String trxName);
+
+	/**
+	 * Delete index by query
+	 * @param ctx
+	 * @param searchIndexName
+	 * @param query
+	 * @param params
+	 * @param trxName
+	 */
+	public void deleteIndexByQuery(Properties ctx, String searchIndexName, String query, Object[] params, String trxName);
+
+	/**
+	 * Recreate index
+	 * @param ctx
+	 * @param indexRecordsMap - key is AD_SearchIndex_ID
+	 * @param trxName
+	 */
 	public void reCreateIndex(Properties ctx, Map<Integer, Set<SearchIndexRecord>> indexRecordsMap, String trxName);
+
+	/**
+	 * Get search results
+	 * @param ctx
+	 * @param searchIndexName
+	 * @param queryString
+	 * @param isAdvanced
+	 * @param trxName
+	 * @return
+	 */
+	public List<ISearchResult> getSearchResults(Properties ctx, String searchIndexName, String queryString, boolean isAdvanced, String trxName);
 	
-	public boolean isIndexPopulated(String searchIndexName);
+	/**
+	 * Get search results
+	 * @param ctx
+	 * @param result
+	 * @param query
+	 * @param trxname
+	 */
+	public void setHeadline(Properties ctx, ISearchResult result, String query, String trxname);
+
+	/**
+	 * Get search results
+	 * @param ctx
+	 * @param searchIndexName
+	 * @param trxName
+	 * @return
+	 */
+	public boolean isIndexPopulated(Properties ctx, String searchIndexName, String trxName);
 	
+	/**
+	 * Get AD_SearchIndexProvider_ID
+	 * @return
+	 */
 	public int getAD_SearchIndexProvider_ID();
 	
 }

@@ -20,7 +20,7 @@
 * - Diego Ruiz, BX Service GmbH                                       *
 * - Peter Takacs, Cloudempiere                                        *
 **********************************************************************/
-package com.cloudempiere.searchindex.pgtextsearch;
+package com.cloudempiere.searchindex.indexprovider.pgtextsearch;
 
 import org.compiere.model.MTable;
 import org.compiere.model.MUserDefWin;

@@ -23,8 +23,8 @@ package com.cloudempiere.searchindex.indexprovider;
 
 import org.compiere.util.Util;
 
-import com.cloudempiere.searchindex.elasticsearch.ElasticSearchIndexProvider;
-import com.cloudempiere.searchindex.pgtextsearch.PGTextSearchIndexProvider;
+import com.cloudempiere.searchindex.indexprovider.elasticsearch.ElasticSearchIndexProvider;
+import com.cloudempiere.searchindex.indexprovider.pgtextsearch.PGTextSearchIndexProvider;
 
 /**
  * 

@@ -20,7 +20,7 @@
 * - Diego Ruiz, BX Service GmbH                                       *
 * - Peter Takacs, Cloudempiere                                        *
 **********************************************************************/
-package com.cloudempiere.searchindex.util;
+package com.cloudempiere.searchindex.util.pojo;
 
 import java.util.ArrayList;
 import java.util.List;

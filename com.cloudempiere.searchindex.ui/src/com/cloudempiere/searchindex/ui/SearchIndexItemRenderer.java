@@ -36,7 +36,7 @@ import org.zkoss.zul.Listitem;
 import org.zkoss.zul.ListitemRenderer;
 import org.zkoss.zul.Vlayout;
 
-import com.cloudempiere.searchindex.pgtextsearch.PGTextSearchResult;
+import com.cloudempiere.searchindex.indexprovider.pgtextsearch.PGTextSearchResult;
 
 public class SearchIndexItemRenderer implements ListitemRenderer<PGTextSearchResult>, EventListener<Event>  {
 

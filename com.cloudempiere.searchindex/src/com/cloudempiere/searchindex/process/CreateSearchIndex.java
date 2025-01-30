@@ -22,7 +22,6 @@
 **********************************************************************/
 package com.cloudempiere.searchindex.process;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
@@ -34,9 +33,9 @@ import org.compiere.process.SvrProcess;
 import org.compiere.util.Msg;
 
 import com.cloudempiere.searchindex.indexprovider.ISearchIndexProvider;
-import com.cloudempiere.searchindex.util.SearchIndexConfig;
-import com.cloudempiere.searchindex.util.SearchIndexRecord;
+import com.cloudempiere.searchindex.util.SearchIndexConfigBuilder;
 import com.cloudempiere.searchindex.util.SearchIndexUtils;
+import com.cloudempiere.searchindex.util.pojo.SearchIndexRecord;
 
 public class CreateSearchIndex extends SvrProcess {
 	
@@ -63,21 +62,24 @@ public class CreateSearchIndex extends SvrProcess {
 		if(p_AD_SearchIndexProvider_ID <= 0)
 			throw new FillMandatoryException("AD_SearchIndexProvider_ID");
 		
+		// Get provider
 		ISearchIndexProvider provider = SearchIndexUtils.getSearchIndexProvider(getCtx(), p_AD_SearchIndexProvider_ID, processUI, get_TrxName());
 		if(provider == null)
 			throw new AdempiereException(Msg.getMsg(getCtx(), "SearchIndexProviderNotFound"));
 		
+		// Load data
 		if (processUI != null) {
 			processUI.statusUpdate("Collecting data...");  // TODO translate
 		}
-	    List<SearchIndexConfig> searchIndexConfigs = SearchIndexUtils.loadSearchIndexConfig(getCtx(), get_TrxName());
-	    if(searchIndexConfigs.size() <= 0)
-	    	throw new AdempiereException(Msg.getMsg(getCtx(), "SearchIndexConfigNotFound"));
-	    
-	    Map<Integer, Set<SearchIndexRecord>> indexRecordsMap = SearchIndexUtils.loadSearchIndexDataWithJoins(getCtx(), searchIndexConfigs, MSG_InvalidArguments);
+		SearchIndexConfigBuilder builder = new SearchIndexConfigBuilder()
+				.setCtx(getCtx())
+				.setTrxName(get_TrxName())
+				.build();
+		Map<Integer, Set<SearchIndexRecord>> indexRecordsMap = builder.getData(false); // key is AD_SearchIndex_ID
 		if(indexRecordsMap.size() <= 0)
 	    	return Msg.getMsg(getCtx(), "NoRecordsFound");
 	    
+		// Create index
 	    provider.reCreateIndex(getCtx(), indexRecordsMap, get_TrxName());
 		
 		return Msg.getMsg(getCtx(), "Success"); // FIXME no error message

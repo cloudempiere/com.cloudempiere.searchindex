@@ -118,7 +118,7 @@ public class ZkSearchIndexUI extends Div implements EventListener<Event> {
 		outerLoop:
 		for(ISearchIndexProvider searchIndexProvider : searchIndexProviderList) {
 			for(String searchIndexName : SearchIndexUtils.getSearchIndexNamesForProvider(ctx, searchIndexProvider.getAD_SearchIndexProvider_ID(), null)) {
-				if (searchIndexProvider.isIndexPopulated(searchIndexName)) {
+				if (searchIndexProvider.isIndexPopulated(ctx, searchIndexName, null)) {
 					showResults = true;
 					break outerLoop;
 				}
@@ -183,8 +183,9 @@ public class ZkSearchIndexUI extends Div implements EventListener<Event> {
 				searchText = searchText.substring(searchText.indexOf(" ") + 1);
 			}
 
+			results = new ArrayList<>();
 			for(ISearchIndexProvider searchIndexProvider : searchIndexProviderList) {
-				results.addAll(searchIndexProvider.searchIndexDocument(searchIndexName, searchText, cbAdvancedSearch.isChecked()));
+				results.addAll(searchIndexProvider.getSearchResults(ctx, searchIndexName, searchText, cbAdvancedSearch.isChecked(), null));
 			}
 
 			if (results.size() > 0) {

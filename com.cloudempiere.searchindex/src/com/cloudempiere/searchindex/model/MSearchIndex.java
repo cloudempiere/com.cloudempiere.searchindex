@@ -21,15 +21,11 @@
  **********************************************************************/
 package com.cloudempiere.searchindex.model;
 
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
-import java.util.logging.Level;
 
 import org.compiere.model.PO;
 import org.compiere.model.Query;
@@ -91,31 +87,6 @@ public class MSearchIndex extends X_AD_SearchIndex {
 				.setParameters(clientId)
 				.list();
 		return list.toArray(new MSearchIndex[list.size()]);
-	}
-	
-	public int[] getColumnIdList() {
-		List<Integer> colIdList = new ArrayList<>();
-		StringBuilder sql = new StringBuilder("SELECT ").append(MSearchIndexColumn.COLUMNNAME_AD_Column_ID)
-				.append(" FROM ").append(MSearchIndexColumn.Table_Name).append(" sic ")
-				.append(" JOIN ").append(MSearchIndexTable.Table_Name).append(" sit ON sic.")
-				.append(MSearchIndexColumn.COLUMNNAME_AD_SearchIndexTable_ID).append("=sit.")
-				.append(MSearchIndexTable.COLUMNNAME_AD_SearchIndexTable_ID)
-				.append(" WHERE sit.").append(MSearchIndexTable.COLUMNNAME_AD_SearchIndex_ID).append("=?");
-		PreparedStatement pstmt = null;
-		ResultSet rs = null;
-		try {
-			pstmt = DB.prepareStatement(sql.toString(), get_TrxName());
-			pstmt.setInt(1, getAD_SearchIndex_ID());
-			rs = pstmt.executeQuery();
-			while (rs.next()) {
-				colIdList.add(rs.getInt(1));
-			}
-		} catch (SQLException e) {
-			log.log(Level.SEVERE, "Error while getting column id list", e);
-		} finally {
-			DB.close(rs, pstmt);
-		}
-		return colIdList.stream().mapToInt(i -> i).toArray();
 	}
 	
 	public static MSearchIndex[] getForTable(Properties ctx, PO po, Set<KeyNamePair> indexedTableNames, String trxName) {
