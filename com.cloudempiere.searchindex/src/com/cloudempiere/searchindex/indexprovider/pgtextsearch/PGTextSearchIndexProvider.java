@@ -44,7 +44,7 @@ import org.compiere.util.Util;
 import com.cloudempiere.searchindex.indexprovider.ISearchIndexProvider;
 import com.cloudempiere.searchindex.model.MSearchIndexProvider;
 import com.cloudempiere.searchindex.util.ISearchResult;
-import com.cloudempiere.searchindex.util.pojo.SearchIndexRecord;
+import com.cloudempiere.searchindex.util.pojo.SearchIndexData;
 
 /**
  * 
@@ -66,7 +66,7 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
     }
     
     @Override
-	public void createIndex(Properties ctx, Map<Integer, Set<SearchIndexRecord>> indexRecordsMap, String trxName) {
+	public void createIndex(Properties ctx, Map<Integer, Set<SearchIndexData>> indexRecordsMap, String trxName) {
 		if (indexRecordsMap == null) {
 			return;
 		}
@@ -75,8 +75,8 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 	    Map<String, PreparedStatement> preparedStatementMap = new HashMap<>();
 	
 	    try {
-	        for (Map.Entry<Integer, Set<SearchIndexRecord>> searchIndexRecordSet : indexRecordsMap.entrySet()) {
-	            for (SearchIndexRecord searchIndexRecord : searchIndexRecordSet.getValue()) {
+	        for (Map.Entry<Integer, Set<SearchIndexData>> searchIndexRecordSet : indexRecordsMap.entrySet()) {
+	            for (SearchIndexData searchIndexRecord : searchIndexRecordSet.getValue()) {
 	                String tableName = searchIndexRecord.getSearchIndexName();
 	                String upsertQuery = "INSERT INTO " + tableName + " " +
 	                                     "(ad_client_id, ad_table_id, record_id, idx_tsvector) VALUES (?, ?, ?, to_tsvector(?::regconfig, ?::text)) " +
@@ -131,7 +131,7 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 	}
 	
 	@Override
-	public void updateIndex(Properties ctx, Map<Integer, Set<SearchIndexRecord>> indexRecordsMap, String trxName) {
+	public void updateIndex(Properties ctx, Map<Integer, Set<SearchIndexData>> indexRecordsMap, String trxName) {
 		createIndex(ctx, indexRecordsMap, trxName); // uses upsert
 	}
 
@@ -175,7 +175,7 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
     }
 	
 	@Override
-	public void reCreateIndex(Properties ctx, Map<Integer, Set<SearchIndexRecord>> indexRecordsMap, String trxName) {
+	public void reCreateIndex(Properties ctx, Map<Integer, Set<SearchIndexData>> indexRecordsMap, String trxName) {
 		deleteAllIndex(ctx, trxName);
 		createIndex(ctx, indexRecordsMap, trxName);
 	}

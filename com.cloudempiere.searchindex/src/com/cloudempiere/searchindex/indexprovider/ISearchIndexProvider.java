@@ -32,7 +32,7 @@ import org.compiere.util.CLogger;
 
 import com.cloudempiere.searchindex.model.MSearchIndexProvider;
 import com.cloudempiere.searchindex.util.ISearchResult;
-import com.cloudempiere.searchindex.util.pojo.SearchIndexRecord;
+import com.cloudempiere.searchindex.util.pojo.SearchIndexData;
 
 /**
  * 
@@ -53,7 +53,7 @@ public interface ISearchIndexProvider
 	 * @param indexRecordsMap - key is AD_SearchIndex_ID
 	 * @param trxName
 	 */
-	public void createIndex(Properties ctx, Map<Integer, Set<SearchIndexRecord>> indexRecordsMap, String trxName);
+	public void createIndex(Properties ctx, Map<Integer, Set<SearchIndexData>> indexRecordsMap, String trxName);
 	
 	/**
 	 * Update index
@@ -63,7 +63,7 @@ public interface ISearchIndexProvider
 	 * @param columnIDs
 	 * @param trxName
 	 */
-	public void updateIndex(Properties ctx, Map<Integer, Set<SearchIndexRecord>> indexRecordsMap, String trxName);
+	public void updateIndex(Properties ctx, Map<Integer, Set<SearchIndexData>> indexRecordsMap, String trxName);
 	
 	/**
 	 * Delete index
@@ -89,7 +89,7 @@ public interface ISearchIndexProvider
 	 * @param indexRecordsMap - key is AD_SearchIndex_ID
 	 * @param trxName
 	 */
-	public void reCreateIndex(Properties ctx, Map<Integer, Set<SearchIndexRecord>> indexRecordsMap, String trxName);
+	public void reCreateIndex(Properties ctx, Map<Integer, Set<SearchIndexData>> indexRecordsMap, String trxName);
 
 	/**
 	 * Get search results

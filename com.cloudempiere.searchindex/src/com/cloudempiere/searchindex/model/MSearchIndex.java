@@ -31,8 +31,8 @@ import org.compiere.model.PO;
 import org.compiere.model.Query;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
-import org.compiere.util.KeyNamePair;
 
+import com.cloudempiere.searchindex.event.pojo.SearchIndexTableConfigSimple;
 import com.cloudempiere.searchindex.util.SearchIndexUtils;
 
 /**
@@ -89,23 +89,23 @@ public class MSearchIndex extends X_AD_SearchIndex {
 		return list.toArray(new MSearchIndex[list.size()]);
 	}
 	
-	public static MSearchIndex[] getForTable(Properties ctx, PO po, Set<KeyNamePair> indexedTableNames, String trxName) {
-		return get(ctx, po, false, indexedTableNames, trxName);
+	public static MSearchIndex[] getForTable(Properties ctx, PO po, Set<SearchIndexTableConfigSimple> indexedTables, String trxName) {
+		return get(ctx, po, false, indexedTables, trxName);
 	}
 	
-	public static MSearchIndex[] getForRecord(Properties ctx, PO po, Set<KeyNamePair> indexedTableNames, String trxName) {
-		return get(ctx, po, true, indexedTableNames, trxName);
+	public static MSearchIndex[] getForRecord(Properties ctx, PO po, Set<SearchIndexTableConfigSimple> indexedTables, String trxName) {
+		return get(ctx, po, true, indexedTables, trxName);
 	}
 	
 	/**
 	 * Get AD_SearchIndex for a PO record
 	 * @param ctx
 	 * @param po
-	 * @param indexedTableNames
+	 * @param indexedTables
 	 * @param trxName
 	 * @return
 	 */
-	private static MSearchIndex[] get(Properties ctx, PO po, boolean isRecordLevel, Set<KeyNamePair> indexedTableNames, String trxName) {
+	private static MSearchIndex[] get(Properties ctx, PO po, boolean isRecordLevel, Set<SearchIndexTableConfigSimple> indexedTables, String trxName) {
 		if (po instanceof MSearchIndex) {
 			
 			return new MSearchIndex[] { (MSearchIndex) po };
@@ -122,16 +122,15 @@ public class MSearchIndex extends X_AD_SearchIndex {
 		
 		} else {
 			
-			if (indexedTableNames == null || indexedTableNames.isEmpty())
-				indexedTableNames = SearchIndexUtils.getIndexedTableNames(trxName, Env.getAD_Client_ID(ctx));
+			if (indexedTables == null || indexedTables.isEmpty())
+				indexedTables = SearchIndexUtils.getIndexedTableNames(trxName, Env.getAD_Client_ID(ctx));
 			
 			Set<MSearchIndex> searchIndexSet = new HashSet<>();
-			for (KeyNamePair indexTable : indexedTableNames) {
-				int recordId = po.get_ID() > 0 ? po.get_ID() : po.get_IDOld();
-				int searchIndexId = indexTable.getKey();
-				MSearchIndex searchIndex = new MSearchIndex(ctx, searchIndexId, trxName);
+			for (SearchIndexTableConfigSimple indexTable : indexedTables) {
+				MSearchIndex searchIndex = new MSearchIndex(ctx, indexTable.getSearchIndexId(), trxName);
 				String searchIdxTableName = searchIndex.getSearchIndexName();
 				if (isRecordLevel) {
+					int recordId = po.get_ID() > 0 ? po.get_ID() : po.get_IDOld();
 					if (containsRecord(ctx, po.getAD_Client_ID(), po.get_Table_ID(), recordId, searchIdxTableName, trxName))
 						searchIndexSet.add(searchIndex);
 				} else {

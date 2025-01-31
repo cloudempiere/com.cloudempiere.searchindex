@@ -35,7 +35,7 @@ import org.compiere.util.Msg;
 import com.cloudempiere.searchindex.indexprovider.ISearchIndexProvider;
 import com.cloudempiere.searchindex.util.SearchIndexConfigBuilder;
 import com.cloudempiere.searchindex.util.SearchIndexUtils;
-import com.cloudempiere.searchindex.util.pojo.SearchIndexRecord;
+import com.cloudempiere.searchindex.util.pojo.SearchIndexData;
 
 public class CreateSearchIndex extends SvrProcess {
 	
@@ -75,7 +75,7 @@ public class CreateSearchIndex extends SvrProcess {
 				.setCtx(getCtx())
 				.setTrxName(get_TrxName())
 				.build();
-		Map<Integer, Set<SearchIndexRecord>> indexRecordsMap = builder.getData(false); // key is AD_SearchIndex_ID
+		Map<Integer, Set<SearchIndexData>> indexRecordsMap = builder.getData(false); // key is AD_SearchIndex_ID
 		if(indexRecordsMap.size() <= 0)
 	    	return Msg.getMsg(getCtx(), "NoRecordsFound");
 	    

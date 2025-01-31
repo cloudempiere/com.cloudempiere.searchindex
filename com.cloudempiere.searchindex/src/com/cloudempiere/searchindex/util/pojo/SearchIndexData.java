@@ -27,9 +27,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Search Index Record
+ * Search Index Data
  */
-public class SearchIndexRecord {
+public class SearchIndexData {
 
 	/* AD_Table_ID */
     private int tableId;
@@ -40,7 +40,7 @@ public class SearchIndexRecord {
     /* Data: ColumnName - Value */
     private Set<Map<String, Object>> tableData;
 
-    public SearchIndexRecord(int tableId, String keyColName, String searchIndexName) {
+    public SearchIndexData(int tableId, String keyColName, String searchIndexName) {
         this.tableId = tableId;
         this.keyColName = keyColName;
         this.searchIndexName = searchIndexName;

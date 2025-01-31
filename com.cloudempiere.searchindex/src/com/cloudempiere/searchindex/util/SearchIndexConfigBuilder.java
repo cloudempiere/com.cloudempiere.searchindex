@@ -24,7 +24,7 @@ import org.compiere.util.Util;
 
 import com.cloudempiere.searchindex.util.pojo.SearchIndexColumnConfig;
 import com.cloudempiere.searchindex.util.pojo.SearchIndexConfig;
-import com.cloudempiere.searchindex.util.pojo.SearchIndexRecord;
+import com.cloudempiere.searchindex.util.pojo.SearchIndexData;
 import com.cloudempiere.searchindex.util.pojo.SearchIndexTableConfig;
 
 public class SearchIndexConfigBuilder {
@@ -45,7 +45,7 @@ public class SearchIndexConfigBuilder {
 	/** Search Index Configs */
 	private List<SearchIndexConfig> searchIndexConfigs = new ArrayList<>();
 	/** Search Index Data - key is AD_SearchIndex_ID */
-	private Map<Integer, Set<SearchIndexRecord>> searchIndexData = new HashMap<>();
+	private Map<Integer, Set<SearchIndexData>> searchIndexData = new HashMap<>();
 
 	/**
 	 * Set Context
@@ -107,7 +107,7 @@ public class SearchIndexConfigBuilder {
 	 * Get Search Index Configs
 	 * @return
 	 */
-	public Map<Integer, Set<SearchIndexRecord>> getData(boolean forceReload) {
+	public Map<Integer, Set<SearchIndexData>> getData(boolean forceReload) {
 		if (forceReload) {
 			try {
 				loadSearchIndexData();
@@ -235,10 +235,10 @@ public class SearchIndexConfigBuilder {
     	if(searchIndexConfigs == null || searchIndexConfigs.size() <= 0)
 	    	throw new AdempiereException(Msg.getMsg(ctx, "SearchIndexConfigNotFound"));
     	
-        SearchIndexRecord searchIndexRecord = null;
+        SearchIndexData searchIndexRecord = null;
 
         for (SearchIndexConfig searchIndexConfig : searchIndexConfigs) {
-            Set<SearchIndexRecord> indexTableDataSet = new HashSet<>();
+            Set<SearchIndexData> indexTableDataSet = new HashSet<>();
             for (SearchIndexTableConfig tableConfig : searchIndexConfig.getTableConfigs()) {
 
                 StringBuilder fromClauseBuilder = new StringBuilder();
@@ -304,7 +304,7 @@ public class SearchIndexConfigBuilder {
         	            pstmt.setObject(i + 1, params.get(i));
         	        }
                     rs = pstmt.executeQuery();
-                    searchIndexRecord = new SearchIndexRecord(tableConfig.getTableId(), tableConfig.getKeyColName(), searchIndexConfig.getSearchIndexName());
+                    searchIndexRecord = new SearchIndexData(tableConfig.getTableId(), tableConfig.getKeyColName(), searchIndexConfig.getSearchIndexName());
 
                     while (rs.next()) {
                         Map<String, Object> data = new HashMap<>();
