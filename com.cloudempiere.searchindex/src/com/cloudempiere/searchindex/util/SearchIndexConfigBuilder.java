@@ -241,6 +241,9 @@ public class SearchIndexConfigBuilder {
             Set<SearchIndexData> indexTableDataSet = new HashSet<>();
             for (SearchIndexTableConfig tableConfig : searchIndexConfig.getTableConfigs()) {
 
+            	if (tableId > 0 && tableId != tableConfig.getTableId())
+            		continue;
+            	
                 StringBuilder fromClauseBuilder = new StringBuilder();
                 fromClauseBuilder.append(" FROM ").append(tableConfig.getTableName()).append(" main");
                 StringBuilder selectClauseBuilder = new StringBuilder();

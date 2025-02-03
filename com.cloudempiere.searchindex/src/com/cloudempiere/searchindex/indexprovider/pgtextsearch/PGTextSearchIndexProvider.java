@@ -187,6 +187,10 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 
 		StringBuilder sql = new StringBuilder();
 		List<String> tablesToSearch = new ArrayList<>();
+		List<Object> params = new ArrayList<>();
+		
+		String tsConfig = getTSConfig(ctx, trxName);
+		int clientId = Env.getAD_Client_ID(ctx);
 
 		if (Util.isEmpty(searchIndexName)) {
 			tablesToSearch.addAll(getAllSearchIndexTables(ctx, trxName));
@@ -196,17 +200,26 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 
 		for (int i = 0; i < tablesToSearch.size(); i++) {
 			String tableName = tablesToSearch.get(i);
-			sql.append("SELECT DISTINCT ad_table_id, record_id ");
+			sql.append("SELECT DISTINCT ad_table_id, record_id, ts_rank(idx_tsvector, to_tsquery(?::regconfig, ?::text)) as rank ");
 			sql.append("FROM ");
 			sql.append(tableName);
 			sql.append(" WHERE idx_tsvector @@ ");
+			params.add(tsConfig);
+			params.add(isAdvanced ? convertQueryString(query) : query.replace(" ", " & "));			
 
-			if (isAdvanced) 
-				sql.append("to_tsquery('" + convertQueryString(query) + "') ");
-			else
-				sql.append("plainto_tsquery('" + query + "') ");
+			params.add(tsConfig);
+			if (isAdvanced) {
+				sql.append("to_tsquery(?::regconfig, ?::text) ");
+				params.add(convertQueryString(query));
+			} else {
+				sql.append("plainto_tsquery(?::regconfig, ?::text) ");
+				params.add(query.replace(" ", " & "));
+			}
 
 			sql.append("AND AD_CLIENT_ID IN (0,?) ");
+			params.add(clientId);
+			
+			sql.append("ORDER BY rank DESC ");
 
 			if (i < tablesToSearch.size() - 1) {
 				sql.append(" UNION ");
@@ -218,8 +231,8 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 		ResultSet rs = null;
 		try {
 			pstmt = DB.prepareStatement(sql.toString(), trxName);
-			for (int i = 0; i < tablesToSearch.size(); i++) {
-				pstmt.setInt(i + 1, Env.getAD_Client_ID(ctx));
+			for (int i = 0; i < params.size(); i++) {
+				pstmt.setObject(i + 1, params.get(i));
 			}
 			rs = pstmt.executeQuery();
 
@@ -390,9 +403,9 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 	 * @return the text search configuration
 	 */
     private String getTSConfig(Properties ctx, String trxName) {
-		// Check if the specified text search configuration exists
+		// Check if the specified text search configuration exists for language
         String tsConfig = MClient.get(ctx).getLanguage().getLocale().getDisplayLanguage(Locale.ENGLISH);
-        String fallbackConfig = "simple";
+        String fallbackConfig = "unaccent";
         String checkConfigQuery = "SELECT COUNT(*) FROM pg_ts_config WHERE cfgname = ?";
         int configCount = DB.getSQLValue(trxName, checkConfigQuery, tsConfig);
 
