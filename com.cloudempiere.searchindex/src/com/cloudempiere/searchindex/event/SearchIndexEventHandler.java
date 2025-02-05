@@ -241,7 +241,7 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 			searchIndexId = indexTable.getAD_SearchIndex_ID();
 		} else if (po instanceof MSearchIndexColumn) {
 			MSearchIndexColumn indexColumn = (MSearchIndexColumn) po;
-			MSearchIndexTable indexTable = new MSearchIndexTable(ctx, indexColumn.getAD_SearchIndexTable_ID(), trxName);
+			MSearchIndexTable indexTable = MSearchIndexTable.get(ctx, indexColumn.getAD_SearchIndexTable_ID(), trxName);
 			searchIndexId = indexTable.getAD_SearchIndex_ID();
 		} else {
 			return;

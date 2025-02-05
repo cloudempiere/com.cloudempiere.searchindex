@@ -25,7 +25,10 @@ import java.sql.ResultSet;
 import java.util.List;
 import java.util.Properties;
 
+import org.compiere.model.PO;
 import org.compiere.model.Query;
+import org.idempiere.cache.ImmutableIntPOCache;
+import org.idempiere.cache.ImmutablePOSupport;
 
 /**
  * 
@@ -34,10 +37,12 @@ import org.compiere.model.Query;
  * @author Peter Takacs, Cloudempiere
  *
  */
-public class MSearchIndexProvider extends X_AD_SearchIndexProvider {
+public class MSearchIndexProvider extends X_AD_SearchIndexProvider implements ImmutablePOSupport {
 
 	/** Generated serial version ID */
 	private static final long serialVersionUID = -5327411696537583461L;
+	/**	Cache */
+	private static ImmutableIntPOCache<Integer,MSearchIndexProvider> s_cache = new ImmutableIntPOCache<Integer,MSearchIndexProvider>(Table_Name, 20);
 
 	/**
 	 * @param ctx
@@ -68,6 +73,23 @@ public class MSearchIndexProvider extends X_AD_SearchIndexProvider {
 	}
 
 	/**
+	 * Get search index provider from cache
+	 * @param ctx
+	 * @param AD_SearchTableIndexProvider_ID
+	 * @param trxName
+	 * @return
+	 */
+	public static MSearchIndexProvider get(Properties ctx, int AD_SearchTableIndexProvider_ID, String trxName) {
+		MSearchIndexProvider searchIndexProvider = s_cache.get(AD_SearchTableIndexProvider_ID);
+		if (searchIndexProvider != null)
+			return searchIndexProvider;
+		
+		searchIndexProvider = new MSearchIndexProvider(ctx, AD_SearchTableIndexProvider_ID, trxName);
+		s_cache.put(AD_SearchTableIndexProvider_ID, searchIndexProvider);
+		return searchIndexProvider;
+	}
+
+	/**
 	 * Get Search Index Providers by Client
 	 * @param ctx
 	 * @param clientId - AD_Client_ID
@@ -93,5 +115,14 @@ public class MSearchIndexProvider extends X_AD_SearchIndexProvider {
 				.setOnlyActiveRecords(true)
 				.setClient_ID()
 				.firstId();
+	}
+
+	@Override
+	public PO markImmutable() {
+		if (is_Immutable())
+			return this;
+		
+		makeImmutable();
+		return this;
 	}
 }

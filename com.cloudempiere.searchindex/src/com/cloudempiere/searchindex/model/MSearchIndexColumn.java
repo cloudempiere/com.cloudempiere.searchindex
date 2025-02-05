@@ -27,8 +27,11 @@ import java.sql.SQLException;
 import java.util.Properties;
 import java.util.logging.Level;
 
+import org.compiere.model.PO;
 import org.compiere.util.DB;
 import org.compiere.util.Msg;
+import org.idempiere.cache.ImmutableIntPOCache;
+import org.idempiere.cache.ImmutablePOSupport;
 
 /**
  * 
@@ -37,10 +40,12 @@ import org.compiere.util.Msg;
  * @author Peter Takacs, Cloudempiere
  *
  */
-public class MSearchIndexColumn extends X_AD_SearchIndexColumn {
+public class MSearchIndexColumn extends X_AD_SearchIndexColumn implements ImmutablePOSupport {
 
 	/** Generated serial version ID */
-	private static final long serialVersionUID = 2900699941170299022L;	
+	private static final long serialVersionUID = 2900699941170299022L;
+	/**	Cache */
+	private static ImmutableIntPOCache<Integer,MSearchIndexColumn> s_cache = new ImmutableIntPOCache<Integer,MSearchIndexColumn>(Table_Name, 20);
 
 	/** Parent */
 	protected MSearchIndexTable m_parent = null;
@@ -72,6 +77,23 @@ public class MSearchIndexColumn extends X_AD_SearchIndexColumn {
 	public MSearchIndexColumn(Properties ctx, ResultSet rs, String trxName) {
 		super(ctx, rs, trxName);
 	}
+
+	/**
+	 * Get search index column from cache
+	 * @param ctx
+	 * @param AD_SearchIndexColumn_ID
+	 * @param trxName
+	 * @return
+	 */
+	public static MSearchIndexColumn get(Properties ctx, int AD_SearchIndexColumn_ID, String trxName) {
+		MSearchIndexColumn searchIndexColumn = s_cache.get(AD_SearchIndexColumn_ID);
+		if (searchIndexColumn != null)
+			return searchIndexColumn;
+		
+		searchIndexColumn = new MSearchIndexColumn(ctx, AD_SearchIndexColumn_ID, trxName);
+		s_cache.put(AD_SearchIndexColumn_ID, searchIndexColumn);
+		return searchIndexColumn;
+	}
 	
 	/**
 	 * 	Get Parent
@@ -80,7 +102,7 @@ public class MSearchIndexColumn extends X_AD_SearchIndexColumn {
 	public MSearchIndexTable getParent()
 	{
 		if (m_parent == null)
-			m_parent = new MSearchIndexTable(getCtx(), getAD_SearchIndexTable_ID(), get_TrxName());
+			m_parent = MSearchIndexTable.get(getCtx(), getAD_SearchIndexTable_ID(), get_TrxName());
 		return m_parent;
 	}
 	
@@ -123,6 +145,15 @@ public class MSearchIndexColumn extends X_AD_SearchIndexColumn {
 			DB.close(rs, pstmt);
 		}
 		return searchIndex;
+	}
+
+	@Override
+	public PO markImmutable() {
+		if (is_Immutable())
+			return this;
+		
+		makeImmutable();
+		return this;
 	}
 
 }

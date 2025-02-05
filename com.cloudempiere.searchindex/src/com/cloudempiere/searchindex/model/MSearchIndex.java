@@ -32,6 +32,8 @@ import org.compiere.model.PO;
 import org.compiere.model.Query;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
+import org.idempiere.cache.ImmutableIntPOCache;
+import org.idempiere.cache.ImmutablePOSupport;
 
 import com.cloudempiere.searchindex.event.pojo.IndexedTable;
 import com.cloudempiere.searchindex.util.SearchIndexUtils;
@@ -43,10 +45,12 @@ import com.cloudempiere.searchindex.util.SearchIndexUtils;
  * @author Peter Takacs, Cloudempiere
  *
  */
-public class MSearchIndex extends X_AD_SearchIndex {
+public class MSearchIndex extends X_AD_SearchIndex implements ImmutablePOSupport {
 
 	/** Generated serial version ID */
 	private static final long serialVersionUID = 5448449186132862379L;
+	/**	Cache */
+	private static ImmutableIntPOCache<Integer,MSearchIndex> s_cache = new ImmutableIntPOCache<Integer,MSearchIndex>(Table_Name, 20);
 
 	/**
 	 * @param ctx
@@ -74,6 +78,23 @@ public class MSearchIndex extends X_AD_SearchIndex {
 	 */
 	public MSearchIndex(Properties ctx, ResultSet rs, String trxName) {
 		super(ctx, rs, trxName);
+	}
+
+	/**
+	 * Get search index from cache
+	 * @param ctx
+	 * @param AD_SearchIndex_ID
+	 * @param trxName
+	 * @return
+	 */
+	public static MSearchIndex get(Properties ctx, int AD_SearchIndex_ID, String trxName) {
+		MSearchIndex searchIndex = s_cache.get(AD_SearchIndex_ID);
+		if (searchIndex != null)
+			return searchIndex;
+		
+		searchIndex = new MSearchIndex(ctx, AD_SearchIndex_ID, trxName);
+		s_cache.put(AD_SearchIndex_ID, searchIndex);
+		return searchIndex;
 	}
 
 	/**
@@ -112,7 +133,7 @@ public class MSearchIndex extends X_AD_SearchIndex {
 			
 		} else if (po instanceof MSearchIndexTable) {			
 			MSearchIndexTable searchIndexTable = (MSearchIndexTable) po;
-			return new MSearchIndex[] { new MSearchIndex(ctx, searchIndexTable.getAD_SearchIndex_ID(), trxName) };
+			return new MSearchIndex[] { MSearchIndex.get(ctx, searchIndexTable.getAD_SearchIndex_ID(), trxName) };
 		
 		} else if (po instanceof MSearchIndexColumn) {			
 			MSearchIndexColumn searchIndexColumn = (MSearchIndexColumn) po;
@@ -145,10 +166,10 @@ public class MSearchIndex extends X_AD_SearchIndex {
 				if (isRecordLevel) {
 					int recordId = po.get_ID() > 0 ? po.get_ID() : po.get_IDOld();
 					if (containsRecord(ctx, po.getAD_Client_ID(), po.get_Table_ID(), recordId, searchIndexConfig.getSearchIndexName(), trxName))
-						searchIndexSet.add(new MSearchIndex(ctx, searchIndexConfig.getSearchIndexId(), trxName));
+						searchIndexSet.add(MSearchIndex.get(ctx, searchIndexConfig.getSearchIndexId(), trxName));
 				} else {
 					if (containsTable(ctx, po.getAD_Client_ID(), po.get_Table_ID(), searchIndexConfig.getSearchIndexName(), trxName))
-						searchIndexSet.add(new MSearchIndex(ctx, searchIndexConfig.getSearchIndexId(), trxName));
+						searchIndexSet.add(MSearchIndex.get(ctx, searchIndexConfig.getSearchIndexId(), trxName));
 				}
 			}
 			return searchIndexSet.toArray(new MSearchIndex[0]);
@@ -182,5 +203,14 @@ public class MSearchIndex extends X_AD_SearchIndex {
 		StringBuilder sql = new StringBuilder("SELECT 1 FROM ").append(indexTableName)
 				.append(" WHERE AD_Client_ID=? AND AD_Table_ID=?");
 		return DB.getSQLValue(trxName, sql.toString(), clientId, tableId) > 0;
+	}
+
+	@Override
+	public PO markImmutable() {
+		if (is_Immutable())
+			return this;
+		
+		makeImmutable();
+		return this;
 	}
 }

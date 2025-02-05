@@ -24,6 +24,10 @@ package com.cloudempiere.searchindex.model;
 import java.sql.ResultSet;
 import java.util.Properties;
 
+import org.compiere.model.PO;
+import org.idempiere.cache.ImmutableIntPOCache;
+import org.idempiere.cache.ImmutablePOSupport;
+
 /**
  * 
  * Model class for AD_SearchIndexTable
@@ -31,10 +35,13 @@ import java.util.Properties;
  * @author Peter Takacs, Cloudempiere
  *
  */
-public class MSearchIndexTable extends X_AD_SearchIndexTable {
+public class MSearchIndexTable extends X_AD_SearchIndexTable implements ImmutablePOSupport {
 
 	/** Generated serial version ID */
 	private static final long serialVersionUID = -2412775728559620890L;
+	/**	Cache */
+	private static ImmutableIntPOCache<Integer,MSearchIndexTable> s_cache = new ImmutableIntPOCache<Integer,MSearchIndexTable>(Table_Name, 20);
+	
 	
 	/**
 	 * @param ctx
@@ -62,6 +69,32 @@ public class MSearchIndexTable extends X_AD_SearchIndexTable {
 	 */
 	public MSearchIndexTable(Properties ctx, ResultSet rs, String trxName) {
 		super(ctx, rs, trxName);
+	}
+
+	/**
+	 * Get search index table from cache
+	 * @param ctx
+	 * @param AD_SearchTableIndex_ID
+	 * @param trxName
+	 * @return
+	 */
+	public static MSearchIndexTable get(Properties ctx, int AD_SearchTableIndex_ID, String trxName) {
+		MSearchIndexTable searchIndexTable = s_cache.get(AD_SearchTableIndex_ID);
+		if (searchIndexTable != null)
+			return searchIndexTable;
+		
+		searchIndexTable = new MSearchIndexTable(ctx, AD_SearchTableIndex_ID, trxName);
+		s_cache.put(AD_SearchTableIndex_ID, searchIndexTable);
+		return searchIndexTable;
+	}
+
+	@Override
+	public PO markImmutable() {
+		if (is_Immutable())
+			return this;
+		
+		makeImmutable();
+		return this;
 	}
 
 }
