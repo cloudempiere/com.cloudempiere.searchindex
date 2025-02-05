@@ -31,7 +31,7 @@ public class X_AD_SearchIndex extends PO implements I_AD_SearchIndex, I_Persiste
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = 20250129L;
+	private static final long serialVersionUID = 20250204L;
 
     /** Standard Constructor */
     public X_AD_SearchIndex (Properties ctx, int AD_SearchIndex_ID, String trxName)
@@ -164,6 +164,29 @@ public class X_AD_SearchIndex extends PO implements I_AD_SearchIndex, I_Persiste
 		return (String)get_Value(COLUMNNAME_Description);
 	}
 
+	/** Set Valid.
+		@param IsValid Element is valid
+	*/
+	public void setIsValid (boolean IsValid)
+	{
+		set_Value (COLUMNNAME_IsValid, Boolean.valueOf(IsValid));
+	}
+
+	/** Get Valid.
+		@return Element is valid
+	  */
+	public boolean isValid()
+	{
+		Object oo = get_Value(COLUMNNAME_IsValid);
+		if (oo != null) 
+		{
+			 if (oo instanceof Boolean) 
+				 return ((Boolean)oo).booleanValue(); 
+			return "Y".equals(oo);
+		}
+		return false;
+	}
+
 	/** Set Name.
 		@param Name Alphanumeric identifier of the entity
 	*/
@@ -178,6 +201,28 @@ public class X_AD_SearchIndex extends PO implements I_AD_SearchIndex, I_Persiste
 	public String getName()
 	{
 		return (String)get_Value(COLUMNNAME_Name);
+	}
+
+	/** Set Process Now.
+		@param Processing Process Now
+	*/
+	public void setProcessing (boolean Processing)
+	{
+		set_Value (COLUMNNAME_Processing, Boolean.valueOf(Processing));
+	}
+
+	/** Get Process Now.
+		@return Process Now	  */
+	public boolean isProcessing()
+	{
+		Object oo = get_Value(COLUMNNAME_Processing);
+		if (oo != null) 
+		{
+			 if (oo instanceof Boolean) 
+				 return ((Boolean)oo).booleanValue(); 
+			return "Y".equals(oo);
+		}
+		return false;
 	}
 
 	/** Set Search Index Name.

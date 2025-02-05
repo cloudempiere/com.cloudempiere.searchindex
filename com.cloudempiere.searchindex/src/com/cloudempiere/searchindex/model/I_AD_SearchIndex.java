@@ -32,8 +32,8 @@ public interface I_AD_SearchIndex
     /** TableName=AD_SearchIndex */
     public static final String Table_Name = "AD_SearchIndex";
 
-    /** AD_Table_ID=800159 */
-    public static final int Table_ID = 800159;
+    /** AD_Table_ID=1001850 */
+    public static final int Table_ID = MTable.getTable_ID(Table_Name);
 
     KeyNamePair Model = new KeyNamePair(Table_ID, Table_Name);
 
@@ -135,6 +135,19 @@ public interface I_AD_SearchIndex
 	  */
 	public boolean isActive();
 
+    /** Column name IsValid */
+    public static final String COLUMNNAME_IsValid = "IsValid";
+
+	/** Set Valid.
+	  * Element is valid
+	  */
+	public void setIsValid (boolean IsValid);
+
+	/** Get Valid.
+	  * Element is valid
+	  */
+	public boolean isValid();
+
     /** Column name Name */
     public static final String COLUMNNAME_Name = "Name";
 
@@ -147,6 +160,15 @@ public interface I_AD_SearchIndex
 	  * Alphanumeric identifier of the entity
 	  */
 	public String getName();
+
+    /** Column name Processing */
+    public static final String COLUMNNAME_Processing = "Processing";
+
+	/** Set Process Now	  */
+	public void setProcessing (boolean Processing);
+
+	/** Get Process Now	  */
+	public boolean isProcessing();
 
     /** Column name SearchIndexName */
     public static final String COLUMNNAME_SearchIndexName = "SearchIndexName";

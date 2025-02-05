@@ -31,15 +31,18 @@ import org.adempiere.base.event.IEventTopics;
 import org.adempiere.model.GenericPO;
 import org.compiere.model.MTable;
 import org.compiere.model.PO;
+import org.compiere.model.Query;
 import org.compiere.util.CLogger;
+import org.compiere.util.DB;
 import org.compiere.util.Env;
+import org.compiere.util.Util;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.event.Event;
 
-import com.cloudempiere.searchindex.event.pojo.SearchIndexTableConfigSimple;
+import com.cloudempiere.searchindex.event.pojo.IndexedTable;
 import com.cloudempiere.searchindex.indexprovider.ISearchIndexProvider;
 import com.cloudempiere.searchindex.model.MSearchIndex;
 import com.cloudempiere.searchindex.model.MSearchIndexColumn;
@@ -59,15 +62,15 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 	/** Transaction name */
 	private String trxName = null;
 	/** Indexed tables set (key: AD_SearchIndex_ID, name: TableName) */
-	private Set<SearchIndexTableConfigSimple> indexedTables = null;
+	private Set<IndexedTable> indexedTables = null;
 	
 	@Override
 	protected void initialize() {
 
-		indexedTables = SearchIndexUtils.getIndexedTableNames(trxName, -1); // gets data from all clients
+		indexedTables = SearchIndexUtils.getSearchIndexConfigs(trxName, -1); // gets data from all clients
 		Set<String> tablesToRegister = new HashSet<>();
 
-		for (SearchIndexTableConfigSimple indexTable : indexedTables) {
+		for (IndexedTable indexTable : indexedTables) {
 			String tableName = indexTable.getTableName();
 			tablesToRegister.add(tableName);
 			//Index the FK tables
@@ -92,20 +95,29 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 
 	@Override
 	protected void doHandleEvent(Event event) {
-		
+
 		String type = event.getTopic();
 		PO eventPO = getPO(event);
 		ctx = Env.getCtx();
 		trxName = eventPO.get_TrxName();
+		
+		if (eventPO instanceof MSearchIndex
+				|| eventPO instanceof MSearchIndexTable
+				|| eventPO instanceof MSearchIndexColumn) {
+			
+			handleSearchIndexConfigChange(eventPO);
+			return;
+		}
+		
 		PO[] mainPOArr = getMainPOs(eventPO, indexedTables);
 		MSearchIndex[] searchIndexArr;
 		
 		for (PO po : mainPOArr) {
 			// Find existing search indexes for the record
 			if (type.equals(IEventTopics.PO_AFTER_NEW)) {
-				searchIndexArr = MSearchIndex.getForTable(ctx, po, indexedTables, trxName);
+				searchIndexArr = MSearchIndex.getForTable(ctx, po, eventPO, indexedTables, trxName);
 			} else {
-				searchIndexArr = MSearchIndex.getForRecord(ctx, po, indexedTables, trxName);
+				searchIndexArr = MSearchIndex.getForRecord(ctx, po, eventPO, indexedTables, trxName);
 			}
 			
 			for (MSearchIndex searchIndex : searchIndexArr) {
@@ -117,23 +129,10 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 				SearchIndexConfigBuilder builder = new SearchIndexConfigBuilder()
 						.setCtx(ctx)
 						.setTrxName(trxName)
-						.setSearchIndexId(searchIndex.getAD_SearchIndex_ID())
+						.setAD_SearchIndex_ID(searchIndex.getAD_SearchIndex_ID())
 						.setRecord(tableId, recordId);
 				
-				// TODO handle changes in search index configuration: invalidate the configuration
-				if (po instanceof MSearchIndexColumn) {
-					if (type.equals(IEventTopics.PO_AFTER_NEW) ||
-							type.equals(IEventTopics.PO_AFTER_DELETE) ||
-							(type.equals(IEventTopics.PO_AFTER_CHANGE) &&
-							po.is_ValueChanged(MSearchIndexColumn.COLUMNNAME_AD_Column_ID) || 
-							po.is_ValueChanged(MSearchIndexColumn.COLUMNNAME_AD_Table_ID))) {
-						
-						// If the Search Index configuration has changed -> register/unregister the modified table
-						IEventManager tempManager = eventManager;
-						unbindEventManager(eventManager);
-						bindEventManager(tempManager);
-					}
-				} else if (type.equals(IEventTopics.PO_AFTER_DELETE)) {
+				if (type.equals(IEventTopics.PO_AFTER_DELETE)) {
 					if (provider != null) {
 						StringBuilder whereClause = new StringBuilder();
 						whereClause.append(" AD_Client_ID=? AND AD_Table_ID=? AND Record_ID=?");
@@ -155,16 +154,18 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 		}
 	}
 	
-	private PO[] getMainPOs(PO po, Set<SearchIndexTableConfigSimple> tableConfigs) {
+	private PO[] getMainPOs(PO po, Set<IndexedTable> tableConfigs) {
 		Set<PO> mainPOSet = new HashSet<>();
-		for (SearchIndexTableConfigSimple tableConfig : tableConfigs) {
+		for (IndexedTable tableConfig : tableConfigs) {
 			// record of an index table
 			if (po.get_TableName().equals(tableConfig.getTableName())) {
-				mainPOSet.add(po);
+				po = applyWhereClause(po, tableConfig.getWhereClause());
+				if (po != null)
+					mainPOSet.add(po);
 			} else { // related to an index table - find the main record
 				for (String fkTableName : tableConfig.getFKTableNames()) {
 					if (po.get_TableName().equals(fkTableName)) {
-						PO[] mainPOsOfTable = getMainPOsOfTable(po, tableConfig.getTableName());
+						PO[] mainPOsOfTable = getMainPOsOfTable(po, tableConfig.getTableName(), tableConfig.getWhereClause());
 						for (PO mainPO : mainPOsOfTable) {
 							mainPOSet.add(mainPO);
 						}
@@ -175,13 +176,19 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 		return mainPOSet.toArray(new PO[0]);
 	}
 	
-	private PO[] getMainPOsOfTable(PO po, String mainTableName) {
+	private PO[] getMainPOsOfTable(PO po, String mainTableName, String whereClause) {
+		
+		if (!Util.isEmpty(whereClause))
+			whereClause = " AND " + whereClause;
+		
 		Set<PO> mainPOSet = new HashSet<>();
+		
 		// one to many
-		MTable fkTable = MTable.get(ctx, mainTableName, mainTableName);
+		MTable fkTable = MTable.get(ctx, mainTableName, trxName);
 		for (String keyCol : po.get_KeyColumns()) {
 			if (fkTable.columnExistsInDictionary(keyCol)) {
-				for (int recordId : PO.getAllIDs(mainTableName, keyCol+"="+po.get_ID(), trxName)) {
+				// FIXME has problem with aliases in whereClause: ERROR: missing FROM-clause entry for table "main
+				for (int recordId : PO.getAllIDs(mainTableName, keyCol+"="+po.get_ID()+whereClause, trxName)) {
 					mainPOSet.add(new GenericPO(mainTableName, ctx, recordId, trxName));
 				}
 			}
@@ -190,13 +197,64 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 		if (mainPOSet.isEmpty()) {
 			for (String keyCol : fkTable.getKeyColumns()) {
 				if (po.columnExists(keyCol)) {
-//					for (int recordId : PO.getAllIDs(mainTableName, keyCol+"="+po.get_ValueAsInt(keyCol), trxName)) {
+					//  TODO apply where clause here too
 					int recordId = po.get_ValueAsInt(keyCol);
 					mainPOSet.add(new GenericPO(mainTableName, ctx, recordId, trxName));
 				}
 			}
 		}
 		return mainPOSet.toArray(new PO[0]);
+	}
+	
+	/**
+	 * Check if PO passes the where clause filter
+	 * @param po
+	 * @param whereClause
+	 * @return
+	 */
+	private PO applyWhereClause(PO po, String whereClause) {
+		
+		if (Util.isEmpty(whereClause))
+			return po;
+		else
+			whereClause = " AND " + whereClause;
+		
+		MTable table = MTable.get(ctx, po.get_TableName(), trxName);
+		for (String keyCol : po.get_KeyColumns()) {
+			if (table.columnExistsInDictionary(keyCol)) {
+				// FIXME has problem with aliases in whereClause: ERROR: missing FROM-clause entry for table "main
+				if (new Query(ctx, po.get_TableName(), keyCol+"="+po.get_ID()+whereClause, trxName).match())
+					return po;
+			}
+		}
+		return null;
+	}
+	
+	private void handleSearchIndexConfigChange(PO po) {
+		
+		int searchIndexId;
+		// Get the Search Index
+		if (po instanceof MSearchIndex) {
+			searchIndexId = po.get_ValueAsInt(MSearchIndex.COLUMNNAME_AD_SearchIndex_ID);
+		} else if (po instanceof MSearchIndexTable) {
+			MSearchIndexTable indexTable = (MSearchIndexTable) po;
+			searchIndexId = indexTable.getAD_SearchIndex_ID();
+		} else if (po instanceof MSearchIndexColumn) {
+			MSearchIndexColumn indexColumn = (MSearchIndexColumn) po;
+			MSearchIndexTable indexTable = new MSearchIndexTable(ctx, indexColumn.getAD_SearchIndexTable_ID(), trxName);
+			searchIndexId = indexTable.getAD_SearchIndex_ID();
+		} else {
+			return;
+		}
+		
+		// Invalidate the Search Index
+		String sql = "UPDATE AD_SearchIndex SET IsValid='N' WHERE AD_SearchIndex_ID=?";
+		DB.executeUpdateEx(sql, new Object[] {searchIndexId}, trxName);
+		
+		// Register/unregister the modified table
+		IEventManager tempManager = eventManager;
+		unbindEventManager(eventManager);
+		bindEventManager(tempManager);
 	}
 
 }

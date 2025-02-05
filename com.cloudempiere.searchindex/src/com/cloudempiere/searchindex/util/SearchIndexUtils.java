@@ -39,7 +39,7 @@ import org.compiere.util.CLogger;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
 
-import com.cloudempiere.searchindex.event.pojo.SearchIndexTableConfigSimple;
+import com.cloudempiere.searchindex.event.pojo.IndexedTable;
 import com.cloudempiere.searchindex.indexprovider.ISearchIndexProvider;
 import com.cloudempiere.searchindex.indexprovider.SearchIndexProviderFactory;
 import com.cloudempiere.searchindex.model.MSearchIndexProvider;
@@ -148,8 +148,8 @@ public class SearchIndexUtils {
 	 * @param clientId
 	 * @return
 	 */
-	public static Set<SearchIndexTableConfigSimple> getIndexedTableNames(String trxName, int clientId) {
-	    StringBuilder sql = new StringBuilder("SELECT sit.AD_SearchIndex_ID, t.tablename, mt.tablename, si.SearchIndexName ")
+	public static Set<IndexedTable> getSearchIndexConfigs(String trxName, int clientId) {
+	    StringBuilder sql = new StringBuilder("SELECT sit.AD_SearchIndex_ID, t.TableName, mt.TableName, sit.WhereClause, si.SearchIndexName, sic.AD_Column_ID ")
 	    	.append("FROM AD_SearchIndexColumn sic ")
 	        .append("JOIN AD_SearchIndexTable sit ON sic.AD_SearchIndexTable_ID = sit.AD_SearchIndexTable_ID ")
 	        .append("JOIN AD_SearchIndex si ON si.AD_SearchIndex_ID = sit.AD_SearchIndex_ID ")
@@ -161,7 +161,7 @@ public class SearchIndexUtils {
 
 	    PreparedStatement pstmt = null;
 	    ResultSet rs = null;
-	    Set<SearchIndexTableConfigSimple> tableConfigs = new HashSet<>();
+	    Set<IndexedTable> indexedTables = new HashSet<>();
 	    try {
 	        pstmt = DB.prepareStatement(sql.toString(), trxName);
 	        if(clientId >= 0)
@@ -171,18 +171,23 @@ public class SearchIndexUtils {
 	        	int searchIndexId = rs.getInt(1);
 	        	String fkTableName = rs.getString(2);
 	        	String mainTableName = rs.getString(3);
-	        	String searchIndexName = rs.getString(4);
+	        	String whereClause = rs.getString(4);
+	        	String searchIndexName = rs.getString(5);
+	        	int columnId = rs.getInt(6); // FIXME not working for lookup references - e.g. C_BPartner_ID
 	        	
-	        	SearchIndexTableConfigSimple tableConfig = tableConfigs.stream()
+	        	IndexedTable indexedTable = indexedTables.stream()
 	                .filter(config -> (config.getSearchIndexId() == searchIndexId && config.getTableName().equals(mainTableName)))
 	                .findFirst()
 	                .orElseGet(() -> {
-	                	SearchIndexTableConfigSimple newConfig = new SearchIndexTableConfigSimple(searchIndexId, searchIndexName, mainTableName);
-	                	tableConfigs.add(newConfig);
-	                    return newConfig;
+	                	IndexedTable newIndexedTable = new IndexedTable(searchIndexId, searchIndexName, mainTableName, whereClause);
+	                	indexedTables.add(newIndexedTable);
+	                    return newIndexedTable;
 	                });
+	        	
 	        	if (!mainTableName.equals(fkTableName))
-	        		tableConfig.addFKTableName(fkTableName);
+	        		indexedTable.addFKTableName(fkTableName);
+	        	
+	        	indexedTable.addColumnId(columnId);
 	        }
 	    } catch (Exception e) {
 	        log.log(Level.SEVERE, sql.toString(), e);
@@ -192,7 +197,7 @@ public class SearchIndexUtils {
 	        pstmt = null;
 	    }
 
-	    return tableConfigs;
+	    return indexedTables;
 	}
 }
 

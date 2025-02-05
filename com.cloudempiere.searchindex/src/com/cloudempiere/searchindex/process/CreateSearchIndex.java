@@ -30,6 +30,7 @@ import org.adempiere.exceptions.AdempiereException;
 import org.adempiere.exceptions.FillMandatoryException;
 import org.compiere.process.ProcessInfoParameter;
 import org.compiere.process.SvrProcess;
+import org.compiere.util.DB;
 import org.compiere.util.Msg;
 
 import com.cloudempiere.searchindex.indexprovider.ISearchIndexProvider;
@@ -39,7 +40,10 @@ import com.cloudempiere.searchindex.util.pojo.SearchIndexData;
 
 public class CreateSearchIndex extends SvrProcess {
 	
-	protected int p_AD_SearchIndexProvider_ID = 0;
+	/** Search Index Provider */
+	protected int p_AD_SearchIndexProvider_ID = -1;
+	/** Search Index */
+	protected int p_AD_SearchIndex_ID = -1;
 	
 	@Override
 	protected void prepare() {
@@ -51,6 +55,8 @@ public class CreateSearchIndex extends SvrProcess {
 				;
 			else if (name.equals("AD_SearchIndexProvider_ID"))
 				p_AD_SearchIndexProvider_ID = para[i].getParameterAsInt();
+			else if (name.equals("AD_SearchIndex_ID"))
+				p_AD_SearchIndex_ID = para[i].getParameterAsInt();
 			else
 				log.log(Level.SEVERE, "Unknown Parameter: " + name);
 		}
@@ -74,13 +80,22 @@ public class CreateSearchIndex extends SvrProcess {
 		SearchIndexConfigBuilder builder = new SearchIndexConfigBuilder()
 				.setCtx(getCtx())
 				.setTrxName(get_TrxName())
+				.setAD_SearchIndexProvider_ID(p_AD_SearchIndexProvider_ID)
+				.setAD_SearchIndex_ID(p_AD_SearchIndex_ID) // optional
 				.build();
 		Map<Integer, Set<SearchIndexData>> indexRecordsMap = builder.getData(false); // key is AD_SearchIndex_ID
 		if(indexRecordsMap.size() <= 0)
 	    	return Msg.getMsg(getCtx(), "NoRecordsFound");
 	    
-		// Create index
+		// Recreate index
 	    provider.reCreateIndex(getCtx(), indexRecordsMap, get_TrxName());
+	    
+	    // Set Search Index definitions as valid
+	    for (Map.Entry<Integer, Set<SearchIndexData>> searchIndexRecord : indexRecordsMap.entrySet()) {
+	    	int searchIndexId = searchIndexRecord.getKey();
+				String sql = "UPDATE AD_SearchIndex SET IsValid='Y' WHERE AD_SearchIndex_ID=?";
+				DB.executeUpdateEx(sql, new Object[] {searchIndexId}, get_TrxName());
+	    }
 		
 		return Msg.getMsg(getCtx(), "Success"); // FIXME no error message
 	}

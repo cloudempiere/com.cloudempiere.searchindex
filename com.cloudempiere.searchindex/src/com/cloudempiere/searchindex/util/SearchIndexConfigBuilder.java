@@ -36,6 +36,8 @@ public class SearchIndexConfigBuilder {
 	private Properties ctx = null;
 	/** Transaction Name */
 	private String trxName = null;
+	/** AD_SearchIndexProvider_ID */
+	private int searchIndexProviderId = -1;
 	/** AD_SearchIndex_ID */
 	private int searchIndexId = -1;
 	/** AD_Table_ID */
@@ -68,11 +70,21 @@ public class SearchIndexConfigBuilder {
 	}
 
 	/**
+	 * Set Search Index Provider ID
+	 * @param searchIndexId - AD_SearchIndexProvider_ID
+	 * @return
+	 */
+	public SearchIndexConfigBuilder setAD_SearchIndexProvider_ID(int searchIndexProviderId) {
+		this.searchIndexProviderId = searchIndexProviderId;
+		return this;
+	}
+	
+	/**
 	 * Set Search Index ID
 	 * @param searchIndexId - AD_SearchIndex_ID
 	 * @return
 	 */
-	public SearchIndexConfigBuilder setSearchIndexId(int searchIndexId) {
+	public SearchIndexConfigBuilder setAD_SearchIndex_ID(int searchIndexId) {
 		this.searchIndexId = searchIndexId;
 		return this;
 	}
@@ -157,6 +169,10 @@ public class SearchIndexConfigBuilder {
 	    if (searchIndexId > 0) {
 	    	sql.append(" AND si.AD_SearchIndex_ID = ? ");
 	    	params.add(searchIndexId);
+	    }
+	    if (searchIndexProviderId > 0) {
+	    	sql.append(" AND si.AD_SearchIndexProvider_ID = ?");
+	    	params.add(searchIndexProviderId);
 	    }
 	
 	    PreparedStatement pstmt = null;
@@ -245,9 +261,9 @@ public class SearchIndexConfigBuilder {
             		continue;
             	
                 StringBuilder fromClauseBuilder = new StringBuilder();
-                fromClauseBuilder.append(" FROM ").append(tableConfig.getTableName()).append(" main");
+                fromClauseBuilder.append(" FROM ").append(tableConfig.getTableName());
                 StringBuilder selectClauseBuilder = new StringBuilder();
-                selectClauseBuilder.append("SELECT ").append("main.").append(tableConfig.getKeyColName()).append(" as Record_ID, ");
+                selectClauseBuilder.append("SELECT ").append(tableConfig.getTableName()).append(".").append(tableConfig.getKeyColName()).append(" as Record_ID, ");
 
                 Set<String> joinedTables = new HashSet<>();
 
@@ -255,7 +271,7 @@ public class SearchIndexConfigBuilder {
                     String columnAlias = columnConfig.getTableName() + "_" + columnConfig.getColumnName();
                     if (columnConfig.getTableId() == tableConfig.getTableId()) {
                         if (!Util.isEmpty(columnConfig.getColumnName())) {
-                            selectClauseBuilder.append("main.").append(columnConfig.getColumnName()).append(" as ").append(columnAlias);
+                            selectClauseBuilder.append(tableConfig.getTableName()).append(".").append(columnConfig.getColumnName()).append(" as ").append(columnAlias);
                         }
                     } else {
                         if (!Util.isEmpty(columnConfig.getTableName()) && !Util.isEmpty(columnConfig.getColumnName())) {
@@ -266,7 +282,7 @@ public class SearchIndexConfigBuilder {
                             if (!Util.isEmpty(columnConfig.getParentTableName()) && !tableConfig.getTableName().equals(columnConfig.getParentTableName())) {
                                 fromClauseBuilder.append(columnConfig.getParentTableName());
                             } else {
-                                fromClauseBuilder.append("main");
+                                fromClauseBuilder.append(tableConfig.getTableName());
                             }
                             fromClauseBuilder.append(".").append(columnConfig.getParentColumnName());
                             fromClauseBuilder.append(" = ").append(columnConfig.getTableName()).append(".").append(columnConfig.getColumnName());
@@ -281,7 +297,7 @@ public class SearchIndexConfigBuilder {
 
                 StringBuilder whereClauseBuilder = new StringBuilder();
                 List<Object> params = new ArrayList<>();
-                whereClauseBuilder.append(" WHERE main.AD_Client_ID = ? AND main.IsActive = 'Y' ");
+                whereClauseBuilder.append(" WHERE ").append(tableConfig.getTableName()).append(".AD_Client_ID = ? AND ").append(tableConfig.getTableName()).append(".IsActive = 'Y' ");
                 params.add(Env.getAD_Client_ID(ctx));
                 String dynamicWhere = tableConfig.getSqlWhere();
                 if (!Util.isEmpty(dynamicWhere)) {
@@ -292,7 +308,7 @@ public class SearchIndexConfigBuilder {
                     whereClauseBuilder.append(" ");
                 }
                 if (recordId > 0) {
-                	whereClauseBuilder.append(" AND main.").append(tableConfig.getKeyColName()).append(" = ? ");
+                	whereClauseBuilder.append(" AND ").append(tableConfig.getTableName()).append(".").append(tableConfig.getKeyColName()).append(" = ? ");
                 	params.add(recordId);
                 }
 
@@ -323,6 +339,7 @@ public class SearchIndexConfigBuilder {
                     }
                 } catch (Exception e) {
                     log.log(Level.SEVERE, query, e);
+                    throw new AdempiereException(e.getMessage());
                 } finally {
                     DB.close(rs, pstmt);
                 }
