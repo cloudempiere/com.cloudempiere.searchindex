@@ -35,6 +35,10 @@ public interface ISearchResult {
 	
 	void setRecord_ID(int Record_ID);
 	
+	double getRank();
+	
+	void setRank(double rank);
+	
 	String getHtmlHeadline();
 	
 	void setHtmlHeadline(String htmlHeadline);

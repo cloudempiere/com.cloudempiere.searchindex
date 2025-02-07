@@ -241,17 +241,20 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 			while (rs.next()) {
 				int AD_Table_ID = rs.getInt(1);
 				int recordID = rs.getInt(2);
+				double rank = rs.getDouble(3);
 				
-				int AD_Window_ID = Env.getZoomWindowID(AD_Table_ID, recordID);
-				
-				if (AD_Window_ID > 0 && role.getWindowAccess(AD_Window_ID) == null)
-					continue;
-				if (AD_Window_ID > 0 && !role.isRecordAccess(AD_Table_ID, recordID, true))
-					continue;
+				// FIXME: uncomment and discuss
+//				int AD_Window_ID = Env.getZoomWindowID(AD_Table_ID, recordID);
+//				
+//				if (AD_Window_ID > 0 && role.getWindowAccess(AD_Window_ID) == null)
+//					continue;
+//				if (AD_Window_ID > 0 && !role.isRecordAccess(AD_Table_ID, recordID, true))
+//					continue;
 				
 				result = new PGTextSearchResult();
 				result.setAD_Table_ID(AD_Table_ID);
 				result.setRecord_ID(recordID);
+				result.setRank(rank);
 				results.add(result);
 
 				if (i < 10) {

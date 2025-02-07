@@ -96,6 +96,23 @@ public class MSearchIndex extends X_AD_SearchIndex implements ImmutablePOSupport
 		s_cache.put(AD_SearchIndex_ID, searchIndex);
 		return searchIndex;
 	}
+	
+	/**
+	 * Get search index by Transaction Code
+	 * @param ctx
+	 * @param transactionCode
+	 * @param trxName
+	 * @return
+	 */
+	public static MSearchIndex get(Properties ctx, String transactionCode, String trxName) {
+		if (transactionCode == null)
+			return null;
+		return new Query(ctx, Table_Name, COLUMNNAME_TransactionCode+"=?", trxName)
+				.setParameters(transactionCode)
+				.setClient_ID()
+				.setOnlyActiveRecords(true)
+				.first(); // TransactionCode should be unique
+	}
 
 	/**
 	 * Get search index by client
@@ -203,6 +220,18 @@ public class MSearchIndex extends X_AD_SearchIndex implements ImmutablePOSupport
 		StringBuilder sql = new StringBuilder("SELECT 1 FROM ").append(indexTableName)
 				.append(" WHERE AD_Client_ID=? AND AD_Table_ID=?");
 		return DB.getSQLValue(trxName, sql.toString(), clientId, tableId) > 0;
+	}
+	
+	/**
+	 * Get AD_SearchIndexProvider_ID by transaction code
+	 * @param ctx
+	 * @param searchIndexName
+	 * @param trxName
+	 * @return
+	 */
+	public static int getAD_SearchIndexProvider_ID(Properties ctx, String searchIndexName, String trxName) {
+		String sql = "SELECT AD_SearchIndexProvider_ID FROM AD_SearchIndex WHERE SearchIndexName=? AND IsActive='Y' AND AD_Client_ID = IN(0, ?)";
+		return DB.getSQLValue(trxName, sql, searchIndexName, Env.getAD_Client_ID(ctx));
 	}
 
 	@Override

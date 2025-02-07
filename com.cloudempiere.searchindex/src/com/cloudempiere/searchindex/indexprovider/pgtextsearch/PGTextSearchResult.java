@@ -35,6 +35,7 @@ public class PGTextSearchResult implements ISearchResult {
 	
 	private int AD_Table_ID;
 	private int Record_ID;
+	private double rank;
 	private String htmlHeadline;
 	
 	@Override
@@ -55,6 +56,16 @@ public class PGTextSearchResult implements ISearchResult {
 	@Override
 	public void setRecord_ID(int Record_ID) {
 		this.Record_ID = Record_ID;
+	}
+	
+	@Override
+	public double getRank() {
+		return rank;
+	}
+	
+	@Override
+	public void setRank(double rank) {
+		this.rank = rank;
 	}
 	
 	@Override
