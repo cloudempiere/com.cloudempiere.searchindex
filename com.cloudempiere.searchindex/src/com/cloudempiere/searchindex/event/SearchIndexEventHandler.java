@@ -29,6 +29,7 @@ import org.adempiere.base.event.AbstractEventHandler;
 import org.adempiere.base.event.IEventManager;
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.model.GenericPO;
+import org.compiere.model.MSysConfig;
 import org.compiere.model.MTable;
 import org.compiere.model.PO;
 import org.compiere.model.Query;
@@ -96,9 +97,13 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 	@Override
 	protected void doHandleEvent(Event event) {
 
+		ctx = Env.getCtx();
+		
+		if (!MSysConfig.getBooleanValue(MSysConfig.ALLOW_SEARCH_INDEX_EVENT, false, Env.getAD_Client_ID(ctx)))
+			return;
+		
 		String type = event.getTopic();
 		PO eventPO = getPO(event);
-		ctx = Env.getCtx();
 		trxName = eventPO.get_TrxName();
 		
 		if (eventPO instanceof MSearchIndex
