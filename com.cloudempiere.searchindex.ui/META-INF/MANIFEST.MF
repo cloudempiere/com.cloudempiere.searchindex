@@ -1,0 +1,12 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: SearchIndexUI
+Bundle-SymbolicName: com.cloudempiere.searchindex.ui
+Bundle-Version: 10.0.0.qualifier
+Fragment-Host: org.adempiere.ui.zk
+Bundle-RequiredExecutionEnvironment: JavaSE-11
+Require-Bundle: org.adempiere.plugin.utils;bundle-version="10.0.0",
+ com.cloudempiere.searchindex;bundle-version="10.0.0"
+Export-Package: com.cloudempiere.searchindex.ui.dashboard
+Bundle-ClassPath: zul/,
+ .
