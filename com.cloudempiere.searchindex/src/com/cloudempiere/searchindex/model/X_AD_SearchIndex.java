@@ -31,7 +31,7 @@ public class X_AD_SearchIndex extends PO implements I_AD_SearchIndex, I_Persiste
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = 20250204L;
+	private static final long serialVersionUID = 20250210L;
 
     /** Standard Constructor */
     public X_AD_SearchIndex (Properties ctx, int AD_SearchIndex_ID, String trxName)
@@ -106,21 +106,6 @@ public class X_AD_SearchIndex extends PO implements I_AD_SearchIndex, I_Persiste
 		return ii.intValue();
 	}
 
-	/** Set AD_SearchIndex_UU.
-		@param AD_SearchIndex_UU AD_SearchIndex_UU
-	*/
-	public void setAD_SearchIndex_UU (String AD_SearchIndex_UU)
-	{
-		set_ValueNoCheck (COLUMNNAME_AD_SearchIndex_UU, AD_SearchIndex_UU);
-	}
-
-	/** Get AD_SearchIndex_UU.
-		@return AD_SearchIndex_UU	  */
-	public String getAD_SearchIndex_UU()
-	{
-		return (String)get_Value(COLUMNNAME_AD_SearchIndex_UU);
-	}
-
 	public I_AD_SearchIndexProvider getAD_SearchIndexProvider() throws RuntimeException
 	{
 		return (I_AD_SearchIndexProvider)MTable.get(getCtx(), I_AD_SearchIndexProvider.Table_ID)
@@ -146,6 +131,21 @@ public class X_AD_SearchIndex extends PO implements I_AD_SearchIndex, I_Persiste
 		if (ii == null)
 			 return 0;
 		return ii.intValue();
+	}
+
+	/** Set AD_SearchIndex_UU.
+		@param AD_SearchIndex_UU AD_SearchIndex_UU
+	*/
+	public void setAD_SearchIndex_UU (String AD_SearchIndex_UU)
+	{
+		set_ValueNoCheck (COLUMNNAME_AD_SearchIndex_UU, AD_SearchIndex_UU);
+	}
+
+	/** Get AD_SearchIndex_UU.
+		@return AD_SearchIndex_UU	  */
+	public String getAD_SearchIndex_UU()
+	{
+		return (String)get_Value(COLUMNNAME_AD_SearchIndex_UU);
 	}
 
 	/** Set Description.
