@@ -31,7 +31,7 @@ public class X_AD_SearchIndexColumn extends PO implements I_AD_SearchIndexColumn
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = 20250129L;
+	private static final long serialVersionUID = 20250210L;
 
     /** Standard Constructor */
     public X_AD_SearchIndexColumn (Properties ctx, int AD_SearchIndexColumn_ID, String trxName)
