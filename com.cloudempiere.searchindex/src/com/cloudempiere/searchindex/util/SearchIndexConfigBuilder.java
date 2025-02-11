@@ -161,7 +161,7 @@ public class SearchIndexConfigBuilder {
 	       .append("JOIN AD_Table tbl ON (sic.AD_Table_ID = tbl.AD_Table_ID) ")
 	       .append("JOIN AD_Column col ON (sic.AD_Column_ID = col.AD_Column_ID) ")
 	       .append("LEFT JOIN AD_Column parentCol ON (sic.Parent_Column_ID = parentCol.AD_Column_ID) ")
-	       .append("WHERE si.IsActive = 'Y' AND si.AD_Client_ID = ?");
+	       .append("WHERE si.IsActive = 'Y' AND si.AD_Client_ID IN (?,0)");
 	    
 	    List<Object> params = new ArrayList<>();
 	    params.add(Env.getAD_Client_ID(ctx));

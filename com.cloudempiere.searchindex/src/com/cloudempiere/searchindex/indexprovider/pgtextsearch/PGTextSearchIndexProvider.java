@@ -142,7 +142,7 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 		int i = 0;
 		for (String tableName : tables) {
 			String sql = "TRUNCATE TABLE " + tableName + " RESTART IDENTITY";
-			DB.executeUpdate(sql, trxName);
+			DB.executeUpdateEx(sql, trxName);
 			updateProcessUIStatus("Deleted " + i + "/" + tables.size()); // TODO translate
 			i++;
 		}
@@ -160,7 +160,7 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
     				sql = "TRUNCATE TABLE " + tableName + " RESTART IDENTITY";
     			else
     				sql = "DELETE FROM " + tableName + " WHERE " + query;
-    			DB.executeUpdate(sql, params, false, trxName, 0);
+    			DB.executeUpdateEx(sql, params, trxName);
     			updateProcessUIStatus("Deleted " + i + "/" + tables.size()); // TODO translate
     			i++;
     		}
@@ -170,7 +170,7 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 				sql = "TRUNCATE TABLE " + searchIndexName + " RESTART IDENTITY";
 			else
 				sql = "DELETE FROM " + searchIndexName + " WHERE " + query;
-	        DB.executeUpdate(sql, params, false, trxName, 0);
+	        DB.executeUpdateEx(sql, params, trxName);
     	}
     }
 	
