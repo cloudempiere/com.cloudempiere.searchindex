@@ -107,9 +107,8 @@ public class MSearchIndex extends X_AD_SearchIndex implements ImmutablePOSupport
 	public static MSearchIndex get(Properties ctx, String transactionCode, String trxName) {
 		if (transactionCode == null)
 			return null;
-		return new Query(ctx, Table_Name, COLUMNNAME_TransactionCode+"=?", trxName)
-				.setParameters(transactionCode)
-				.setClient_ID()
+		return new Query(ctx, Table_Name, COLUMNNAME_TransactionCode+"=? AND "+COLUMNNAME_AD_Client_ID+" IN (?,0)", trxName)
+				.setParameters(transactionCode, Env.getAD_Client_ID(ctx))
 				.setOnlyActiveRecords(true)
 				.first(); // TransactionCode should be unique
 	}

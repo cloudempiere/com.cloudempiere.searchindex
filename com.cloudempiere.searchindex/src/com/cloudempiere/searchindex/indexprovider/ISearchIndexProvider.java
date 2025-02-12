@@ -100,7 +100,7 @@ public interface ISearchIndexProvider
 	 * @param trxName
 	 * @return
 	 */
-	public List<ISearchResult> getSearchResults(Properties ctx, String searchIndexName, String queryString, boolean isAdvanced, String trxName);
+	public List<ISearchResult> getSearchResults(Properties ctx, String searchIndexName, String queryString, boolean isAdvanced, SearchType searchType, String trxName);
 	
 	/**
 	 * Get search results
@@ -125,5 +125,13 @@ public interface ISearchIndexProvider
 	 * @return
 	 */
 	public int getAD_SearchIndexProvider_ID();
+	
+	/**
+	 * Search type
+	 */
+	public enum SearchType {
+	    TS_RANK,
+	    POSITION
+	}
 	
 }

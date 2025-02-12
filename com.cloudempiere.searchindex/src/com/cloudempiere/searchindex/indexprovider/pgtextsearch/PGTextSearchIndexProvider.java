@@ -180,99 +180,109 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 		createIndex(ctx, indexRecordsMap, trxName);
 	}
 
-	@Override
-	public List<ISearchResult> getSearchResults(Properties ctx, String searchIndexName, String query, boolean isAdvanced, String trxName) {
-		ArrayList<ISearchResult> results = new ArrayList<>();
-		indexQuery.clear();
+    @Override
+    public List<ISearchResult> getSearchResults(Properties ctx, String searchIndexName, String query, boolean isAdvanced, SearchType searchType, String trxName) {
+        ArrayList<ISearchResult> results = new ArrayList<>();
+        indexQuery.clear();
 
-		StringBuilder sql = new StringBuilder();
-		List<String> tablesToSearch = new ArrayList<>();
-		List<Object> params = new ArrayList<>();
-		
-		String tsConfig = getTSConfig(ctx, trxName);
-		int clientId = Env.getAD_Client_ID(ctx);
+        StringBuilder sql = new StringBuilder();
+        List<String> tablesToSearch = new ArrayList<>();
+        List<Object> params = new ArrayList<>();
 
-		if (Util.isEmpty(searchIndexName)) {
-			tablesToSearch.addAll(getAllSearchIndexTables(ctx, trxName));
-		} else {
-			tablesToSearch.add(searchIndexName);
-		}
+        String tsConfig = getTSConfig(ctx, trxName);
+        int clientId = Env.getAD_Client_ID(ctx);
 
-		for (int i = 0; i < tablesToSearch.size(); i++) {
-			String tableName = tablesToSearch.get(i);
-			sql.append("SELECT DISTINCT ad_table_id, record_id, ts_rank(idx_tsvector, to_tsquery(?::regconfig, ?::text)) as rank ");
-			sql.append("FROM ");
-			sql.append(tableName);
-			sql.append(" WHERE idx_tsvector @@ ");
-			params.add(tsConfig);
-			params.add(isAdvanced ? convertQueryString(query) : query.replace(" ", " & "));			
+        if (Util.isEmpty(searchIndexName)) {
+            tablesToSearch.addAll(getAllSearchIndexTables(ctx, trxName));
+        } else {
+            tablesToSearch.add(searchIndexName);
+        }
 
-			params.add(tsConfig);
-			if (isAdvanced) {
-				sql.append("to_tsquery(?::regconfig, ?::text) ");
-				params.add(convertQueryString(query));
-			} else {
-				sql.append("plainto_tsquery(?::regconfig, ?::text) ");
-				params.add(query.replace(" ", " & "));
-			}
+        for (int i = 0; i < tablesToSearch.size(); i++) {
+            String tableName = tablesToSearch.get(i);
+            sql.append("SELECT DISTINCT ad_table_id, record_id, ");
+            if (searchType == SearchType.TS_RANK) {
+                sql.append("ts_rank(idx_tsvector, to_tsquery(?::regconfig, ?::text)) as rank ");
+                params.add(tsConfig);
+                params.add(isAdvanced ? convertQueryString(query) : query.replace(" ", " & "));
+            } else if (searchType == SearchType.POSITION) {
+                String regexQuery = isAdvanced ? convertQueryString(query).replace("&", ".").replace(":*", ".*") : query.replace(":*", ".*");
+                sql.append("(regexp_match(idx_tsvector::text, '." + regexQuery + ".:(\\d+)'))[1]::int as position ");
+            }
+            sql.append("FROM ");
+            sql.append(tableName);
+            sql.append(" WHERE idx_tsvector @@ ");
+            
+            params.add(tsConfig);
+            if (isAdvanced) {
+                sql.append("to_tsquery(?::regconfig, ?::text) ");
+                params.add(convertQueryString(query));
+            } else {
+                sql.append("plainto_tsquery(?::regconfig, ?::text) ");
+                params.add(query.replace(" ", " & "));
+            }
 
-			sql.append("AND AD_CLIENT_ID IN (0,?) ");
-			params.add(clientId);
-			
-			sql.append("ORDER BY rank DESC ");
+            sql.append("AND AD_CLIENT_ID IN (0,?) ");
+            params.add(clientId);
 
-			if (i < tablesToSearch.size() - 1) {
-				sql.append(" UNION ");
-			}
-		}
+            if (searchType == SearchType.TS_RANK) {
+                sql.append("ORDER BY rank DESC ");
+            } else if (searchType == SearchType.POSITION) {
+                sql.append("ORDER BY position ASC ");
+            }
 
-		MRole role = MRole.getDefault(ctx, false);
-		PreparedStatement pstmt = null;
-		ResultSet rs = null;
-		try {
-			pstmt = DB.prepareStatement(sql.toString(), trxName);
-			for (int i = 0; i < params.size(); i++) {
-				pstmt.setObject(i + 1, params.get(i));
-			}
-			rs = pstmt.executeQuery();
+            if (i < tablesToSearch.size() - 1) {
+                sql.append(" UNION ");
+            }
+        }
 
-			PGTextSearchResult result = null;
-			int i = 0;
-			while (rs.next()) {
-				int AD_Table_ID = rs.getInt(1);
-				int recordID = rs.getInt(2);
-				double rank = rs.getDouble(3);
-				
-				// FIXME: uncomment and discuss
-//				int AD_Window_ID = Env.getZoomWindowID(AD_Table_ID, recordID);
-//				
-//				if (AD_Window_ID > 0 && role.getWindowAccess(AD_Window_ID) == null)
-//					continue;
-//				if (AD_Window_ID > 0 && !role.isRecordAccess(AD_Table_ID, recordID, true))
-//					continue;
-				
-				result = new PGTextSearchResult();
-				result.setAD_Table_ID(AD_Table_ID);
-				result.setRecord_ID(recordID);
-				result.setRank(rank);
-				results.add(result);
+        MRole role = MRole.getDefault(ctx, false);
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            pstmt = DB.prepareStatement(sql.toString(), trxName);
+            for (int i = 0; i < params.size(); i++) {
+                pstmt.setObject(i + 1, params.get(i));
+            }
+            rs = pstmt.executeQuery();
 
-				if (i < 10) {
-					setHeadline(ctx, result, query, trxName);
-				}
-				i++;
-			}
-		} catch (Exception e) {
-			log.log(Level.SEVERE, sql.toString(), e);
-		} finally {
-			DB.close(rs, pstmt);
-			rs = null;
-			pstmt = null;
-		}
+            PGTextSearchResult result = null;
+            int i = 0;
+            while (rs.next()) {
+                int AD_Table_ID = rs.getInt(1);
+                int recordID = rs.getInt(2);
+                double rank = rs.getDouble(3);
 
-		return results;
-	}
-    
+                // FIXME: uncomment and discuss
+//                int AD_Window_ID = Env.getZoomWindowID(AD_Table_ID, recordID);
+//                
+//                if (AD_Window_ID > 0 && role.getWindowAccess(AD_Window_ID) == null)
+//                    continue;
+//                if (AD_Window_ID > 0 && !role.isRecordAccess(AD_Table_ID, recordID, true))
+//                    continue;
+
+                result = new PGTextSearchResult();
+                result.setAD_Table_ID(AD_Table_ID);
+                result.setRecord_ID(recordID);
+                result.setRank(rank);
+                results.add(result);
+
+                if (i < 10) {
+                    setHeadline(ctx, result, query, trxName);
+                }
+                i++;
+            }
+        } catch (Exception e) {
+            log.log(Level.SEVERE, sql.toString(), e);
+        } finally {
+            DB.close(rs, pstmt);
+            rs = null;
+            pstmt = null;
+        }
+
+        return results;
+    }
+
     @Override
 	public void setHeadline(Properties ctx, ISearchResult result, String query, String trxName) { // TODO validate if this method must be in the SearchIndexProvider interface
 		
