@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
-import org.compiere.model.MTable;
 import org.compiere.model.PO;
 import org.compiere.model.Query;
 import org.compiere.util.DB;
@@ -128,22 +127,22 @@ public class MSearchIndex extends X_AD_SearchIndex implements ImmutablePOSupport
 	}
 	
 	public static MSearchIndex[] getForTable(Properties ctx, PO po, PO eventPO, Set<IndexedTable> indexedTables, String trxName) {
-		return getIfIndexedColumnChanged(ctx, po, eventPO, false, indexedTables, trxName);
+		return get(ctx, po, eventPO, false, indexedTables, trxName);
 	}
 	
 	public static MSearchIndex[] getForRecord(Properties ctx, PO po, PO eventPO, Set<IndexedTable> indexedTables, String trxName) {
-		return getIfIndexedColumnChanged(ctx, po, eventPO, true, indexedTables, trxName);
+		return get(ctx, po, eventPO, true, indexedTables, trxName);
 	}
 	
 	/**
-	 * Get AD_SearchIndex for a PO record, if an indexed column changed
+	 * Get AD_SearchIndex for a PO record
 	 * @param ctx
 	 * @param po
 	 * @param indexedTables
 	 * @param trxName
 	 * @return
 	 */
-	private static MSearchIndex[] getIfIndexedColumnChanged(Properties ctx, PO po, PO eventPO, boolean isRecordLevel, Set<IndexedTable> indexedTables, String trxName) {
+	private static MSearchIndex[] get(Properties ctx, PO po, PO eventPO, boolean isRecordLevel, Set<IndexedTable> indexedTables, String trxName) {
 		if (po instanceof MSearchIndex) {
 			return new MSearchIndex[] { (MSearchIndex) po };
 			
@@ -159,26 +158,8 @@ public class MSearchIndex extends X_AD_SearchIndex implements ImmutablePOSupport
 			if (indexedTables == null || indexedTables.isEmpty())
 				indexedTables = SearchIndexUtils.getSearchIndexConfigs(trxName, Env.getAD_Client_ID(ctx));
 			
-			MTable mTableEvt = MTable.get(ctx, eventPO.get_Table_ID(), trxName);
-			Set<Integer> changedColumnIDs = new HashSet<>();
-			
-			for (int columnId : mTableEvt.getColumnIDs(false)) {
-				if (eventPO.is_ValueChanged_byId(columnId))
-					changedColumnIDs.add(columnId);
-			}
-			
 			Set<MSearchIndex> searchIndexSet = new HashSet<>();
 			for (IndexedTable searchIndexConfig : indexedTables) {
-				boolean containsChangedColumn = false;
-				for (int changedColId : changedColumnIDs) {
-					if (searchIndexConfig.getColumnIDs().contains(Integer.valueOf(changedColId))) {
-						containsChangedColumn = true;
-						break;
-					}
-				}
-				if (!containsChangedColumn)
-					continue;
-				
 				if (isRecordLevel) {
 					int recordId = po.get_ID() > 0 ? po.get_ID() : po.get_IDOld();
 					if (containsRecord(ctx, po.getAD_Client_ID(), po.get_Table_ID(), recordId, searchIndexConfig.getSearchIndexName(), trxName))

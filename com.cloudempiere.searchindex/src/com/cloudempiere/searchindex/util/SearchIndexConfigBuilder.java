@@ -16,6 +16,7 @@ import org.adempiere.exceptions.AdempiereException;
 import org.compiere.model.MLookup;
 import org.compiere.model.MLookupFactory;
 import org.compiere.model.MLookupInfo;
+import org.compiere.util.CCache;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
@@ -31,6 +32,8 @@ public class SearchIndexConfigBuilder {
 	
 	/** Logger */
 	private static final CLogger log = CLogger.getCLogger(SearchIndexConfigBuilder.class);
+	/** Search Index Config Cache */
+	private static final CCache<Integer, List<SearchIndexConfig>> searchIndexConfigCache = new CCache<>("SearchIndexConfig", 50);
 
 	/** Context */
 	private Properties ctx = null;
@@ -136,6 +139,11 @@ public class SearchIndexConfigBuilder {
 	 */
 	protected void loadSearchIndexConfig() throws SQLException {
 
+		if (searchIndexConfigCache.containsKey(searchIndexId)) {
+			searchIndexConfigs = searchIndexConfigCache.get(searchIndexId);
+			return;
+		}
+
 	    StringBuilder sql = new StringBuilder();
 	    sql.append("SELECT ")
 	       .append("si.AD_SearchIndex_ID, ")
@@ -236,6 +244,7 @@ public class SearchIndexConfigBuilder {
 	                }
 	            }
 	        }
+	        searchIndexConfigCache.put(searchIndexId, searchIndexConfigs);
 	    } catch (Exception e) {
 	        log.log(Level.SEVERE, sql.toString(), e);
 	    } finally {
