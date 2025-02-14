@@ -123,7 +123,7 @@ public class SearchIndexUtils {
 	 */
 	public static Map<String, String> getTransactionCodesByClient(Properties ctx, int clientId, int searchIndexProviderId, String trxName) {
 		Map<String, String> transactionCodeMap = new HashMap<>();
-		String sql = "SELECT TransactionCode, SearchIndexName FROM AD_SearchIndex WHERE IsActive = 'Y' AND AD_Client_ID = ? AND AD_SearchIndexProvider_ID = ? ";
+		String sql = "SELECT TransactionCode, SearchIndexName FROM AD_SearchIndex WHERE IsActive = 'Y' AND AD_Client_ID IN (?,0) AND AD_SearchIndexProvider_ID = ? ";
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		try {

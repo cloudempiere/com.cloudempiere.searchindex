@@ -27,6 +27,7 @@ import java.util.Properties;
 
 import org.compiere.model.PO;
 import org.compiere.model.Query;
+import org.compiere.util.Env;
 import org.idempiere.cache.ImmutableIntPOCache;
 import org.idempiere.cache.ImmutablePOSupport;
 
@@ -97,7 +98,7 @@ public class MSearchIndexProvider extends X_AD_SearchIndexProvider implements Im
 	 * @return
 	 */
 	public static MSearchIndexProvider[] getByClient(Properties ctx, int clientId, String trxName) {
-		List<MSearchIndexProvider> list = new Query(ctx, Table_Name, COLUMNNAME_AD_Client_ID + "=?", trxName)
+		List<MSearchIndexProvider> list = new Query(ctx, Table_Name, COLUMNNAME_AD_Client_ID + " IN (?,0)", trxName)
 				.setParameters(clientId)
 				.list();
 		return list.toArray(new MSearchIndexProvider[list.size()]);
@@ -110,10 +111,10 @@ public class MSearchIndexProvider extends X_AD_SearchIndexProvider implements Im
 	 */
 	public static int getAD_SearchIndexProvider_ID(Properties ctx, String classname) {
 		StringBuilder whereClause = new StringBuilder(COLUMNNAME_Classname).append("=?");
+		whereClause.append(" AND ").append(COLUMNNAME_AD_Client_ID).append(" IN (?,0)");
 		return new Query(ctx, Table_Name, whereClause.toString(), null)
-				.setParameters(classname)
+				.setParameters(classname, Env.getAD_Client_ID(ctx))
 				.setOnlyActiveRecords(true)
-				.setClient_ID()
 				.firstId();
 	}
 

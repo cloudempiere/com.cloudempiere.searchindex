@@ -45,6 +45,7 @@ import org.zkoss.zul.Vlayout;
 import org.zkoss.zul.event.PagingEvent;
 
 import com.cloudempiere.searchindex.indexprovider.ISearchIndexProvider;
+import com.cloudempiere.searchindex.indexprovider.ISearchIndexProvider.SearchType;
 import com.cloudempiere.searchindex.model.MSearchIndexProvider;
 import com.cloudempiere.searchindex.ui.searchresult.ISearchResultRenderer;
 import com.cloudempiere.searchindex.util.ISearchResult;
@@ -185,7 +186,7 @@ public class ZkSearchIndexUI extends Div implements EventListener<Event> {
 
 			results = new ArrayList<>();
 			for(ISearchIndexProvider searchIndexProvider : searchIndexProviderList) {
-				results.addAll(searchIndexProvider.getSearchResults(ctx, searchIndexName, searchText, cbAdvancedSearch.isChecked(), null));
+				results.addAll(searchIndexProvider.getSearchResults(ctx, searchIndexName, searchText, cbAdvancedSearch.isChecked(), SearchType.POSITION, null)); // FIXME hardcoded search type
 			}
 
 			if (results.size() > 0) {

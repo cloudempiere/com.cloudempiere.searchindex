@@ -96,14 +96,10 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 
 	@Override
 	protected void doHandleEvent(Event event) {
-
-		ctx = Env.getCtx();
-		
-		if (!MSysConfig.getBooleanValue(MSysConfig.ALLOW_SEARCH_INDEX_EVENT, false, Env.getAD_Client_ID(ctx)))
-			return;
 		
 		String type = event.getTopic();
 		PO eventPO = getPO(event);
+		ctx = Env.getCtx();
 		trxName = eventPO.get_TrxName();
 		
 		if (eventPO instanceof MSearchIndex
@@ -113,6 +109,30 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 			handleSearchIndexConfigChange(eventPO);
 			return;
 		}
+		
+		if (!MSysConfig.getBooleanValue(MSysConfig.ALLOW_SEARCH_INDEX_EVENT, false, Env.getAD_Client_ID(ctx)))
+			return;
+		
+		// Check if changed column is indexed
+		MTable mTableEvt = MTable.get(ctx, eventPO.get_Table_ID(), trxName);
+		boolean updateIndex = false;
+		Set<Integer> changedColumnIDs = new HashSet<>();
+		for (int columnId : mTableEvt.getColumnIDs(false)) {
+			if (eventPO.is_ValueChanged_byId(columnId))
+				changedColumnIDs.add(columnId);
+		}
+		for (IndexedTable searchIndexConfig : indexedTables) {
+			for (int changedColId : changedColumnIDs) {
+				if (searchIndexConfig.getColumnIDs().contains(Integer.valueOf(changedColId))) {
+					updateIndex = true;
+					break;
+				}
+			}
+			if (updateIndex)
+				break;
+		}
+		if (!updateIndex)
+			return;
 		
 		PO[] mainPOArr = getMainPOs(eventPO, indexedTables);
 		MSearchIndex[] searchIndexArr;
