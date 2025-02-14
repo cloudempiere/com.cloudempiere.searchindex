@@ -74,7 +74,7 @@ public class ElasticSearchIndexProvider implements ISearchIndexProvider {
 
 	@Override
 	public List<ISearchResult> getSearchResults(Properties ctx, String searchIndexName, String queryString,
-			boolean isAdvanced, String trxName) {
+			boolean isAdvanced, SearchType searchType, String trxName) {
 		return null;
 	}
 
