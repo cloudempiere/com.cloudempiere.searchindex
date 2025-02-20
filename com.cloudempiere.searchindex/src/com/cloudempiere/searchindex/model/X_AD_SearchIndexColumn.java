@@ -17,9 +17,11 @@
 /** Generated Model - DO NOT CHANGE */
 package com.cloudempiere.searchindex.model;
 
+import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.util.Properties;
 import org.compiere.model.*;
+import org.compiere.util.Env;
 
 /** Generated Model for AD_SearchIndexColumn
  *  @author iDempiere (generated) 
@@ -31,7 +33,7 @@ public class X_AD_SearchIndexColumn extends PO implements I_AD_SearchIndexColumn
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = 20250210L;
+	private static final long serialVersionUID = 20250220L;
 
     /** Standard Constructor */
     public X_AD_SearchIndexColumn (Properties ctx, int AD_SearchIndexColumn_ID, String trxName)
@@ -306,5 +308,24 @@ public class X_AD_SearchIndexColumn extends PO implements I_AD_SearchIndexColumn
 		if (ii == null)
 			 return 0;
 		return ii.intValue();
+	}
+
+	/** Set Search Weight.
+		@param SearchWeight Weight of the Search Index Column (from 0 to 10)
+	*/
+	public void setSearchWeight (BigDecimal SearchWeight)
+	{
+		set_Value (COLUMNNAME_SearchWeight, SearchWeight);
+	}
+
+	/** Get Search Weight.
+		@return Weight of the Search Index Column (from 0 to 10)
+	  */
+	public BigDecimal getSearchWeight()
+	{
+		BigDecimal bd = (BigDecimal)get_Value(COLUMNNAME_SearchWeight);
+		if (bd == null)
+			 return Env.ZERO;
+		return bd;
 	}
 }

@@ -22,6 +22,8 @@
 **********************************************************************/
 package com.cloudempiere.searchindex.util.pojo;
 
+import java.math.BigDecimal;
+
 /**
  * Simplified class for AD_SearchIndexColumn
  */
@@ -41,8 +43,13 @@ public class SearchIndexColumnConfig {
 	private String parentColumnName;
 	/* Parent Column Name for foreign key */
 	private String parentTableName;
+	/* SearchWeight */
+	private BigDecimal searchWeight;
 
-    public SearchIndexColumnConfig(int tableId, String tableName, int columnId, String columnName, int parentColumnId, String parentColumnName, String parentTableName) {
+    public SearchIndexColumnConfig(int tableId, String tableName, int columnId, 
+    		String columnName, int parentColumnId, String parentColumnName, 
+    		String parentTableName, BigDecimal searchWeight) {
+    	
 		this.tableId = tableId;
 		this.tableName = tableName;
 		this.columnId = columnId;
@@ -50,6 +57,7 @@ public class SearchIndexColumnConfig {
 		this.parentColumnId = parentColumnId;
 		this.parentColumnName = parentColumnName;
 		this.parentTableName = parentTableName;
+		this.searchWeight = searchWeight;
     }
 
     public String getColumnName() {
@@ -106,6 +114,14 @@ public class SearchIndexColumnConfig {
 
 	public void setParentTableName(String parentTableName) {
 		this.parentTableName = parentTableName;
+	}
+	
+	public void setSearchWeight(BigDecimal searchWeight) {
+		this.searchWeight = searchWeight;
+	}
+	
+	public BigDecimal getSearchWeight() {
+		return searchWeight;
 	}
 
 }

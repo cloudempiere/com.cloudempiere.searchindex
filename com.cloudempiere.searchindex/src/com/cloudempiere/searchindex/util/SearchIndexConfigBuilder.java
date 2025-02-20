@@ -1,11 +1,13 @@
 package com.cloudempiere.searchindex.util;
 
+import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -24,9 +26,10 @@ import org.compiere.util.Msg;
 import org.compiere.util.Util;
 
 import com.cloudempiere.searchindex.util.pojo.SearchIndexColumnConfig;
+import com.cloudempiere.searchindex.util.pojo.SearchIndexColumnData;
 import com.cloudempiere.searchindex.util.pojo.SearchIndexConfig;
-import com.cloudempiere.searchindex.util.pojo.SearchIndexData;
 import com.cloudempiere.searchindex.util.pojo.SearchIndexTableConfig;
+import com.cloudempiere.searchindex.util.pojo.SearchIndexTableData;
 
 public class SearchIndexConfigBuilder {
 	
@@ -50,7 +53,7 @@ public class SearchIndexConfigBuilder {
 	/** Search Index Configs */
 	private List<SearchIndexConfig> searchIndexConfigs = new ArrayList<>();
 	/** Search Index Data - key is AD_SearchIndex_ID */
-	private Map<Integer, Set<SearchIndexData>> searchIndexData = new HashMap<>();
+	private Map<Integer, Set<SearchIndexTableData>> searchIndexData = new HashMap<>();
 
 	/**
 	 * Set Context
@@ -122,7 +125,7 @@ public class SearchIndexConfigBuilder {
 	 * Get Search Index Configs
 	 * @return
 	 */
-	public Map<Integer, Set<SearchIndexData>> getData(boolean forceReload) {
+	public Map<Integer, Set<SearchIndexTableData>> getData(boolean forceReload) {
 		if (forceReload) {
 			try {
 				loadSearchIndexData();
@@ -157,6 +160,7 @@ public class SearchIndexConfigBuilder {
 	       .append("col.IsParent, ")
 	       .append("sic.AD_Reference_ID, ")
 	       .append("sic.AD_Reference_Value_ID, ")
+	       .append("sic.SearchWeight, ")
 	       .append("parentCol.AD_Column_ID as AD_Column_ID_parent, ")
 	       .append("parentCol.ColumnName as ColumnName_parent, ")
 	       .append("si.SearchIndexName, ")
@@ -169,7 +173,7 @@ public class SearchIndexConfigBuilder {
 	       .append("JOIN AD_Table tbl ON (sic.AD_Table_ID = tbl.AD_Table_ID) ")
 	       .append("JOIN AD_Column col ON (sic.AD_Column_ID = col.AD_Column_ID) ")
 	       .append("LEFT JOIN AD_Column parentCol ON (sic.Parent_Column_ID = parentCol.AD_Column_ID) ")
-	       .append("WHERE si.IsActive = 'Y' AND si.AD_Client_ID IN (?,0)");
+	       .append("WHERE si.IsActive = 'Y' AND si.AD_Client_ID IN (?,0) ");
 	    
 	    List<Object> params = new ArrayList<>();
 	    params.add(Env.getAD_Client_ID(ctx));
@@ -179,9 +183,11 @@ public class SearchIndexConfigBuilder {
 	    	params.add(searchIndexId);
 	    }
 	    if (searchIndexProviderId > 0) {
-	    	sql.append(" AND si.AD_SearchIndexProvider_ID = ?");
+	    	sql.append(" AND si.AD_SearchIndexProvider_ID = ? ");
 	    	params.add(searchIndexProviderId);
 	    }
+	    
+	    sql.append(" ORDER BY sic.SearchWeight DESC ");
 	
 	    PreparedStatement pstmt = null;
 	    ResultSet rs = null;
@@ -209,6 +215,7 @@ public class SearchIndexConfigBuilder {
 	            int referenceValueId = rs.getInt("AD_Reference_Value_ID");
 	            String searchIndexName = rs.getString("SearchIndexName");
 	            String whereClause = rs.getString("WhereClause");
+	            BigDecimal searchWeight = rs.getBigDecimal("SearchWeight");
 	
 	            if (Util.isEmpty(mainKeyColumnName)) {
 	                log.severe("No Key Column found for table: " + tableName);
@@ -228,19 +235,21 @@ public class SearchIndexConfigBuilder {
 	                .filter(config -> config.getTableId() == mainTableId)
 	                .findFirst()
 	                .orElseGet(() -> {
-	                    SearchIndexTableConfig newConfig = new SearchIndexTableConfig(mainTableName, mainTableId, mainKeyColumnName, whereClause);
+	                    SearchIndexTableConfig newConfig = new SearchIndexTableConfig(mainTableName, mainTableId, mainKeyColumnName, whereClause, searchWeight);
 	                    searchIndexConfig.addTableConfig(newConfig);
 	                    return newConfig;
 	                });
+	            
+	            tableConfig.updateMaxSearchWeight(searchWeight);
 	
 	            if (referenceId <= 0) {
-	                tableConfig.addColumn(new SearchIndexColumnConfig(tableId, tableName, columnId, columnName, parentColId, parentColName, null));
+	                tableConfig.addColumn(new SearchIndexColumnConfig(tableId, tableName, columnId, columnName, parentColId, parentColName, null, searchWeight));
 	            } else {
-	                tableConfig.addColumn(new SearchIndexColumnConfig(tableId, tableName, -1, columnName, parentColId, parentColName, null));
+	                tableConfig.addColumn(new SearchIndexColumnConfig(tableId, tableName, -1, columnName, parentColId, parentColName, null, searchWeight));
 	                MLookup lookup = MLookupFactory.get(ctx, 0, columnId, referenceId, Env.getLanguage(ctx), columnName, referenceValueId, isParent, null);
 	                MLookupInfo lookupInfo = lookup.getLookupInfo();
 	                for (String lookupDisplayColumnName : lookupInfo.lookupDisplayColumns) {
-	                    tableConfig.addColumn(new SearchIndexColumnConfig(-1, lookupInfo.TableName, -1, lookupDisplayColumnName, -1, getLookupKeyColumnName(lookupInfo.KeyColumn), tableName));
+	                    tableConfig.addColumn(new SearchIndexColumnConfig(-1, lookupInfo.TableName, -1, lookupDisplayColumnName, -1, getLookupKeyColumnName(lookupInfo.KeyColumn), tableName, searchWeight));
 	                }
 	            }
 	        }
@@ -260,10 +269,10 @@ public class SearchIndexConfigBuilder {
     	if(searchIndexConfigs == null || searchIndexConfigs.size() <= 0)
 	    	throw new AdempiereException(Msg.getMsg(ctx, "SearchIndexConfigNotFound"));
     	
-        SearchIndexData searchIndexRecord = null;
+    	SearchIndexTableData searchIndexTableData = null;
 
         for (SearchIndexConfig searchIndexConfig : searchIndexConfigs) {
-            Set<SearchIndexData> indexTableDataSet = new HashSet<>();
+            Set<SearchIndexTableData> indexTableDataSet = new HashSet<>();
             for (SearchIndexTableConfig tableConfig : searchIndexConfig.getTableConfigs()) {
 
             	if (tableId > 0 && tableId != tableConfig.getTableId())
@@ -332,19 +341,19 @@ public class SearchIndexConfigBuilder {
         	            pstmt.setObject(i + 1, params.get(i));
         	        }
                     rs = pstmt.executeQuery();
-                    searchIndexRecord = new SearchIndexData(tableConfig.getTableId(), tableConfig.getKeyColName(), searchIndexConfig.getSearchIndexName());
+                    searchIndexTableData = new SearchIndexTableData(tableConfig.getTableId(), tableConfig.getKeyColName(), searchIndexConfig.getSearchIndexName());
 
                     while (rs.next()) {
-                        Map<String, Object> data = new HashMap<>();
-                        data.put("Record_ID", rs.getObject("Record_ID"));
+                        Map<String, SearchIndexColumnData> data = new LinkedHashMap<>();
+                        data.put("Record_ID", new SearchIndexColumnData("Record_ID", rs.getObject("Record_ID"), Env.ONE, tableConfig.getMaxSearchWeight()));
                         for (SearchIndexColumnConfig columnConfig : tableConfig.getColumns()) {
                             if (!Util.isEmpty(columnConfig.getColumnName())) {
                                 String key = columnConfig.getTableName() + "." + columnConfig.getColumnName();
                                 String columnAlias = columnConfig.getTableName() + "_" + columnConfig.getColumnName();
-                                data.put(key, rs.getObject(columnAlias));
+                                data.put(key, new SearchIndexColumnData(key, rs.getObject(columnAlias), columnConfig.getSearchWeight(), tableConfig.getMaxSearchWeight()));
                             }
                         }
-                        searchIndexRecord.addTableData(data);
+                        searchIndexTableData.addColumnData(data);
                     }
                 } catch (Exception e) {
                     log.log(Level.SEVERE, query, e);
@@ -352,8 +361,8 @@ public class SearchIndexConfigBuilder {
                 } finally {
                     DB.close(rs, pstmt);
                 }
-                if (searchIndexRecord != null)
-                    indexTableDataSet.add(searchIndexRecord);
+                if (searchIndexTableData != null)
+                    indexTableDataSet.add(searchIndexTableData);
             }
             searchIndexData.put(searchIndexConfig.getSearchIndexId(), indexTableDataSet);
         }

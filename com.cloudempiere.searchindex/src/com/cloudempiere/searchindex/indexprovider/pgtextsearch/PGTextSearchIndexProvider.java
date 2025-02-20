@@ -21,19 +21,22 @@
  **********************************************************************/
 package com.cloudempiere.searchindex.indexprovider.pgtextsearch;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.logging.Level;
 
-import org.adempiere.exceptions.AdempiereException;
 import org.adempiere.util.IProcessUI;
 import org.compiere.model.MClient;
 import org.compiere.model.MRole;
@@ -44,7 +47,8 @@ import org.compiere.util.Util;
 import com.cloudempiere.searchindex.indexprovider.ISearchIndexProvider;
 import com.cloudempiere.searchindex.model.MSearchIndexProvider;
 import com.cloudempiere.searchindex.util.ISearchResult;
-import com.cloudempiere.searchindex.util.pojo.SearchIndexData;
+import com.cloudempiere.searchindex.util.pojo.SearchIndexColumnData;
+import com.cloudempiere.searchindex.util.pojo.SearchIndexTableData;
 
 /**
  * 
@@ -54,6 +58,15 @@ import com.cloudempiere.searchindex.util.pojo.SearchIndexData;
  *
  */
 public class PGTextSearchIndexProvider implements ISearchIndexProvider {
+
+	/* Weights thresholds in percents */
+    private static final NavigableMap<BigDecimal, String> WEIGHT_THRESHOLDS = new TreeMap<>();
+    static {
+        WEIGHT_THRESHOLDS.put(new BigDecimal("75"), "A");
+        WEIGHT_THRESHOLDS.put(new BigDecimal("50"), "B");
+        WEIGHT_THRESHOLDS.put(new BigDecimal("25"), "C");
+        WEIGHT_THRESHOLDS.put(BigDecimal.ZERO, "D");
+    }
 
 	private HashMap<Integer, String> indexQuery = new HashMap<>();
 	private MSearchIndexProvider searchIndexProvider;
@@ -66,72 +79,43 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
     }
     
     @Override
-	public void createIndex(Properties ctx, Map<Integer, Set<SearchIndexData>> indexRecordsMap, String trxName) {
-		if (indexRecordsMap == null) {
-			return;
-		}
-	
-	    String tsConfig = getTSConfig(ctx, trxName);
-	    Map<String, PreparedStatement> preparedStatementMap = new HashMap<>();
-	
-	    try {
-	        for (Map.Entry<Integer, Set<SearchIndexData>> searchIndexRecordSet : indexRecordsMap.entrySet()) {
-	            for (SearchIndexData searchIndexRecord : searchIndexRecordSet.getValue()) {
-	                String tableName = searchIndexRecord.getSearchIndexName();
-	                String upsertQuery = "INSERT INTO " + tableName + " " +
-	                                     "(ad_client_id, ad_table_id, record_id, idx_tsvector) VALUES (?, ?, ?, to_tsvector(?::regconfig, ?::text)) " +
-	                                     "ON CONFLICT (ad_table_id, record_id) DO UPDATE SET idx_tsvector = EXCLUDED.idx_tsvector";
-	
-	                PreparedStatement pstmt = preparedStatementMap.get(tableName);
-	                if (pstmt == null) {
-	                    pstmt = DB.prepareStatement(upsertQuery, trxName);
-	                    preparedStatementMap.put(tableName, pstmt);
-	                }
-	                
-	                int i = 0;
-	                for (Map<String, Object> tableDataSet : searchIndexRecord.getTableData()) {
-	                    if (tableDataSet.get("Record_ID") == null)
-	                        continue;
-	                    
-	                    updateProcessUIStatus("Preparing " + tableName + "(" + i + "/" + searchIndexRecord.getTableData().size() + ")"); // TODO translate
-	                    
-	                    String documentContent = extractDocumentContent(tableDataSet);
-	
-	                    int idx = 1;
-	                    pstmt.setInt(idx++, Env.getAD_Client_ID(ctx));
-	                    pstmt.setInt(idx++, searchIndexRecord.getTableId());
-	                    pstmt.setInt(idx++, Integer.parseInt(tableDataSet.get("Record_ID").toString()));
-	                    pstmt.setString(idx++, tsConfig);
-	                    pstmt.setString(idx++, documentContent);
-	                    pstmt.addBatch();
-	                    i++;
-	                }
-	            }
-	        }
-	
-	        updateProcessUIStatus("Inserting data..."); // TODO translate
-	        for (PreparedStatement pstmt : preparedStatementMap.values()) {
-	            pstmt.executeBatch();
-	            pstmt.close();
-	        }
-	
-	    } catch (Exception e) {
-	        throw new AdempiereException(e);
-	    } finally {
-	        for (PreparedStatement pstmt : preparedStatementMap.values()) {
-	            try {
-	                if (pstmt != null && !pstmt.isClosed()) {
-	                    pstmt.close();
-	                }
-	            } catch (SQLException e) {
-	                log.severe(e.getMessage());
-	            }
-	        }
+	public void createIndex(Properties ctx, Map<Integer, Set<SearchIndexTableData>> indexRecordsMap, String trxName) {
+	    if (indexRecordsMap == null) {
+	        return;
 	    }
+	    String tsConfig = getTSConfig(ctx, trxName);
+	    for (Map.Entry<Integer, Set<SearchIndexTableData>> searchIndexRecordSet : indexRecordsMap.entrySet()) {
+            for (SearchIndexTableData searchIndexRecord : searchIndexRecordSet.getValue()) {
+                String tableName = searchIndexRecord.getSearchIndexName();
+
+                int i = 0;
+                for (Map<String, SearchIndexColumnData> tableDataSet : searchIndexRecord.getColumnData()) {
+                    if (tableDataSet.get("Record_ID") == null)
+                        continue;
+
+                    updateProcessUIStatus("Preparing " + tableName + "(" + i + "/" + searchIndexRecord.getColumnData().size() + ")"); // TODO translate
+
+                    List<Object> params = new ArrayList<>();
+                    params.add(Env.getAD_Client_ID(ctx));
+                    params.add(searchIndexRecord.getTableId());
+                    params.add(Integer.parseInt(tableDataSet.get("Record_ID").getValue().toString()));
+                    String documentContent = documentContentToTsvector(tableDataSet, tsConfig, params);
+                    StringBuilder upsertQuery = new StringBuilder();
+                    upsertQuery.append("INSERT INTO ").append(tableName).append(" ")
+                               .append("(ad_client_id, ad_table_id, record_id, idx_tsvector) VALUES (?, ?, ?, ")
+                               .append(documentContent).append(") ")
+                               .append("ON CONFLICT (ad_table_id, record_id) DO UPDATE SET idx_tsvector = EXCLUDED.idx_tsvector");
+                    DB.executeUpdateEx(upsertQuery.toString(), params.toArray(), trxName);
+                    i++;
+                }
+            }
+        }
+
+        updateProcessUIStatus("Inserting data..."); // TODO translate
 	}
 	
 	@Override
-	public void updateIndex(Properties ctx, Map<Integer, Set<SearchIndexData>> indexRecordsMap, String trxName) {
+	public void updateIndex(Properties ctx, Map<Integer, Set<SearchIndexTableData>> indexRecordsMap, String trxName) {
 		createIndex(ctx, indexRecordsMap, trxName); // uses upsert
 	}
 
@@ -175,7 +159,7 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
     }
 	
 	@Override
-	public void reCreateIndex(Properties ctx, Map<Integer, Set<SearchIndexData>> indexRecordsMap, String trxName) {
+	public void reCreateIndex(Properties ctx, Map<Integer, Set<SearchIndexTableData>> indexRecordsMap, String trxName) {
 		deleteAllIndex(ctx, trxName);
 		createIndex(ctx, indexRecordsMap, trxName);
 	}
@@ -200,18 +184,11 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 
         for (int i = 0; i < tablesToSearch.size(); i++) {
             String tableName = tablesToSearch.get(i);
-            sql.append("SELECT DISTINCT ad_table_id, record_id, ");
-            if (searchType == SearchType.TS_RANK) {
-                sql.append("ts_rank(idx_tsvector, to_tsquery(?::regconfig, ?::text)) as rank ");
-                params.add(tsConfig);
-                params.add(isAdvanced ? convertQueryString(query) : query.replace(" ", " & "));
-            } else if (searchType == SearchType.POSITION) {
-                String regexQuery = isAdvanced ? convertQueryString(query).replace("&", ".").replace(":*", ".*") : query.replace(":*", ".*");
-                sql.append("(regexp_match(idx_tsvector::text, '." + regexQuery + ".:(\\d+)'))[1]::int as position ");
-            }
-            sql.append("FROM ");
-            sql.append(tableName);
-            sql.append(" WHERE idx_tsvector @@ ");
+            sql.append("SELECT DISTINCT ad_table_id, record_id, ")
+            	.append(getRank(query, isAdvanced, searchType, params, tsConfig))
+	            .append(" as rank FROM ")
+	            .append(tableName)
+            	.append(" WHERE idx_tsvector @@ ");
             
             params.add(tsConfig);
             if (isAdvanced) {
@@ -225,11 +202,17 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
             sql.append("AND AD_CLIENT_ID IN (0,?) ");
             params.add(clientId);
 
-            if (searchType == SearchType.TS_RANK) {
-                sql.append("ORDER BY rank DESC ");
-            } else if (searchType == SearchType.POSITION) {
-                sql.append("ORDER BY position ASC ");
-            }
+            sql.append("ORDER BY rank ");
+            switch (searchType) {
+				case TS_RANK:
+					sql.append("DESC ");
+					break;
+				case POSITION:
+					sql.append("ASC ");
+					break;
+				default:
+					break;
+			}
 
             if (i < tablesToSearch.size() - 1) {
                 sql.append(" UNION ");
@@ -396,19 +379,47 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 	}
     
     /**
-     * Extracts the document content from the table data set.
+     * Extracts the document content from the table data set 
+     * converts each part to tsvector with added weight, 
+     * finally concatenates the tsvectors.
+     * 
+     * E.g. setweight(to_tsvector(value1::regconfig,tsConfig::text),'A') || setweight(to_tsvector(value2::regconfig,tsConfig::text),'B')
      *
      * @param tableDataSet the table data set
      * @return the document content
      */
-    private String extractDocumentContent(Map<String, Object> tableDataSet) {
+    private String documentContentToTsvector(Map<String, SearchIndexColumnData> tableDataSet, String tsConfig, List<Object> params) {
         StringBuilder documentContent = new StringBuilder();
-        for (Map.Entry<String, Object> entry : tableDataSet.entrySet()) {
-            if (entry.getValue() != null) {
-                documentContent.append(entry.getValue().toString()).append(" ");
+        for (Map.Entry<String, SearchIndexColumnData> entry : tableDataSet.entrySet()) {
+        	SearchIndexColumnData columnData = entry.getValue();
+            if (columnData != null) {
+            	String tsWeight = getTSWeight(columnData.getSearchWeight(), columnData.getMaxSearchWeight());
+                documentContent.append("setweight(")
+                	.append("to_tsvector('")
+                	.append(tsConfig).append("'::regconfig,")
+                	.append("?::text)")
+                	.append(",").append("'").append(tsWeight).append("')")
+                	.append(" || ");
+                params.add(Objects.toString(columnData.getValue(), ""));
             }
         }
-        return documentContent.toString().trim();
+        documentContent.setLength(documentContent.length() - 4); // Remove the last " || "
+        return documentContent.toString();
+    }
+    
+	/**
+     * Gets the weight for the given search weight.
+     * @param searchWeight the search weight
+     * @return weight
+     */
+    private String getTSWeight(BigDecimal searchWeight, BigDecimal maxSearchWeight) {
+    	// For negative values return the lowest weight
+        if (searchWeight.compareTo(BigDecimal.ZERO) < 0) {
+            return WEIGHT_THRESHOLDS.get(BigDecimal.ZERO);
+        }
+        // Calculate the weight based on the search weight and the maximum search weight
+        BigDecimal weight = searchWeight.divide(maxSearchWeight, 2, RoundingMode.HALF_UP).multiply(Env.ONEHUNDRED);
+        return WEIGHT_THRESHOLDS.floorEntry(weight).getValue();
     }
     
     /**
@@ -450,5 +461,47 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 		if (processUI != null) {
 			processUI.statusUpdate(message);
 		}
+	}
+	
+	/**
+	 * Gets the rank SQL based on the search type.
+	 * @param query the query
+	 * @param isAdvanced the advanced search flag
+	 * @param searchType the search type
+	 * @param params the parameters
+	 * @param tsConfig the text search configuration
+	 * @return the rank SQL
+	 */
+	private String getRank(String query, boolean isAdvanced, SearchType searchType, List<Object> params, String tsConfig) {
+	    StringBuilder rankSql = new StringBuilder();
+	    String[] searchTerms = query.split(" ");
+	
+	    switch (searchType) {
+	        case TS_RANK:
+	            rankSql.append("ts_rank(idx_tsvector, to_tsquery(?::regconfig, ?::text)) ");
+	            params.add(tsConfig);
+	            params.add(isAdvanced ? convertQueryString(query) : query.replace(" ", " & "));
+	            break;
+	        case POSITION:
+	            rankSql.append("(");
+	            for (int i = 0; i < searchTerms.length; i++) {
+	                String term = searchTerms[i];
+	                String regexQuery = isAdvanced ? term.replace("&", "").replace(":*", "") : term; // the pg text search query operators are not needed for the regexp
+	                if (i > 0) {
+	                    rankSql.append(" + ");
+	                }
+	                // Match full and partial matches and consider weights
+	                rankSql.append("COALESCE(")
+	                       .append("(SELECT (regexp_match(idx_tsvector::text, '").append(regexQuery).append("[^'']*'':(\\d+)([A])'))[1]::int), ")
+	                       .append("(SELECT (regexp_match(idx_tsvector::text, '").append(regexQuery).append("[^'']*'':(\\d+)([B])'))[1]::int), ")
+	                       .append("(SELECT (regexp_match(idx_tsvector::text, '").append(regexQuery).append("[^'']*'':(\\d+)([C])'))[1]::int), ")
+	                       .append("1000)"); // a large number to deprioritize non-matches
+	            }
+	            rankSql.append(") ");
+	            break;
+	        default:
+	            break;
+	    }
+	    return rankSql.toString();
 	}
 }
