@@ -36,7 +36,7 @@ import org.compiere.util.Msg;
 import com.cloudempiere.searchindex.indexprovider.ISearchIndexProvider;
 import com.cloudempiere.searchindex.util.SearchIndexConfigBuilder;
 import com.cloudempiere.searchindex.util.SearchIndexUtils;
-import com.cloudempiere.searchindex.util.pojo.SearchIndexData;
+import com.cloudempiere.searchindex.util.pojo.SearchIndexTableData;
 
 public class CreateSearchIndex extends SvrProcess {
 	
@@ -83,7 +83,7 @@ public class CreateSearchIndex extends SvrProcess {
 				.setAD_SearchIndexProvider_ID(p_AD_SearchIndexProvider_ID)
 				.setAD_SearchIndex_ID(p_AD_SearchIndex_ID) // optional
 				.build();
-		Map<Integer, Set<SearchIndexData>> indexRecordsMap = builder.getData(false); // key is AD_SearchIndex_ID
+		Map<Integer, Set<SearchIndexTableData>> indexRecordsMap = builder.getData(false); // key is AD_SearchIndex_ID
 		if(indexRecordsMap.size() <= 0)
 	    	return Msg.getMsg(getCtx(), "NoRecordsFound");
 	    
@@ -91,7 +91,7 @@ public class CreateSearchIndex extends SvrProcess {
 	    provider.reCreateIndex(getCtx(), indexRecordsMap, get_TrxName());
 	    
 	    // Set Search Index definitions as valid
-	    for (Map.Entry<Integer, Set<SearchIndexData>> searchIndexRecord : indexRecordsMap.entrySet()) {
+	    for (Map.Entry<Integer, Set<SearchIndexTableData>> searchIndexRecord : indexRecordsMap.entrySet()) {
 	    	int searchIndexId = searchIndexRecord.getKey();
 				String sql = "UPDATE AD_SearchIndex SET IsValid='Y' WHERE AD_SearchIndex_ID=?";
 				DB.executeUpdateEx(sql, new Object[] {searchIndexId}, get_TrxName());

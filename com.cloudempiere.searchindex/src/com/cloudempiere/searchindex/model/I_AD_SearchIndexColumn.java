@@ -32,8 +32,8 @@ public interface I_AD_SearchIndexColumn
     /** TableName=AD_SearchIndexColumn */
     public static final String Table_Name = "AD_SearchIndexColumn";
 
-    /** AD_Table_ID=1001878 */
-    public static final int Table_ID = MTable.getTable_ID(Table_Name);
+    /** AD_Table_ID=800161 */
+    public static final int Table_ID = 800161;
 
     KeyNamePair Model = new KeyNamePair(Table_ID, Table_Name);
 
@@ -209,6 +209,19 @@ public interface I_AD_SearchIndexColumn
 	public int getParent_Column_ID();
 
 	public org.compiere.model.I_AD_Column getParent_Column() throws RuntimeException;
+
+    /** Column name SearchWeight */
+    public static final String COLUMNNAME_SearchWeight = "SearchWeight";
+
+	/** Set Search Weight.
+	  * Weight of the Search Index Column (from 0 to 10)
+	  */
+	public void setSearchWeight (BigDecimal SearchWeight);
+
+	/** Get Search Weight.
+	  * Weight of the Search Index Column (from 0 to 10)
+	  */
+	public BigDecimal getSearchWeight();
 
     /** Column name Updated */
     public static final String COLUMNNAME_Updated = "Updated";
