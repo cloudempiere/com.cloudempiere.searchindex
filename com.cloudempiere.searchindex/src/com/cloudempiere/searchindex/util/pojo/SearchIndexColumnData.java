@@ -17,61 +17,68 @@
 * MA 02110-1301, USA.                                                 *
 *                                                                     *
 * Contributors:                                                       *
-* - Diego Ruiz, BX Service GmbH                                       *
 * - Peter Takacs, Cloudempiere                                        *
 **********************************************************************/
 package com.cloudempiere.searchindex.util.pojo;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.math.BigDecimal;
+import java.util.Objects;
 
-/**
- * Search Index Data
- */
-public class SearchIndexData {
+public class SearchIndexColumnData {
+    private String columnName;
+    private Object value;
+    private BigDecimal searchWeight;
+		private BigDecimal maxSearchWeight;
 
-	/* AD_Table_ID */
-    private int tableId;
-    /* Key Column Name */
-    private String keyColName;
-	/* Index Table Name */
-	private String searchIndexName;
-    /* Data: ColumnName - Value */
-    private Set<Map<String, Object>> tableData;
-
-    public SearchIndexData(int tableId, String keyColName, String searchIndexName) {
-        this.tableId = tableId;
-        this.keyColName = keyColName;
-        this.searchIndexName = searchIndexName;
-        this.tableData = new HashSet<>();
+    public SearchIndexColumnData(String columnName, Object value, BigDecimal weight, BigDecimal maxSearchWeight) {
+        this.columnName = columnName;
+        this.value = value;
+        this.searchWeight = weight;
+				this.maxSearchWeight = maxSearchWeight;
     }
 
-    public int getTableId() {
-        return tableId;
-    }
-    
-    public String getKeyColName() {
-    	return keyColName;
+    public String getColumnName() {
+        return columnName;
     }
 
-    public Set<Map<String, Object>> getTableData() {
-        return tableData;
+    public Object getValue() {
+        return value;
     }
 
-    public void addTableData(Map<String, Object> data) {
-        tableData.add(data);
+    public BigDecimal getSearchWeight() {
+        return searchWeight;
     }
 
-    public String getSearchIndexName() {
-		return searchIndexName;
+	public BigDecimal getMaxSearchWeight() {
+		return maxSearchWeight;
 	}
 
-	@Override
+	public void setMaxSearchWeight(BigDecimal maxSearchWeight) {
+		this.maxSearchWeight = maxSearchWeight;
+	}
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SearchIndexColumnData that = (SearchIndexColumnData) o;
+        return searchWeight == that.searchWeight &&
+                Objects.equals(columnName, that.columnName) &&
+                Objects.equals(value, that.value);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(columnName, value, searchWeight, maxSearchWeight);
+    }
+
+    @Override
     public String toString() {
-        return "SearchIndexRecord{" +
-                "tableId='" + tableId + '\'' +
-                ", tableData=" + tableData +
+        return "SearchIndexColumnData{" +
+                "columnName='" + columnName + '\'' +
+                ", value=" + value +
+                ", weight=" + searchWeight +
+				", maxSearchWeight=" + maxSearchWeight +
                 '}';
     }
 }

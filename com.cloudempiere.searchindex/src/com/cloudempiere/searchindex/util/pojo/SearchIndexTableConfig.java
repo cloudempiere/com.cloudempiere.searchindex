@@ -22,6 +22,7 @@
 **********************************************************************/
 package com.cloudempiere.searchindex.util.pojo;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,13 +41,16 @@ public class SearchIndexTableConfig {
 	private String sqlWhere;
 	/* Search Index Columns */
     private List<SearchIndexColumnConfig> columns;
+	/* Maximum SearchWeight for the AD_SearchIndexTable */
+	private BigDecimal maxSearchWeight;
 
-    public SearchIndexTableConfig(String tableName, int tableId, String keyColName, String sqlWhere) {
+    public SearchIndexTableConfig(String tableName, int tableId, String keyColName, String sqlWhere, BigDecimal maxSearchWeight) {
     	this.tableId = tableId;
         this.tableName = tableName;
         this.keyColName = keyColName;
         this.sqlWhere = sqlWhere;
         this.columns = new ArrayList<>();
+		this.maxSearchWeight = maxSearchWeight;
     }
 
     public String getTableName() {
@@ -87,6 +91,20 @@ public class SearchIndexTableConfig {
 
 	public void setSqlWhere(String sqlWhere) {
 		this.sqlWhere = sqlWhere;
+	}
+
+	public void setMaxSearchWeight(BigDecimal maxSearchWeight) {
+		this.maxSearchWeight = maxSearchWeight;
+	}
+	
+	public void updateMaxSearchWeight(BigDecimal searchWeight) {
+        if (maxSearchWeight == null || searchWeight.compareTo(maxSearchWeight) > 0) {
+            maxSearchWeight = searchWeight;
+        }
+    }
+
+	public BigDecimal getMaxSearchWeight() {
+		return maxSearchWeight;
 	}
 
 }

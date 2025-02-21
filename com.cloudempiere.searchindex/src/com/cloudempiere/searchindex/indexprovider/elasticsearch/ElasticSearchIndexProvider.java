@@ -31,7 +31,7 @@ import org.adempiere.util.IProcessUI;
 import com.cloudempiere.searchindex.indexprovider.ISearchIndexProvider;
 import com.cloudempiere.searchindex.model.MSearchIndexProvider;
 import com.cloudempiere.searchindex.util.ISearchResult;
-import com.cloudempiere.searchindex.util.pojo.SearchIndexData;
+import com.cloudempiere.searchindex.util.pojo.SearchIndexTableData;
 
 /**
  * 
@@ -48,12 +48,12 @@ public class ElasticSearchIndexProvider implements ISearchIndexProvider {
 	}
 
 	@Override
-	public void createIndex(Properties ctx, Map<Integer, Set<SearchIndexData>> indexRecordsMap, String trxName) {
+	public void createIndex(Properties ctx, Map<Integer, Set<SearchIndexTableData>> indexRecordsMap, String trxName) {
 		
 	}
 
 	@Override
-	public void updateIndex(Properties ctx, Map<Integer, Set<SearchIndexData>> indexRecordsMap, String trxName) {
+	public void updateIndex(Properties ctx, Map<Integer, Set<SearchIndexTableData>> indexRecordsMap, String trxName) {
 		
 	}
 
@@ -68,7 +68,7 @@ public class ElasticSearchIndexProvider implements ISearchIndexProvider {
 	}
 
 	@Override
-	public void reCreateIndex(Properties ctx, Map<Integer, Set<SearchIndexData>> indexRecordsMap, String trxName) {
+	public void reCreateIndex(Properties ctx, Map<Integer, Set<SearchIndexTableData>> indexRecordsMap, String trxName) {
 		
 	}
 
