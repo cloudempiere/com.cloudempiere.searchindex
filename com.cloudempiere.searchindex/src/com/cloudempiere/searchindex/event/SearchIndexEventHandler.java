@@ -114,25 +114,27 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 			return;
 		
 		// Check if changed column is indexed
-		MTable mTableEvt = MTable.get(ctx, eventPO.get_Table_ID(), trxName);
-		boolean updateIndex = false;
-		Set<Integer> changedColumnIDs = new HashSet<>();
-		for (int columnId : mTableEvt.getColumnIDs(false)) {
-			if (eventPO.is_ValueChanged_byId(columnId))
-				changedColumnIDs.add(columnId);
-		}
-		for (IndexedTable searchIndexConfig : indexedTables) {
-			for (int changedColId : changedColumnIDs) {
-				if (searchIndexConfig.getColumnIDs().contains(Integer.valueOf(changedColId))) {
-					updateIndex = true;
-					break;
-				}
+		if (type.equals(IEventTopics.PO_AFTER_CHANGE)) {
+			MTable mTableEvt = MTable.get(ctx, eventPO.get_Table_ID(), trxName);
+			boolean updateIndex = false;
+			Set<Integer> changedColumnIDs = new HashSet<>();
+			for (int columnId : mTableEvt.getColumnIDs(false)) {
+				if (eventPO.is_ValueChanged_byId(columnId))
+					changedColumnIDs.add(columnId);
 			}
-			if (updateIndex)
-				break;
+			for (IndexedTable searchIndexConfig : indexedTables) {
+				for (int changedColId : changedColumnIDs) {
+					if (searchIndexConfig.getColumnIDs().contains(Integer.valueOf(changedColId))) {
+						updateIndex = true;
+						break;
+					}
+				}
+				if (updateIndex)
+					break;
+			}
+			if (!updateIndex)
+				return;
 		}
-		if (!updateIndex)
-			return;
 		
 		PO[] mainPOArr = getMainPOs(eventPO, indexedTables);
 		MSearchIndex[] searchIndexArr;
