@@ -67,6 +67,12 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
         WEIGHT_THRESHOLDS.put(new BigDecimal("25"), "C");
         WEIGHT_THRESHOLDS.put(BigDecimal.ZERO, "D");
     }
+    
+    /* Valid tsquery operators for to_tsquery function */
+    private static final String OPERATOR_AND = "&";
+    private static final String OPERATOR_OR = "|";
+    private static final String OPERATOR_NOT = "!";
+    private static final String OPERATOR_FOLLOWED_BY = "<->";
 
 	private HashMap<Integer, String> indexQuery = new HashMap<>();
 	private MSearchIndexProvider searchIndexProvider;
@@ -196,7 +202,7 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
                 params.add(convertQueryString(query));
             } else {
                 sql.append("plainto_tsquery(?::regconfig, ?::text) ");
-                params.add(query.replace(" ", " & "));
+                params.add(query);
             }
 
             sql.append("AND AD_CLIENT_ID IN (0,?) ");
@@ -297,7 +303,7 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 		try
 		{
 			pstmt = DB.prepareStatement(sql.toString(), trxName);
-			pstmt.setString(1, convertQueryString(query));
+			pstmt.setString(1, convertQueryString(query)); // TODO add IsAdvanced check?
 			pstmt.setInt(2, Env.getAD_Client_ID(ctx));
 			pstmt.setInt(3, result.getRecord_ID());
 			rs = pstmt.executeQuery();
@@ -441,16 +447,32 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 	}
     
     /**
-	 * Converts a String to a valid to_Tsquery String
-	 * @param queryString
-	 * @return
-	 */
+     * Converts a String to a valid to_tsquery String. <br>
+     * Only AND (&) operator is supported <br>
+     * Prefix search (:*) and weighted search (:ABCD) is supported <br>
+     * @see <a href="https://www.postgresql.org/docs/current/textsearch-controls.html">PostgreSQL Text Search Controls</a>
+     * @param queryString
+     * @return
+     */
 	private String convertQueryString(String queryString) {
-		queryString = queryString.trim(); //(Remove leading and trailing spaces
-		if (!queryString.contains("&"))
-			queryString =  queryString.replace(" ", "&"); //If the query does not include &, handle spaces as & strings
-		
-		return queryString;
+	    queryString = queryString.trim();
+	    
+	    // Remove all operators
+	    queryString = queryString.replace(OPERATOR_AND, "")
+	                             .replace(OPERATOR_OR, "")
+	                             .replace(OPERATOR_NOT, "")
+	                             .replace(OPERATOR_FOLLOWED_BY, "");
+	    
+	    // Remove abandoned controls and handle duplicate controls
+	    queryString = queryString.replaceAll("\\s+:\\*", "")
+	    		.replaceAll("\\s+:[A-D]", "")
+	    		.replaceAll("(:\\*|:[A-D]){2,}", "");
+	    
+	    // Replace all spaces with OPERATOR_AND
+	    queryString = queryString.trim();
+	    queryString = queryString.replace(" ", " "+OPERATOR_AND+" ");
+	    
+	    return queryString;
 	}
 	
 	/**
@@ -480,7 +502,7 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 	        case TS_RANK:
 	            rankSql.append("ts_rank(idx_tsvector, to_tsquery(?::regconfig, ?::text)) ");
 	            params.add(tsConfig);
-	            params.add(isAdvanced ? convertQueryString(query) : query.replace(" ", " & "));
+	            params.add(isAdvanced ? convertQueryString(query) : query);
 	            break;
 	        case POSITION:
 	            rankSql.append("(");
