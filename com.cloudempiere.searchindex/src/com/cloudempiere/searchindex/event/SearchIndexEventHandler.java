@@ -159,18 +159,20 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 						.setAD_SearchIndex_ID(searchIndex.getAD_SearchIndex_ID())
 						.setRecord(tableId, recordId);
 				
-				if (type.equals(IEventTopics.PO_AFTER_DELETE)) {
+				if (type.equals(IEventTopics.PO_AFTER_DELETE) && po.equals(eventPO)) {
 					if (provider != null) {
 						StringBuilder whereClause = new StringBuilder();
 						whereClause.append(" AD_Client_ID=? AND AD_Table_ID=? AND Record_ID=?");
 						Object[] params = new Object[] { po.getAD_Client_ID(), tableId, recordId };
 						provider.deleteIndexByQuery(ctx, null, whereClause.toString(), params, trxName);
 					}
-				} else if (type.equals(IEventTopics.PO_AFTER_CHANGE)) {
+				} else if (type.equals(IEventTopics.PO_AFTER_CHANGE)
+						|| type.equals(IEventTopics.PO_AFTER_DELETE) && !po.equals(eventPO)
+						|| type.equals(IEventTopics.PO_AFTER_NEW) && !po.equals(eventPO)) {
 					if (provider != null) {
 						provider.updateIndex(ctx, builder.build().getData(false), trxName);
 					}
-				} else if (type.equals(IEventTopics.PO_AFTER_NEW)) {
+				} else if (type.equals(IEventTopics.PO_AFTER_NEW) && po.equals(eventPO)) {
 					if (provider != null) {
 						provider.createIndex(ctx, builder.build().getData(false), trxName);
 					}
@@ -207,6 +209,8 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 		
 		if (!Util.isEmpty(whereClause))
 			whereClause = " AND " + whereClause;
+		else if (whereClause == null)
+			whereClause = "";
 		
 		Set<PO> mainPOSet = new HashSet<>();
 		
@@ -215,7 +219,8 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 		for (String keyCol : po.get_KeyColumns()) {
 			if (fkTable.columnExistsInDictionary(keyCol)) {
 				// FIXME has problem with aliases in whereClause: ERROR: missing FROM-clause entry for table "main
-				for (int recordId : PO.getAllIDs(mainTableName, keyCol+"="+po.get_ID()+whereClause, trxName)) {
+				int poId = po.get_ID() > 0 ? po.get_ID() : po.get_IDOld();
+				for (int recordId : PO.getAllIDs(mainTableName, keyCol+"="+poId+whereClause, trxName)) {
 					mainPOSet.add(new GenericPO(mainTableName, ctx, recordId, trxName));
 				}
 			}
@@ -250,7 +255,8 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 		for (String keyCol : po.get_KeyColumns()) {
 			if (table.columnExistsInDictionary(keyCol)) {
 				// FIXME has problem with aliases in whereClause: ERROR: missing FROM-clause entry for table "main
-				if (new Query(ctx, po.get_TableName(), keyCol+"="+po.get_ID()+whereClause, trxName).match())
+				int poId = po.get_ID() > 0 ? po.get_ID() : po.get_IDOld();
+				if (new Query(ctx, po.get_TableName(), keyCol+"="+poId+whereClause, trxName).match())
 					return po;
 			}
 		}

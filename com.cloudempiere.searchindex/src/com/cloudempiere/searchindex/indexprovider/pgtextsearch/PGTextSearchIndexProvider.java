@@ -36,6 +36,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Level;
+import java.util.regex.Pattern;
 
 import org.adempiere.util.IProcessUI;
 import org.compiere.model.MClient;
@@ -508,7 +509,8 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 	            rankSql.append("(");
 	            for (int i = 0; i < searchTerms.length; i++) {
 	                String term = searchTerms[i];
-	                String regexQuery = isAdvanced ? term.replace("&", "").replace(":*", "") : term; // the pg text search query operators are not needed for the regexp
+	        	    // Remove valid (currently supported) operators for advanced search
+	                String regexQuery = isAdvanced ? escapeSpecialCharacters(term.replace("&", "").replace(":*", "")) : escapeSpecialCharacters(term);
 	                if (i > 0) {
 	                    rankSql.append(" + ");
 	                }
@@ -525,5 +527,21 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 	            break;
 	    }
 	    return rankSql.toString();
+	}
+
+	/**
+	 * Escapes special characters in a string for use in a PostgreSQL regular expression.
+	 * @param term the term to escape
+	 * @return the escaped term
+	 */
+	private String escapeSpecialCharacters(String term) {
+	    StringBuilder escapedTerm = new StringBuilder();
+	    for (char c : term.toCharArray()) {
+	        if ("\\.*+?^${}()|[]".indexOf(c) != -1) {
+	            escapedTerm.append("\\");
+	        }
+	        escapedTerm.append(c);
+	    }
+	    return escapedTerm.toString();
 	}
 }
