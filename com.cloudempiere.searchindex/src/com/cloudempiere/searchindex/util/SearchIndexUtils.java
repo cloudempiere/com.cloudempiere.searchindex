@@ -146,11 +146,11 @@ public class SearchIndexUtils {
 	 * Get indexed table names
 	 * @param trxName
 	 * @param clientId
-	 * @return
+	 * @return map of indexed tables (AD_Client_ID, Set<IndexedTable>)
 	 */
-	public static Set<IndexedTable> getSearchIndexConfigs(String trxName, int clientId) {
+	public static Map<Integer, Set<IndexedTable>> getSearchIndexConfigs(String trxName, int clientId) {
 	    StringBuilder sql = new StringBuilder("SELECT sit.AD_SearchIndex_ID, t.TableName, mt.TableName, sit.WhereClause, si.SearchIndexName, ")
-	    	.append("COALESCE(refCol.AD_Column_ID, sic.AD_Column_ID) AS AD_Column_ID ")
+	    	.append("COALESCE(refCol.AD_Column_ID, sic.AD_Column_ID) AS AD_Column_ID, si.AD_Client_ID ")
 	    	.append("FROM AD_SearchIndexColumn sic ")
 	        .append("JOIN AD_SearchIndexTable sit ON sic.AD_SearchIndexTable_ID = sit.AD_SearchIndexTable_ID ")
 	        .append("JOIN AD_SearchIndex si ON si.AD_SearchIndex_ID = sit.AD_SearchIndex_ID ")
@@ -160,15 +160,15 @@ public class SearchIndexUtils {
 	        .append("LEFT JOIN AD_Ref_Table refTable ON refTable.AD_Reference_ID = ref.AD_Reference_ID ")
 	        .append("LEFT JOIN AD_Column refCol ON refCol.AD_Column_ID = refTable.AD_Display ")
 	        .append("WHERE sit.IsActive = 'Y' AND sic.IsActive = 'Y'");
-	    if(clientId >= 0)
+	    if (clientId >= 0)
 	    	sql.append(" AND sit.AD_Client_ID IN (0, ?)");
 
 	    PreparedStatement pstmt = null;
 	    ResultSet rs = null;
-	    Set<IndexedTable> indexedTables = new HashSet<>();
+	    Map<Integer, Set<IndexedTable>> indexedTablesByClient = new HashMap<>();
 	    try {
 	        pstmt = DB.prepareStatement(sql.toString(), trxName);
-	        if(clientId >= 0)
+	        if (clientId >= 0)
 	        	pstmt.setInt(1, Env.getAD_Client_ID(Env.getCtx()));
 	        rs = pstmt.executeQuery();
 	        while (!Thread.currentThread().isInterrupted() && rs.next()) {
@@ -178,6 +178,9 @@ public class SearchIndexUtils {
 	        	String whereClause = rs.getString(4);
 	        	String searchIndexName = rs.getString(5);
 	        	int columnId = rs.getInt(6); // refCol.AD_Column_ID or sic.AD_Column_ID
+	        	int indexClientId = rs.getInt(7);
+
+	        	Set<IndexedTable> indexedTables = indexedTablesByClient.computeIfAbsent(indexClientId, k -> new HashSet<>());
 	        	
 	        	IndexedTable indexedTable = indexedTables.stream()
 	                .filter(config -> (config.getSearchIndexId() == searchIndexId && config.getTableName().equals(mainTableName)))
@@ -201,7 +204,7 @@ public class SearchIndexUtils {
 	        pstmt = null;
 	    }
 
-	    return indexedTables;
+	    return indexedTablesByClient;
 	}
 }
 

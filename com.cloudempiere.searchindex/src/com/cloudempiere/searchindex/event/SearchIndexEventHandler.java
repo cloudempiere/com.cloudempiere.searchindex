@@ -22,6 +22,7 @@
 package com.cloudempiere.searchindex.event;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
@@ -63,20 +64,23 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 	/** Transaction name */
 	private String trxName = null;
 	/** Indexed tables set (key: AD_SearchIndex_ID, name: TableName) */
-	private Set<IndexedTable> indexedTables = null;
+	private Map<Integer, Set<IndexedTable>> indexedTablesByClient = null; // key is AD_Client_ID
 	
 	@Override
 	protected void initialize() {
 
-		indexedTables = SearchIndexUtils.getSearchIndexConfigs(trxName, -1); // gets data from all clients
+		indexedTablesByClient = SearchIndexUtils.getSearchIndexConfigs(trxName, -1); // gets data from all clients
 		Set<String> tablesToRegister = new HashSet<>();
 
-		for (IndexedTable indexTable : indexedTables) {
-			String tableName = indexTable.getTableName();
-			tablesToRegister.add(tableName);
-			//Index the FK tables
-			for (String fkTableName : indexTable.getFKTableNames()) {
-				tablesToRegister.add(fkTableName);
+		for (Map.Entry<Integer, Set<IndexedTable>> entry : indexedTablesByClient.entrySet()) {
+			Set<IndexedTable> indexedTables = entry.getValue();
+			for (IndexedTable indexTable : indexedTables) {
+				String tableName = indexTable.getTableName();
+				tablesToRegister.add(tableName);
+				//Index the FK tables
+				for (String fkTableName : indexTable.getFKTableNames()) {
+					tablesToRegister.add(fkTableName);
+				}
 			}
 		}
 		
@@ -101,6 +105,14 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 		PO eventPO = getPO(event);
 		ctx = Env.getCtx();
 		trxName = eventPO.get_TrxName();
+		Set<IndexedTable> indexedTables = indexedTablesByClient.get(Env.getAD_Client_ID(ctx));
+		Set<IndexedTable> indexedTables0 = indexedTablesByClient.get(0);
+		if (indexedTables == null)
+			indexedTables = indexedTables0;
+		else {
+			if (indexedTables0 != null)
+				indexedTables.addAll(indexedTables0);
+		}
 		
 		if (eventPO instanceof MSearchIndex
 				|| eventPO instanceof MSearchIndexTable
@@ -111,6 +123,8 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 		}
 		
 		if (!MSysConfig.getBooleanValue(MSysConfig.ALLOW_SEARCH_INDEX_EVENT, false, Env.getAD_Client_ID(ctx)))
+			return;
+		if (indexedTables == null)
 			return;
 		
 		// Check if changed column is indexed
@@ -147,6 +161,9 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 				searchIndexArr = MSearchIndex.getForRecord(ctx, po, eventPO, indexedTables, trxName);
 			}
 			
+			if (searchIndexArr == null)
+				continue;
+			
 			for (MSearchIndex searchIndex : searchIndexArr) {
 				ISearchIndexProvider provider = SearchIndexUtils.getSearchIndexProvider(ctx, searchIndex.getAD_SearchIndexProvider_ID(), null, trxName);
 				int tableId = po.get_Table_ID();
@@ -164,7 +181,7 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 						StringBuilder whereClause = new StringBuilder();
 						whereClause.append(" AD_Client_ID=? AND AD_Table_ID=? AND Record_ID=?");
 						Object[] params = new Object[] { po.getAD_Client_ID(), tableId, recordId };
-						provider.deleteIndexByQuery(ctx, null, whereClause.toString(), params, trxName);
+						provider.deleteIndex(ctx, searchIndex.getSearchIndexName(), whereClause.toString(), params, trxName);
 					}
 				} else if (type.equals(IEventTopics.PO_AFTER_CHANGE)
 						|| type.equals(IEventTopics.PO_AFTER_DELETE) && !po.equals(eventPO)

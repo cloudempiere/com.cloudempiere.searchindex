@@ -32,8 +32,8 @@ public interface I_AD_SearchIndexColumn
     /** TableName=AD_SearchIndexColumn */
     public static final String Table_Name = "AD_SearchIndexColumn";
 
-    /** AD_Table_ID=800161 */
-    public static final int Table_ID = 800161;
+    /** AD_Table_ID=1001876 */
+    public static final int Table_ID = MTable.getTable_ID(Table_Name);
 
     KeyNamePair Model = new KeyNamePair(Table_ID, Table_Name);
 
@@ -214,12 +214,12 @@ public interface I_AD_SearchIndexColumn
     public static final String COLUMNNAME_SearchWeight = "SearchWeight";
 
 	/** Set Search Weight.
-	  * Weight of the Search Index Column (from 0 to 10)
+	  * Weight of the Search Index Column
 	  */
 	public void setSearchWeight (BigDecimal SearchWeight);
 
 	/** Get Search Weight.
-	  * Weight of the Search Index Column (from 0 to 10)
+	  * Weight of the Search Index Column
 	  */
 	public BigDecimal getSearchWeight();
 
