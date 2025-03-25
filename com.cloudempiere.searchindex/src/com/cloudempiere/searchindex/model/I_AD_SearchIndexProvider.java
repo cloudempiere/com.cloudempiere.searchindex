@@ -32,7 +32,7 @@ public interface I_AD_SearchIndexProvider
     /** TableName=AD_SearchIndexProvider */
     public static final String Table_Name = "AD_SearchIndexProvider";
 
-    /** AD_Table_ID=1001875 */
+    /** AD_Table_ID=1001873 */
     public static final int Table_ID = MTable.getTable_ID(Table_Name);
 
     KeyNamePair Model = new KeyNamePair(Table_ID, Table_Name);

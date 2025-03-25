@@ -33,7 +33,7 @@ public class X_AD_SearchIndexColumn extends PO implements I_AD_SearchIndexColumn
 	/**
 	 *
 	 */
-	private static final long serialVersionUID = 20250220L;
+	private static final long serialVersionUID = 20250325L;
 
     /** Standard Constructor */
     public X_AD_SearchIndexColumn (Properties ctx, int AD_SearchIndexColumn_ID, String trxName)
@@ -46,6 +46,8 @@ public class X_AD_SearchIndexColumn extends PO implements I_AD_SearchIndexColumn
 			setAD_SearchIndexTable_ID (0);
 // @AD_SearchIndexTable_ID@
 			setAD_Table_ID (0);
+			setSearchWeight (Env.ZERO);
+// 1
         } */
     }
 
@@ -60,6 +62,8 @@ public class X_AD_SearchIndexColumn extends PO implements I_AD_SearchIndexColumn
 			setAD_SearchIndexTable_ID (0);
 // @AD_SearchIndexTable_ID@
 			setAD_Table_ID (0);
+			setSearchWeight (Env.ZERO);
+// 1
         } */
     }
 
@@ -311,7 +315,7 @@ public class X_AD_SearchIndexColumn extends PO implements I_AD_SearchIndexColumn
 	}
 
 	/** Set Search Weight.
-		@param SearchWeight Weight of the Search Index Column (from 0 to 10)
+		@param SearchWeight Weight of the Search Index Column
 	*/
 	public void setSearchWeight (BigDecimal SearchWeight)
 	{
@@ -319,7 +323,7 @@ public class X_AD_SearchIndexColumn extends PO implements I_AD_SearchIndexColumn
 	}
 
 	/** Get Search Weight.
-		@return Weight of the Search Index Column (from 0 to 10)
+		@return Weight of the Search Index Column
 	  */
 	public BigDecimal getSearchWeight()
 	{

@@ -71,7 +71,7 @@ public interface ISearchIndexProvider
 	 * @param indexRecordsMap - key is AD_SearchIndex_ID
 	 * @param trxName
 	 */
-	public void deleteAllIndex(Properties ctx, String trxName);
+	public void deleteIndex(Properties ctx, String searchIndexName, String trxName);
 
 	/**
 	 * Delete index by query
@@ -81,7 +81,7 @@ public interface ISearchIndexProvider
 	 * @param params
 	 * @param trxName
 	 */
-	public void deleteIndexByQuery(Properties ctx, String searchIndexName, String query, Object[] params, String trxName);
+	public void deleteIndex(Properties ctx, String searchIndexName, String query, Object[] params, String trxName);
 
 	/**
 	 * Recreate index
