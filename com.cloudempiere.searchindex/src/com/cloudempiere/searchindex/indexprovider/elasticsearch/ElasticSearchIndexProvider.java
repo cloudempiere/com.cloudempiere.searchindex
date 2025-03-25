@@ -58,12 +58,12 @@ public class ElasticSearchIndexProvider implements ISearchIndexProvider {
 	}
 
 	@Override
-	public void deleteAllIndex(Properties ctx, String trxName) {
-		
+	public void deleteIndex(Properties ctx, String searchIndexName, String trxName) {
+	
 	}
 
 	@Override
-	public void deleteIndexByQuery(Properties ctx, String searchIndexName, String query, Object[] params, String trxName) {
+	public void deleteIndex(Properties ctx, String searchIndexName, String query, Object[] params, String trxName) {
 		
 	}
 

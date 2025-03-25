@@ -27,6 +27,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -36,7 +37,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Level;
-import java.util.regex.Pattern;
 
 import org.adempiere.util.IProcessUI;
 import org.compiere.model.MClient;
@@ -127,47 +127,67 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 	}
 
 	@Override
-	public void deleteAllIndex(Properties ctx, String trxName) {
-		updateProcessUIStatus("Preparing data to be deleted..."); // TODO translate
-		List<String> tables = getAllSearchIndexTables(ctx, trxName);
-		int i = 0;
-		for (String tableName : tables) {
-			String sql = "TRUNCATE TABLE " + tableName + " RESTART IDENTITY";
-			DB.executeUpdateEx(sql, trxName);
-			updateProcessUIStatus("Deleted " + i + "/" + tables.size()); // TODO translate
-			i++;
-		}
+	public void deleteIndex(Properties ctx, String searchIndexName, String trxName) {
+		deleteIndex(ctx, searchIndexName, null, null, trxName);
 	}
 
     @Override
-    public void deleteIndexByQuery(Properties ctx, String searchIndexName, String query, Object[] params, String trxName) {
+    public void deleteIndex(Properties ctx, String searchIndexName, String dynWhere, Object[] dynParams, String trxName) {
+    	List<Object> params = null;
     	if (Util.isEmpty(searchIndexName)) {
     		updateProcessUIStatus("Preparing data to be deleted..."); // TODO translate
     		List<String> tables = getAllSearchIndexTables(ctx, trxName);
     		String sql;
     		int i = 0;
     		for (String tableName : tables) {
-    			if (Util.isEmpty(query))
-    				sql = "TRUNCATE TABLE " + tableName + " RESTART IDENTITY";
-    			else
-    				sql = "DELETE FROM " + tableName + " WHERE " + query;
-    			DB.executeUpdateEx(sql, params, trxName);
+    			sql = "DELETE FROM " + tableName + " WHERE AD_Client_ID IN (0,?)";
+    			params = new ArrayList<>();
+    			params.add(Env.getAD_Client_ID(ctx));
+    			if (!Util.isEmpty(dynWhere)) {
+    				if (!dynWhere.trim().toUpperCase().startsWith("AND")) {
+    					dynWhere = " AND " + dynWhere;
+    				}
+    				sql += dynWhere;
+    				if (dynParams != null) {
+    					for (Object param : dynParams) {
+    						params.add(param);
+    					}
+    				}
+    			}
+    			DB.executeUpdateEx(sql, params.toArray(), trxName);
     			updateProcessUIStatus("Deleted " + i + "/" + tables.size()); // TODO translate
     			i++;
     		}
     	} else {
-	        String sql;
-	        if (Util.isEmpty(query))
-				sql = "TRUNCATE TABLE " + searchIndexName + " RESTART IDENTITY";
-			else
-				sql = "DELETE FROM " + searchIndexName + " WHERE " + query;
-	        DB.executeUpdateEx(sql, params, trxName);
+    		String sql = "DELETE FROM " + searchIndexName + " WHERE AD_Client_ID IN (0,?)";
+    		params = new ArrayList<>();
+    		params.add(Env.getAD_Client_ID(ctx));
+    		if (!Util.isEmpty(dynWhere)) {
+    			if (!dynWhere.trim().toUpperCase().startsWith("AND")) {
+    				dynWhere = " AND " + dynWhere;
+    			}
+    			sql += dynWhere;
+    			if (dynParams != null) {
+    				for (Object param : dynParams) {
+    					params.add(param);
+    				}
+    			}					
+    		}
+    		DB.executeUpdateEx(sql, params.toArray(), trxName);
     	}
     }
 	
 	@Override
 	public void reCreateIndex(Properties ctx, Map<Integer, Set<SearchIndexTableData>> indexRecordsMap, String trxName) {
-		deleteAllIndex(ctx, trxName);
+		Set<String> searchIndexNames = new HashSet<>();
+		for (Map.Entry<Integer, Set<SearchIndexTableData>> searchIndexRecordSet : indexRecordsMap.entrySet()) {
+			for (SearchIndexTableData searchIndexRecord : searchIndexRecordSet.getValue()) {
+				searchIndexNames.add(searchIndexRecord.getSearchIndexName());
+			}
+		}
+		for (String searchIndexName : searchIndexNames) {
+			deleteIndex(ctx, searchIndexName, trxName);
+		}
 		createIndex(ctx, indexRecordsMap, trxName);
 	}
 

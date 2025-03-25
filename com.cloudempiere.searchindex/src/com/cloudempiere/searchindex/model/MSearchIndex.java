@@ -24,6 +24,7 @@ package com.cloudempiere.searchindex.model;
 import java.sql.ResultSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
@@ -155,8 +156,19 @@ public class MSearchIndex extends X_AD_SearchIndex implements ImmutablePOSupport
 			return new MSearchIndex[] { searchIndexColumn.getSearchIndex() };
 		
 		} else {			
-			if (indexedTables == null || indexedTables.isEmpty())
-				indexedTables = SearchIndexUtils.getSearchIndexConfigs(trxName, Env.getAD_Client_ID(ctx));
+			if (indexedTables == null || indexedTables.isEmpty()) {
+				Map<Integer, Set<IndexedTable>> indexedTablesByClient = SearchIndexUtils.getSearchIndexConfigs(trxName, Env.getAD_Client_ID(ctx));
+				indexedTables = indexedTablesByClient.get(Env.getAD_Client_ID(ctx));
+				Set<IndexedTable> indexedTables0 = indexedTablesByClient.get(0);
+				if (indexedTables == null)
+					indexedTables = indexedTables0;
+				else {
+					if (indexedTables0 != null)
+						indexedTables.addAll(indexedTables0);
+				}
+			}
+			if (indexedTables == null)
+				return null;
 			
 			Set<MSearchIndex> searchIndexSet = new HashSet<>();
 			for (IndexedTable searchIndexConfig : indexedTables) {
