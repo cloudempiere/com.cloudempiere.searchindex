@@ -11,6 +11,10 @@ public class IndexedTable {
 	private String searchIndexName;
 	/** TableName */
 	private String tableName;
+	/** AD_Table_ID */
+	private int tableId;
+	/** Set of AD_Table_ID of Indexed Tables */
+	private Set<Integer> fkTableIDs;
 	/** Where Clause */
 	private String whereClause;
 	/** Table Names of Indexed FK Tables */
@@ -18,10 +22,11 @@ public class IndexedTable {
 	/** Indexed Columns - AD_Column_IDs */
 	private Set<Integer> columnIds;
 
-    public IndexedTable(int searchIndexId, String searchIndexName, String tableName, String whereClause) {
+    public IndexedTable(int searchIndexId, String searchIndexName, String tableName, int tableId, String whereClause) {
     	this.searchIndexId = searchIndexId;
     	this.searchIndexName = searchIndexName;
         this.tableName = tableName;
+        this.tableId = tableId;
         this.whereClause = whereClause;
         this.fkTableNames = new HashSet<>();
         this.columnIds = new HashSet<>();
@@ -30,6 +35,10 @@ public class IndexedTable {
     public String getTableName() {
         return tableName;
     }
+	
+	public int getTableId() {
+		return tableId;
+	}
     
     public String getWhereClause() {
     	return whereClause;
@@ -37,6 +46,10 @@ public class IndexedTable {
     
     public void addFKTableName(String fkTableName) {
     	this.fkTableNames.add(fkTableName);
+    }
+    
+    public void addFKTableName(int fkTableId) {
+    	this.fkTableIDs.add(fkTableId);
     }
 
     public Set<String> getFKTableNames() {
