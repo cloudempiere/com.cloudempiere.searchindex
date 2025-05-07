@@ -177,7 +177,7 @@ public class MSearchIndex extends X_AD_SearchIndex implements ImmutablePOSupport
 					if (containsRecord(ctx, po.getAD_Client_ID(), po.get_Table_ID(), recordId, searchIndexConfig.getSearchIndexName(), trxName))
 						searchIndexSet.add(MSearchIndex.get(ctx, searchIndexConfig.getSearchIndexId(), trxName));
 				} else {
-					if (containsTable(ctx, po.getAD_Client_ID(), po.get_Table_ID(), searchIndexConfig.getSearchIndexName(), trxName))
+					if (searchIndexConfig.getTableId() == po.get_Table_ID())
 						searchIndexSet.add(MSearchIndex.get(ctx, searchIndexConfig.getSearchIndexId(), trxName));
 				}
 			}
@@ -198,20 +198,6 @@ public class MSearchIndex extends X_AD_SearchIndex implements ImmutablePOSupport
 		StringBuilder sql = new StringBuilder("SELECT 1 FROM ").append(indexTableName)
 				.append(" WHERE AD_Client_ID=? AND AD_Table_ID=? AND Record_ID=?");
 		return DB.getSQLValue(trxName, sql.toString(), clientId, tableId, recordId) > 0;
-	}
-
-	/**
-	 * Check if the given index table contains the given table
-	 * @param ctx
-	 * @param tableId
-	 * @param indexTableName
-	 * @param trxName
-	 * @return true if the given index table contains the given table
-	 */
-	public static boolean containsTable(Properties ctx, int clientId, int tableId, String indexTableName, String trxName) {
-		StringBuilder sql = new StringBuilder("SELECT 1 FROM ").append(indexTableName)
-				.append(" WHERE AD_Client_ID=? AND AD_Table_ID=?");
-		return DB.getSQLValue(trxName, sql.toString(), clientId, tableId) > 0;
 	}
 	
 	/**
