@@ -127,24 +127,35 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 		if (indexedTables == null)
 			return;
 		
-		// Check if changed column is indexed
+		// Check if changed column is indexed or if IsActive changed
 		if (type.equals(IEventTopics.PO_AFTER_CHANGE)) {
 			MTable mTableEvt = MTable.get(ctx, eventPO.get_Table_ID(), trxName);
 			boolean updateIndex = false;
+			boolean isActiveChanged = false;
 			Set<Integer> changedColumnIDs = new HashSet<>();
-			for (int columnId : mTableEvt.getColumnIDs(false)) {
-				if (eventPO.is_ValueChanged_byId(columnId))
-					changedColumnIDs.add(columnId);
+			
+			// Check if IsActive changed
+			if (eventPO.is_ValueChanged("IsActive")) {
+				isActiveChanged = true;
+				updateIndex = true;
 			}
-			for (IndexedTable searchIndexConfig : indexedTables) {
-				for (int changedColId : changedColumnIDs) {
-					if (searchIndexConfig.getColumnIDs().contains(Integer.valueOf(changedColId))) {
-						updateIndex = true;
-						break;
-					}
+			
+			// Continue with normal column change check if IsActive didn't change
+			if (!isActiveChanged) {
+				for (int columnId : mTableEvt.getColumnIDs(false)) {
+					if (eventPO.is_ValueChanged_byId(columnId))
+						changedColumnIDs.add(columnId);
 				}
-				if (updateIndex)
-					break;
+				for (IndexedTable searchIndexConfig : indexedTables) {
+					for (int changedColId : changedColumnIDs) {
+						if (searchIndexConfig.getColumnIDs().contains(Integer.valueOf(changedColId))) {
+							updateIndex = true;
+							break;
+						}
+					}
+					if (updateIndex)
+						break;
+				}
 			}
 			if (!updateIndex)
 				return;
@@ -155,7 +166,8 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 		
 		for (PO po : mainPOArr) {
 			// Find existing search indexes for the record
-			if (type.equals(IEventTopics.PO_AFTER_NEW)) {
+			if (type.equals(IEventTopics.PO_AFTER_NEW)
+					|| (type.equals(IEventTopics.PO_AFTER_CHANGE) && eventPO.is_ValueChanged("IsActive"))) {
 				searchIndexArr = MSearchIndex.getForTable(ctx, po, eventPO, indexedTables, trxName);
 			} else {
 				searchIndexArr = MSearchIndex.getForRecord(ctx, po, eventPO, indexedTables, trxName);
@@ -175,7 +187,26 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 						.setTrxName(trxName)
 						.setAD_SearchIndex_ID(searchIndex.getAD_SearchIndex_ID())
 						.setRecord(tableId, recordId);
+
+				// Handle IsActive changes specially
+				if (type.equals(IEventTopics.PO_AFTER_CHANGE) && po.is_ValueChanged("IsActive")) {
+					boolean isActive = po.get_ValueAsBoolean("IsActive");
+					if (provider != null) {
+						if (isActive) {
+							// Record activated - create index
+							provider.createIndex(ctx, builder.build().getData(false), trxName);
+						} else {
+							// Record deactivated - delete index
+							StringBuilder whereClause = new StringBuilder();
+							whereClause.append(" AD_Client_ID=? AND AD_Table_ID=? AND Record_ID=?");
+							Object[] params = new Object[] { po.getAD_Client_ID(), tableId, recordId };
+							provider.deleteIndex(ctx, searchIndex.getSearchIndexName(), whereClause.toString(), params, trxName);
+						}
+						continue;
+					}
+				}				
 				
+				// Handle changes
 				if (type.equals(IEventTopics.PO_AFTER_DELETE) && po.equals(eventPO)) {
 					if (provider != null) {
 						StringBuilder whereClause = new StringBuilder();
