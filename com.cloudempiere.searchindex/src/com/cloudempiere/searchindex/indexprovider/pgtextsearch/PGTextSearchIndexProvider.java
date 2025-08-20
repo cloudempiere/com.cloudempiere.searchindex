@@ -427,13 +427,70 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
                 	.append("?::text)")
                 	.append(",").append("'").append(tsWeight).append("')")
                 	.append(" || ");
-                params.add(Objects.toString(columnData.getValue(), ""));
+                params.add(normalizeDocumentContent(columnData.getValue()));
             }
         }
         documentContent.setLength(documentContent.length() - 4); // Remove the last " || "
         return documentContent.toString();
     }
-    
+
+	/**
+     * Normalizes document content by preserving the original form and adding spaces around special characters.
+     * This improves the PostgreSQL text search for long words like emails and URLs.
+     * 
+     * Example: "test@test.com" becomes "test@test.com test @ test . com"
+     * 
+     * By preserving the original form, we ensure exact matches still work, while
+     * the spaced version improves partial matches.
+     * 
+     * @param documentContent the content to normalize
+     * @return the normalized content with original form and spaces around special characters
+     * 
+     * TODO FUTURE ENHANCEMENT: Implement a custom PostgreSQL text search dictionary 
+     * specifically for emails and URLs. This would require:
+     * 1. Create a custom dictionary in PostgreSQL:
+     *    CREATE TEXT SEARCH DICTIONARY email_url_dict (TEMPLATE = simple, STOPWORDS = empty);
+     *    CREATE TEXT SEARCH CONFIGURATION email_url (COPY = unaccent);
+     *    ALTER TEXT SEARCH CONFIGURATION email_url ALTER MAPPING FOR email, url WITH email_url_dict;
+     *
+     * 2. Modify indexing to use both configurations:
+     *    documentContent.append("setweight(to_tsvector('")
+     *        .append(tsConfig).append("'::regconfig, ?::text), '")
+     *        .append(tsWeight).append("') || ")
+     *        .append("setweight(to_tsvector('email_url'::regconfig, ?::text), '")
+     *        .append(tsWeight).append("')");
+     *    params.add(value);
+     *    params.add(value);
+     */
+	private String normalizeDocumentContent(Object documentContent) {
+		String strContent = Objects.toString(documentContent, "");
+		
+		// Keep original content for exact matches
+		String originalContent = strContent;
+		
+		// Special characters to split by
+		String specialChars = "@.,:;/\\(){}[]<>-_+=*&^%$#!?|~`\"'";
+		
+		StringBuilder normalizedContent = new StringBuilder();
+		char[] chars = strContent.toCharArray();
+		
+		for (int i = 0; i < chars.length; i++) {
+			char c = chars[i];
+			
+			if (specialChars.indexOf(c) >= 0) {
+				normalizedContent.append(' ').append(c).append(' ');
+			} else {
+				normalizedContent.append(c);
+			}
+		}
+		
+		// Replace multiple spaces with a single space
+		String normalized = normalizedContent.toString().replaceAll("\\s+", " ").trim();
+		
+		// Combine original and normalized versions to support both exact and partial matches
+		return originalContent + " " + normalized;
+	}
+
 	/**
      * Gets the weight for the given search weight.
      * @param searchWeight the search weight
