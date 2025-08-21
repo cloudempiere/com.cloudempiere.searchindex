@@ -25,6 +25,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -573,37 +574,63 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 	 * @return the rank SQL
 	 */
 	private String getRank(String query, boolean isAdvanced, SearchType searchType, List<Object> params, String tsConfig) {
-	    StringBuilder rankSql = new StringBuilder();
-	    String[] searchTerms = query.split(" ");
-	
-	    switch (searchType) {
-	        case TS_RANK:
-	            rankSql.append("ts_rank(idx_tsvector, to_tsquery(?::regconfig, ?::text)) ");
-	            params.add(tsConfig);
-	            params.add(isAdvanced ? convertQueryString(query) : query);
-	            break;
-	        case POSITION:
-	            rankSql.append("(");
-	            for (int i = 0; i < searchTerms.length; i++) {
-	                String term = searchTerms[i];
-	        	    // Remove valid (currently supported) operators for advanced search
-	                String regexQuery = isAdvanced ? escapeSpecialCharacters(term.replace("&", "").replace(":*", "")) : escapeSpecialCharacters(term);
-	                if (i > 0) {
-	                    rankSql.append(" + ");
-	                }
-	                // Match full and partial matches and consider weights
-	                rankSql.append("COALESCE(")
-	                       .append("(SELECT (regexp_match(idx_tsvector::text, '").append(regexQuery).append("[^'']*'':(\\d+)([A])'))[1]::int), ")
-	                       .append("(SELECT (regexp_match(idx_tsvector::text, '").append(regexQuery).append("[^'']*'':(\\d+)([B])'))[1]::int), ")
-	                       .append("(SELECT (regexp_match(idx_tsvector::text, '").append(regexQuery).append("[^'']*'':(\\d+)([C])'))[1]::int), ")
-	                       .append("1000)"); // a large number to deprioritize non-matches
-	            }
-	            rankSql.append(") ");
-	            break;
-	        default:
-	            break;
-	    }
-	    return rankSql.toString();
+		StringBuilder rankSql = new StringBuilder();
+		String[] searchTerms = query.split(" ");
+
+		switch (searchType) {
+			case TS_RANK:
+				rankSql.append("ts_rank(idx_tsvector, to_tsquery(?::regconfig, ?::text)) ");
+				params.add(tsConfig);
+				params.add(isAdvanced ? convertQueryString(query) : query);
+				break;
+			case POSITION:
+				rankSql.append("(");
+				for (int i = 0; i < searchTerms.length; i++) {
+					String term = searchTerms[i];
+					// Remove valid (currently supported) operators for advanced search
+					String cleanedTerm = isAdvanced ? term.replace("&", "").replace(":*", "") : term;
+					// Normalize to unaccented for regex
+					String unaccentedTerm = removeAccents(cleanedTerm);
+					String regexQuery = escapeSpecialCharacters(unaccentedTerm);
+					
+					if (i > 0) {
+						rankSql.append(" + ");
+					}
+					
+					// First check for exact word matches with word boundaries - prioritize these highest
+					// Word boundary in PostgreSQL regex is using \y or \m and \M
+					rankSql.append("CASE WHEN EXISTS (")
+					       .append("SELECT 1 FROM regexp_matches(idx_tsvector::text, '\\y").append(regexQuery).append("\\y')")
+					       .append(") THEN 1 ELSE 10 END * "); // Exact matches get priority by multiplier of 10
+					
+					// Match full and partial matches and consider weights
+					rankSql.append("COALESCE(")
+						   // Check for weight A (highest weight)
+						   .append("(SELECT (regexp_match(idx_tsvector::text, '").append(regexQuery).append("[^'']*'':(\\d+)([A])'))[1]::int), ")
+						   // Check for weight B (medium weight)
+						   .append("(SELECT (regexp_match(idx_tsvector::text, '").append(regexQuery).append("[^'']*'':(\\d+)([B])'))[1]::int), ")
+						   // Check for weight C (lowest weight)
+						   .append("(SELECT (regexp_match(idx_tsvector::text, '").append(regexQuery).append("[^'']*'':(\\d+)([C])'))[1]::int), ")
+						   .append("1000)"); // a large number to deprioritize non-matches
+				}
+				rankSql.append(") ");
+				break;
+			default:
+				break;
+		}
+		return rankSql.toString();
+	}
+
+	/**
+	 * Removes accents from a string using Unicode normalization.
+	 * @param input the input string
+	 * @return the unaccented string
+	 */
+	private String removeAccents(String input) {
+		if (input == null) return null;
+		String normalized = Normalizer.normalize(input, Normalizer.Form.NFD);
+		// Remove diacritical marks
+		return normalized.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
 	}
 
 	/**
