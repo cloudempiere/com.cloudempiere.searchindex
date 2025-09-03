@@ -218,13 +218,19 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 	            .append(tableName)
             	.append(" WHERE idx_tsvector @@ ");
             
-            params.add(tsConfig);
+            
             if (isAdvanced) {
-                sql.append("to_tsquery(?::regconfig, ?::text) ");
-                params.add(convertQueryString(query));
+                // Searches for both original and unaccented versions
+                sql.append("(to_tsquery('simple'::regconfig, ?::text) || to_tsquery(?::regconfig, ?::text)) ");
+                params.add(convertQueryString(query)); // with accents using simple config
+                params.add(tsConfig);                  
+                params.add(convertQueryString(query)); // with unaccent config
             } else {
-                sql.append("plainto_tsquery(?::regconfig, ?::text) ");
-                params.add(query);
+                // Same for plain text search
+                sql.append("(plainto_tsquery('simple'::regconfig, ?::text) || plainto_tsquery(?::regconfig, ?::text)) ");
+                params.add(query);      // with accents using simple config
+                params.add(tsConfig);   
+                params.add(query);      // with unaccent config
             }
 
             sql.append("AND AD_CLIENT_ID IN (0,?) ");
@@ -422,13 +428,24 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
         	SearchIndexColumnData columnData = entry.getValue();
             if (columnData != null) {
             	String tsWeight = getTSWeight(columnData.getSearchWeight(), columnData.getMaxSearchWeight());
+                String value = Objects.toString(columnData.getValue(), "");
+                
+                // Add original text with higher weight (A)
+                documentContent.append("setweight(")
+                	.append("to_tsvector('simple'::regconfig,")
+                	.append("?::text)")
+                	.append(",").append("'A')")
+                	.append(" || ");
+                params.add(value);
+                
+                // Add unaccented text with original weight
                 documentContent.append("setweight(")
                 	.append("to_tsvector('")
                 	.append(tsConfig).append("'::regconfig,")
                 	.append("?::text)")
                 	.append(",").append("'").append(tsWeight).append("')")
                 	.append(" || ");
-                params.add(normalizeDocumentContent(columnData.getValue()));
+                params.add(normalizeDocumentContent(value));
             }
         }
         documentContent.setLength(documentContent.length() - 4); // Remove the last " || "
@@ -514,6 +531,7 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
     private String getTSConfig(Properties ctx, String trxName) {
 		// Check if the specified text search configuration exists for language
         String tsConfig = MClient.get(ctx).getLanguage().getLocale().getDisplayLanguage(Locale.ENGLISH);
+        tsConfig = tsConfig != null ? tsConfig.toLowerCase() : tsConfig;
         String fallbackConfig = "unaccent";
         String checkConfigQuery = "SELECT COUNT(*) FROM pg_ts_config WHERE cfgname = ?";
         int configCount = DB.getSQLValue(trxName, checkConfigQuery, tsConfig);
@@ -522,6 +540,13 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
             log.log(Level.INFO, "Text search configuration '" + tsConfig + "' does not exist. Falling back to '" + fallbackConfig + "'.");
             tsConfig = fallbackConfig;
         }
+        
+        // Check if simple config exists (needed for our implementation)
+        int simpleConfigCount = DB.getSQLValue(trxName, checkConfigQuery, "simple");
+        if (simpleConfigCount == 0) {
+            log.log(Level.WARNING, "Text search configuration 'simple' does not exist. Prioritization of accented characters may not work correctly.");
+        }
+        
 		return tsConfig;
 	}
     
@@ -579,7 +604,15 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 
 		switch (searchType) {
 			case TS_RANK:
-				rankSql.append("ts_rank(idx_tsvector, to_tsquery(?::regconfig, ?::text)) ");
+				// First, check for exact matches with accents using simple dictionary
+				rankSql.append("GREATEST(");
+				
+				// Original query with higher weight for exact matches with accents
+				rankSql.append("ts_rank(idx_tsvector, to_tsquery('simple'::regconfig, ?::text)) * 2, ");
+				params.add(isAdvanced ? convertQueryString(query) : query);
+				
+				// Fall back to unaccented matches
+				rankSql.append("ts_rank(idx_tsvector, to_tsquery(?::regconfig, ?::text)))");
 				params.add(tsConfig);
 				params.add(isAdvanced ? convertQueryString(query) : query);
 				break;
@@ -589,6 +622,11 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 					String term = searchTerms[i];
 					// Remove valid (currently supported) operators for advanced search
 					String cleanedTerm = isAdvanced ? term.replace("&", "").replace(":*", "") : term;
+					
+					// Keep original term with diacritics
+					String originalTerm = cleanedTerm;
+					String escapedOriginalTerm = escapeSpecialCharacters(originalTerm);
+					
 					// Normalize to unaccented for regex
 					String unaccentedTerm = removeAccents(cleanedTerm);
 					String regexQuery = escapeSpecialCharacters(unaccentedTerm);
@@ -597,20 +635,29 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 						rankSql.append(" + ");
 					}
 					
-					// First check for exact word matches with word boundaries - prioritize these highest
-					// Word boundary in PostgreSQL regex is using \y or \m and \M
+					// First check for exact word matches with original accents - highest priority
+					// Use the original term (with diacritics) for matching
+					rankSql.append("CASE WHEN EXISTS (")
+					       .append("SELECT 1 FROM regexp_matches(idx_tsvector::text, '\\y").append(escapedOriginalTerm).append("\\y')")
+					       .append(") THEN 0.5 ELSE "); // Exact accent matches get highest priority (0.5)
+					
+					// Then check for unaccented exact word matches - second priority
 					rankSql.append("CASE WHEN EXISTS (")
 					       .append("SELECT 1 FROM regexp_matches(idx_tsvector::text, '\\y").append(regexQuery).append("\\y')")
-					       .append(") THEN 1 ELSE 10 END * "); // Exact matches get priority by multiplier of 10
+					       .append(") THEN 1 ELSE 10 END "); // Exact unaccented matches get second priority (1)
+					
+					rankSql.append("END * ");
 					
 					// Match full and partial matches and consider weights
 					rankSql.append("COALESCE(")
-						   // Check for weight A (highest weight)
+						   // Check for weight A (highest weight) - now used for original text with accents
+						   .append("(SELECT (regexp_match(idx_tsvector::text, '").append(escapedOriginalTerm).append("[^'']*'':(\\d+)([A])'))[1]::int), ")
+						   // Try original text with any weight
+						   .append("(SELECT (regexp_match(idx_tsvector::text, '").append(escapedOriginalTerm).append("[^'']*'':(\\d+)([BCD])'))[1]::int), ")
+						   // Try unaccented with weight A
 						   .append("(SELECT (regexp_match(idx_tsvector::text, '").append(regexQuery).append("[^'']*'':(\\d+)([A])'))[1]::int), ")
-						   // Check for weight B (medium weight)
-						   .append("(SELECT (regexp_match(idx_tsvector::text, '").append(regexQuery).append("[^'']*'':(\\d+)([B])'))[1]::int), ")
-						   // Check for weight C (lowest weight)
-						   .append("(SELECT (regexp_match(idx_tsvector::text, '").append(regexQuery).append("[^'']*'':(\\d+)([C])'))[1]::int), ")
+						   // Try unaccented with lower weights
+						   .append("(SELECT (regexp_match(idx_tsvector::text, '").append(regexQuery).append("[^'']*'':(\\d+)([BCD])'))[1]::int), ")
 						   .append("1000)"); // a large number to deprioritize non-matches
 				}
 				rankSql.append(") ");
