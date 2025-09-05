@@ -236,8 +236,7 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 		for (IndexedTable tableConfig : tableConfigs) {
 			// record of an index table
 			if (po.get_TableName().equals(tableConfig.getTableName())) {
-				po = applyWhereClause(po, tableConfig.getWhereClause());
-				if (po != null)
+				if (applyWhereClause(po, tableConfig.getWhereClause()))
 					mainPOSet.add(po);
 			} else { // related to an index table - find the main record
 				for (String fkTableName : tableConfig.getFKTableNames()) {
@@ -290,12 +289,12 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 	 * Check if PO passes the where clause filter
 	 * @param po
 	 * @param whereClause
-	 * @return
+	 * @return true if po passed the filter
 	 */
-	private PO applyWhereClause(PO po, String whereClause) {
+	private boolean applyWhereClause(PO po, String whereClause) {
 		
 		if (Util.isEmpty(whereClause))
-			return po;
+			return true;
 		else
 			whereClause = " AND " + whereClause;
 		
@@ -305,10 +304,10 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 				// FIXME has problem with aliases in whereClause: ERROR: missing FROM-clause entry for table "main
 				int poId = po.get_ID() > 0 ? po.get_ID() : po.get_IDOld();
 				if (new Query(ctx, po.get_TableName(), keyCol+"="+poId+whereClause, trxName).match())
-					return po;
+					return true;
 			}
 		}
-		return null;
+		return false;
 	}
 	
 	private void handleSearchIndexConfigChange(PO po) {
