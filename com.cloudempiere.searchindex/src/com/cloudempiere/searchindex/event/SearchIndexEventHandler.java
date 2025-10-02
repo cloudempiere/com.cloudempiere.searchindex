@@ -278,7 +278,8 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 				if (po.columnExists(keyCol)) {
 					//  TODO apply where clause here too
 					int recordId = po.get_ValueAsInt(keyCol);
-					mainPOSet.add(new GenericPO(mainTableName, ctx, recordId, trxName));
+					if (recordId > 0)
+						mainPOSet.add(new GenericPO(mainTableName, ctx, recordId, trxName));
 				}
 			}
 		}
