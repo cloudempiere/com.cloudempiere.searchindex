@@ -71,10 +71,10 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
     }
     
     /* Valid tsquery operators for to_tsquery function */
-    protected static final String OPERATOR_AND = "&";
-    protected static final String OPERATOR_OR = "|";
-    protected static final String OPERATOR_NOT = "!";
-    protected static final String OPERATOR_FOLLOWED_BY = "<->";
+    private static final String OPERATOR_AND = "&";
+    private static final String OPERATOR_OR = "|";
+    private static final String OPERATOR_NOT = "!";
+    private static final String OPERATOR_FOLLOWED_BY = "<->";
 
 	private HashMap<Integer, String> indexQuery = new HashMap<>();
 	private MSearchIndexProvider searchIndexProvider;
@@ -194,8 +194,6 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 
     @Override
     public List<ISearchResult> getSearchResults(Properties ctx, String searchIndexName, String query, boolean isAdvanced, SearchType searchType, String trxName) {
-    	
-    	String sanitizedQuery = sanitizeQuery(query, isAdvanced);
         ArrayList<ISearchResult> results = new ArrayList<>();
         indexQuery.clear();
 
@@ -215,7 +213,7 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
         for (int i = 0; i < tablesToSearch.size(); i++) {
             String tableName = tablesToSearch.get(i);
             sql.append("SELECT DISTINCT ad_table_id, record_id, ")
-            	.append(getRank(sanitizedQuery, isAdvanced, searchType, params, tsConfig))
+            	.append(getRank(query, isAdvanced, searchType, params, tsConfig))
 	            .append(" as rank FROM ")
 	            .append(tableName)
             	.append(" WHERE idx_tsvector @@ ");
@@ -224,15 +222,15 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
             if (isAdvanced) {
                 // Searches for both original and unaccented versions
                 sql.append("(to_tsquery('simple'::regconfig, ?::text) || to_tsquery(?::regconfig, ?::text)) ");
-                params.add(sanitizedQuery); // with accents using simple config
+                params.add(convertQueryString(query)); // with accents using simple config
                 params.add(tsConfig);                  
-                params.add(sanitizedQuery); // with unaccent config
+                params.add(convertQueryString(query)); // with unaccent config
             } else {
                 // Same for plain text search
                 sql.append("(plainto_tsquery('simple'::regconfig, ?::text) || plainto_tsquery(?::regconfig, ?::text)) ");
-                params.add(sanitizedQuery);      // with accents using simple config
+                params.add(query);      // with accents using simple config
                 params.add(tsConfig);   
-                params.add(sanitizedQuery);      // with unaccent config
+                params.add(query);      // with unaccent config
             }
 
             sql.append("AND AD_CLIENT_ID IN (0,?) ");
@@ -286,7 +284,7 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
                 results.add(result);
 
                 if (i < 10) {
-                    setHeadline(ctx, result, sanitizedQuery, trxName);
+                    setHeadline(ctx, result, query, trxName);
                 }
                 i++;
             }
@@ -302,7 +300,7 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
     }
 
     @Override
-	public void setHeadline(Properties ctx, ISearchResult result, String sanitizedQuery, String trxName) { // TODO validate if this method must be in the SearchIndexProvider interface
+	public void setHeadline(Properties ctx, ISearchResult result, String query, String trxName) { // TODO validate if this method must be in the SearchIndexProvider interface
 		
 		if (result.getHtmlHeadline() != null && !result.getHtmlHeadline().isEmpty())
 			return;
@@ -332,7 +330,7 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 		try
 		{
 			pstmt = DB.prepareStatement(sql.toString(), trxName);
-			pstmt.setString(1, sanitizedQuery);
+			pstmt.setString(1, convertQueryString(query)); // TODO add IsAdvanced check?
 			pstmt.setInt(2, Env.getAD_Client_ID(ctx));
 			pstmt.setInt(3, result.getRecord_ID());
 			rs = pstmt.executeQuery();
@@ -552,68 +550,33 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 	}
     
     /**
-     * Sanitizes a user-supplied string for PostgreSQL to_tsquery.
-     * Only the AND (&) operator is supported between tokens.
-     * Supports optional prefix search (":*") and weight suffix (":A"–":D") if advanced search is enabled.
-     *
-     * @param input the user query string
-     * @param isAdvanced whether to allow prefix/weight markers
-     * @return a PostgreSQL-safe tsquery string
+     * Converts a String to a valid to_tsquery String. <br>
+     * Only AND (&) operator is supported <br>
+     * Prefix search (:*) and weighted search (:ABCD) is supported <br>
+     * @see <a href="https://www.postgresql.org/docs/current/textsearch-controls.html">PostgreSQL Text Search Controls</a>
+     * @param queryString
+     * @return
      */
-    public static String sanitizeQuery(String input, boolean isAdvanced) {
-        if (input == null || input.isBlank()) {
-            return "";
-        }
-
-        String q = input;
-
-        // Normalize whitespace and remove control characters
-        q = q.replaceAll("[\\t\\n\\r]+", " ").trim();
-
-        // Remove quotes (single and double) to avoid parser issues
-        q = q.replaceAll("[\"']", "");
-
-        // Remove dangerous punctuation or special characters
-        // Keep only letters, digits, underscore, colon, asterisk, and whitespace
-        q = q.replaceAll("[^\\p{L}\\p{N}_:\\*\\s]+", " ");
-
-        // Collapse multiple spaces into one
-        q = q.replaceAll("\\s{2,}", " ").trim();
-
-        if (isAdvanced) {
-            // Validate prefix (:*) and weight markers (:[A-D])
-            // Remove stray or malformed markers
-            q = q.replaceAll("(:\\*|:[A-D]){2,}", ""); // duplicate markers
-            q = q.replaceAll("\\s+:\\*", "");          // prefix marker not attached to a word
-            q = q.replaceAll("\\s+:[A-D]", "");        // weight marker not attached to a word
-        } else {
-            // Strip any markers completely if advanced not enabled
-            q = q.replaceAll("(:\\*|:[A-D])", "");
-        }
-
-        // Remove all parentheses
-        q = q.replaceAll("[()]", "");
-
-        // Split into tokens and rejoin with &
-        String[] tokens = q.trim().split("\\s+");
-        StringBuilder safe = new StringBuilder();
-
-        for (String token : tokens) {
-            if (token.isBlank()) continue;
-            // Ensure no invalid leftover operator characters
-            token = token.replaceAll("[&|!<>]", "");
-
-            // Ensure token doesn't start or end with colon/asterisk
-            token = token.replaceAll("^[:\\*]+|[:\\*]+$", "");
-
-            if (!token.isBlank()) {
-                if (safe.length() > 0) safe.append(" ").append(OPERATOR_AND).append(" ");
-                safe.append(token);
-            }
-        }
-
-        return safe.toString();
-    }
+	private String convertQueryString(String queryString) {
+	    queryString = queryString.trim();
+	    
+	    // Remove all operators
+	    queryString = queryString.replace(OPERATOR_AND, "")
+	                             .replace(OPERATOR_OR, "")
+	                             .replace(OPERATOR_NOT, "")
+	                             .replace(OPERATOR_FOLLOWED_BY, "");
+	    
+	    // Remove abandoned controls and handle duplicate controls
+	    queryString = queryString.replaceAll("\\s+:\\*", "")
+	    		.replaceAll("\\s+:[A-D]", "")
+	    		.replaceAll("(:\\*|:[A-D]){2,}", "");
+	    
+	    // Replace all spaces with OPERATOR_AND
+	    queryString = queryString.trim();
+	    queryString = queryString.replace(" ", " "+OPERATOR_AND+" ");
+	    
+	    return queryString;
+	}
 	
 	/**
 	 * Update the process UI status
@@ -627,16 +590,16 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 	
 	/**
 	 * Gets the rank SQL based on the search type.
-	 * @param sanitizedQuery the sanitized query
+	 * @param query the query
 	 * @param isAdvanced the advanced search flag
 	 * @param searchType the search type
 	 * @param params the parameters
 	 * @param tsConfig the text search configuration
 	 * @return the rank SQL
 	 */
-	private String getRank(String sanitizedQuery, boolean isAdvanced, SearchType searchType, List<Object> params, String tsConfig) {
+	private String getRank(String query, boolean isAdvanced, SearchType searchType, List<Object> params, String tsConfig) {
 		StringBuilder rankSql = new StringBuilder();
-		String[] searchTerms = sanitizedQuery.split(" ");
+		String[] searchTerms = query.split(" ");
 
 		switch (searchType) {
 			case TS_RANK:
@@ -645,12 +608,12 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 				
 				// Original query with higher weight for exact matches with accents
 				rankSql.append("ts_rank(idx_tsvector, to_tsquery('simple'::regconfig, ?::text)) * 2, ");
-				params.add(sanitizedQuery);
+				params.add(isAdvanced ? convertQueryString(query) : query);
 				
 				// Fall back to unaccented matches
 				rankSql.append("ts_rank(idx_tsvector, to_tsquery(?::regconfig, ?::text)))");
 				params.add(tsConfig);
-				params.add(sanitizedQuery);
+				params.add(isAdvanced ? convertQueryString(query) : query);
 				break;
 			case POSITION:
 				rankSql.append("(");
