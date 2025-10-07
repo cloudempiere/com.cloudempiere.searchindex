@@ -603,8 +603,14 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
             // Ensure no invalid leftover operator characters
             token = token.replaceAll("[&|!<>]", "");
 
-            // Ensure token doesn't start or end with colon/asterisk
-            token = token.replaceAll("^[:\\*]+|[:\\*]+$", "");
+            // Ensure token doesn't start with colon/asterisk, but preserve ":*" suffix for prefix search
+            token = token.replaceAll("^[:\\*]+", ""); // Remove only from beginning
+            if (isAdvanced && token.endsWith(":*")) {
+                // Keep ":*" suffix for prefix search in advanced mode
+            } else {
+                // Remove trailing colons/asterisks if not a valid suffix
+                token = token.replaceAll("[:\\*]+$", "");
+            }
 
             if (!token.isBlank()) {
                 if (safe.length() > 0) safe.append(" ").append(OPERATOR_AND).append(" ");
