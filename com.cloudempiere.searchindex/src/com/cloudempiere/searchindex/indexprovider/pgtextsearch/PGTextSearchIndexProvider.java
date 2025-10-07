@@ -554,11 +554,22 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
     /**
      * Sanitizes a user-supplied string for PostgreSQL to_tsquery.
      * Only the AND (&) operator is supported between tokens.
-     * Supports optional prefix search (":*") and weight suffix (":A"–":D") if advanced search is enabled.
+     * 
+     * This method handles the prefix search marker in advanced mode:
+     * - Prefix search marker (":*") - Enables PostgreSQL prefix search functionality 
+     *   (e.g., "word:*" matches "word", "words", etc.)
+     *
+     * Marker behavior:
+     * - In non-advanced mode: All markers are completely stripped from tokens
+     * - In advanced mode: 
+     *   - The prefix marker ":*" is preserved if properly attached to the end of a word
+     *   - Markers at the beginning of tokens are always removed
+     *   - Standalone or duplicate markers are removed
+     *   - The prefix marker is only valid at the end of a token (e.g., "word:*")
      *
      * @param input the user query string
-     * @param isAdvanced whether to allow prefix/weight markers
-     * @return a PostgreSQL-safe tsquery string
+     * @param isAdvanced whether to allow the prefix search marker
+     * @return a PostgreSQL-safe tsquery string ready for use with to_tsquery/plainto_tsquery
      */
     public static String sanitizeQuery(String input, boolean isAdvanced) {
         if (input == null || input.isBlank()) {
@@ -567,28 +578,21 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 
         String q = input;
 
-        // Normalize whitespace and remove control characters
-        q = q.replaceAll("[\\t\\n\\r]+", " ").trim();
-
-        // Remove quotes (single and double) to avoid parser issues
-        q = q.replaceAll("[\"']", "");
-
-        // Remove dangerous punctuation or special characters
-        // Keep only letters, digits, underscore, colon, asterisk, and whitespace
-        q = q.replaceAll("[^\\p{L}\\p{N}_:\\*\\s]+", " ");
-
-        // Collapse multiple spaces into one
-        q = q.replaceAll("\\s{2,}", " ").trim();
+        // Normalize input: replace control chars with space, remove quotes & unwanted chars, collapse spaces
+        // This keeps only characters that are valid in PostgreSQL text search: letters, numbers, some operators
+        q = q.replaceAll("[\\t\\n\\r\"']+|[^\\p{L}\\p{N}_:\\*\\s]+", " ")
+             .replaceAll("\\s{2,}", " ")
+             .trim();
 
         if (isAdvanced) {
-            // Validate prefix (:*) and weight markers (:[A-D])
-            // Remove stray or malformed markers
-            q = q.replaceAll("(:\\*|:[A-D]){2,}", ""); // duplicate markers
-            q = q.replaceAll("\\s+:\\*", "");          // prefix marker not attached to a word
-            q = q.replaceAll("\\s+:[A-D]", "");        // weight marker not attached to a word
+            // In advanced mode, preserve properly formatted prefix markers but remove invalid ones:
+            // - Remove duplicate markers like "word:*:*"
+            // - Remove standalone markers that aren't attached to words like "word :*"
+            q = q.replaceAll("(:\\*){2,}|\\s+:\\*", "");
         } else {
-            // Strip any markers completely if advanced not enabled
-            q = q.replaceAll("(:\\*|:[A-D])", "");
+            // In non-advanced mode, strip all markers completely
+            // This ensures simple text search behavior without any special PostgreSQL operators
+            q = q.replaceAll(":\\*", "");
         }
 
         // Remove all parentheses
@@ -603,12 +607,17 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
             // Ensure no invalid leftover operator characters
             token = token.replaceAll("[&|!<>]", "");
 
-            // Ensure token doesn't start with colon/asterisk, but preserve ":*" suffix for prefix search
+            // Process special characters in token:
+            // 1. First remove any colons/asterisks from the beginning of tokens
             token = token.replaceAll("^[:\\*]+", ""); // Remove only from beginning
+            
             if (isAdvanced && token.endsWith(":*")) {
-                // Keep ":*" suffix for prefix search in advanced mode
+                // 2. In advanced mode, preserve the ":*" suffix for prefix search
+                // This is the PostgreSQL prefix operator that allows "word:*" to match "word", "words", etc.
+                // No action needed - keep the suffix intact
             } else {
-                // Remove trailing colons/asterisks if not a valid suffix
+                // 3. Otherwise remove any trailing colons/asterisks
+                // This handles cases like "word:" or "word*"
                 token = token.replaceAll("[:\\*]+$", "");
             }
 
