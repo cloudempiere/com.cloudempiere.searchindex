@@ -72,10 +72,10 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 		super.init(testInfo);
 		System.out.println("✓ Test: " + testInfo.getDisplayName());
 
-		// Clear table data between tests (transactional operation)
-		// TRUNCATE is faster and safer than DELETE for test cleanup
+		// Clear table data between tests
+		// TRUNCATE is DDL, use null transaction to avoid locks
 		String truncate = "TRUNCATE TABLE " + TEST_TABLE + " RESTART IDENTITY";
-		DB.executeUpdateEx(truncate, null, getTrxName());
+		DB.executeUpdateEx(truncate, null, null);
 	}
 
 	@AfterEach
