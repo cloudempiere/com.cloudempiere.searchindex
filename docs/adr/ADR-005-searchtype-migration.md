@@ -75,6 +75,48 @@ We will **migrate default SearchType from POSITION to TS_RANK** and implement **
 2. **Phase 2:** Change default SearchType to TS_RANK in all codebases
 3. **Phase 3:** Deprecate POSITION (mark as legacy, remove in future version)
 
+### Refinement: Position-Aware Ranking with `ts_rank_cd()`
+
+**Discovery (2025-12-17):** The original POSITION search type provided TWO features:
+1. Slovak diacritics handling (the documented reason)
+2. **Position-based ranking** (undocumented - ranked earlier matches higher)
+
+The original ADR proposed using `ts_rank()` which:
+- ✅ Solves Slovak diacritics (with sk_unaccent config)
+- ❌ Loses position-based ranking (frequency-only)
+
+**Enhanced Solution:** Use **`ts_rank_cd()`** (Cover Density) instead of `ts_rank()`:
+
+```java
+// Before (ADR proposal):
+ts_rank(idx_tsvector, to_tsquery('sk_unaccent', query))
+
+// After (implemented):
+ts_rank_cd(idx_tsvector, to_tsquery('sk_unaccent', query), 2)
+```
+
+**Benefits of `ts_rank_cd()`:**
+- ✅ Slovak diacritics support (via sk_unaccent)
+- ✅ **Position-aware ranking** (earlier matches rank higher)
+- ✅ **Proximity-aware ranking** (closer terms rank higher)
+- ✅ 100× faster than POSITION regex
+- ✅ Uses GIN index (no performance degradation)
+- ✅ Normalization=2: divides by document length + 1
+
+**Why This Matters for Slovak E-commerce:**
+- Product names (early in document) rank higher than descriptions (late in document)
+- Search: "muškát" finds "**Muškát** krúžkovaný" before "Substrát pre muškáty"
+- Better UX: Users expect products with term in NAME to appear first
+
+**Implementation:** Commit 3441f6e (2025-12-17)
+
+**AWS RDS Compatibility:**
+- ✅ `ts_rank_cd()` is a built-in PostgreSQL function (since 8.3)
+- ✅ Fully supported on AWS RDS PostgreSQL (all versions 9.6+)
+- ✅ No extensions required (core feature)
+- ✅ Works identically on-premise and cloud
+- ⚠️ **IMPORTANT:** This is critical for production deployment on AWS RDS
+
 ---
 
 ## Phase 1: Slovak Language Support (Proper Solution)
@@ -177,6 +219,19 @@ sql.append("to_tsvector('").append(getTSConfig(ctx)).append("', ")
 + return provider.getSearchResults(ctx, searchIndex.getSearchIndexName(),
 +     query, isAdvanced, SearchType.TS_RANK, null);
 ```
+
+**IMPORTANT - No Breaking Changes:**
+- ⚠️ **Only change the internal SearchType parameter** (POSITION → TS_RANK)
+- ✅ **Do NOT change REST API endpoint syntax** (URLs, query parameters, response format)
+- ✅ **Do NOT change OData $filter syntax** (searchindex() function remains same)
+- ✅ **Do NOT reimplement REST API resources** (no structural changes)
+- ✅ **100% backward compatible** for API consumers (transparent performance improvement)
+
+Example - API remains unchanged:
+```
+GET /api/v1/models/m_product?$filter=searchindex('product_idx', 'muškát')&$orderby=searchindexrank desc
+```
+This endpoint works identically before and after the change. Only the internal ranking algorithm improves.
 
 ### Configuration Option (Future Enhancement)
 

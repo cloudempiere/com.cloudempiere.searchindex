@@ -1,0 +1,82 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>com.cloudempiere.searchindex.test</artifactId>
+  <packaging>eclipse-test-plugin</packaging>
+  <parent>
+    <groupId>org.idempiere</groupId>
+    <artifactId>org.idempiere.parent</artifactId>
+    <version>${revision}</version>
+    <relativePath>../../iDempiereCLDE/org.idempiere.parent/pom.xml</relativePath>
+  </parent>
+
+  <properties>
+    <idempiere.home>..</idempiere.home>
+    <skipTests>false</skipTests>
+
+    <!-- JUnit 5 Parallel Execution Configuration -->
+    <p1>-Djunit.jupiter.execution.parallel.enabled=true</p1>
+    <p2>-Djunit.jupiter.execution.parallel.mode.default=concurrent</p2>
+    <p3>-Djunit.jupiter.execution.parallel.config.strategy=fixed</p3>
+    <p4>-Djunit.jupiter.execution.parallel.config.fixed.parallelism=4</p4>
+    <p5>-Djunit.jupiter.execution.parallel.mode.classes.default=same_thread</p5>
+  </properties>
+
+  <build>
+    <plugins>
+      <!-- Tycho Surefire Plugin for JUnit 5 Tests -->
+      <plugin>
+        <groupId>org.eclipse.tycho</groupId>
+        <artifactId>tycho-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>
+            -DIDEMPIERE_HOME=${idempiere.home} ${p1} ${p2} ${p3} ${p4} ${p5}
+          </argLine>
+          <testRuntime>p2Installed</testRuntime>
+          <skipTests>${skipTests}</skipTests>
+          <providerHint>junit58</providerHint>
+          <useUIHarness>false</useUIHarness>
+          <includes>
+            <include>**/*Test.java</include>
+          </includes>
+          <extraRequirements>
+            <requirement>
+              <type>eclipse-plugin</type>
+              <id>com.cloudempiere.searchindex</id>
+              <versionRange>0.0.0</versionRange>
+            </requirement>
+          </extraRequirements>
+        </configuration>
+      </plugin>
+    </plugins>
+
+    <pluginManagement>
+      <plugins>
+        <!-- Tell m2e to ignore Tycho lifecycle (this is an OSGi test fragment) -->
+        <plugin>
+          <groupId>org.eclipse.m2e</groupId>
+          <artifactId>lifecycle-mapping</artifactId>
+          <version>1.0.0</version>
+          <configuration>
+            <lifecycleMappingMetadata>
+              <pluginExecutions>
+                <pluginExecution>
+                  <pluginExecutionFilter>
+                    <groupId>org.eclipse.tycho</groupId>
+                    <artifactId>tycho-surefire-plugin</artifactId>
+                    <versionRange>[0.0.0,)</versionRange>
+                    <goals>
+                      <goal>test</goal>
+                    </goals>
+                  </pluginExecutionFilter>
+                  <action>
+                    <ignore />
+                  </action>
+                </pluginExecution>
+              </pluginExecutions>
+            </lifecycleMappingMetadata>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>

@@ -1,0 +1,13 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Search Index Tests
+Bundle-SymbolicName: com.cloudempiere.searchindex.test
+Bundle-Version: 10.0.0.qualifier
+Bundle-Vendor: Cloudempiere
+Fragment-Host: com.cloudempiere.searchindex;bundle-version="10.0.0"
+Automatic-Module-Name: com.cloudempiere.searchindex.test
+Bundle-RequiredExecutionEnvironment: JavaSE-11
+Import-Package: org.assertj.core.api;version="3.22.0",
+ org.junit.jupiter.api;version="5.6.0",
+ org.junit.jupiter.api.extension;version="5.6.0"
+Require-Bundle: org.idempiere.test;bundle-version="10.0.0"
