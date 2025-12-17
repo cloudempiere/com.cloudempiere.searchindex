@@ -7,14 +7,16 @@ and this project adheres to [Conventional Commits](https://conventionalcommits.o
 
 ---
 
-## ⚠️ Critical Issues Requiring Attention
+## ⚠️ Critical Issues Status
 
 | Issue | Severity | Status | ADR Reference | Impact |
 |-------|----------|--------|---------------|--------|
-| **POSITION Search Performance** | 🔴 Critical | Open | [ADR-005](docs/adr/ADR-005-searchtype-migration.md), [ADR-003](docs/adr/ADR-003-slovak-text-search-configuration.md) | 100× slower than TS_RANK, 5s for 10K products |
-| **Multi-Tenant Data Integrity** | 🔴 Critical | Open | [ADR-006](docs/adr/ADR-006-multi-tenant-integrity.md) | Cross-client record corruption risk |
-| **REST API POSITION Hardcoded** | 🟡 Medium | Open | [ADR-004](docs/adr/ADR-004-rest-api-odata-integration.md) | REST API has same 100× performance issue |
-| **Slovak Language Config Missing** | 🟡 Medium | Open | [ADR-003](docs/adr/ADR-003-slovak-text-search-configuration.md) | Missing €36,700 cost savings vs Elasticsearch |
+| **POSITION Search Performance (UI)** | 🔴 Critical | ✅ Fixed | [ADR-005](docs/adr/ADR-005-searchtype-migration.md) | Backend UI now uses TS_RANK (100× faster) |
+| **Multi-Tenant Data Integrity** | 🔴 Critical | ✅ Fixed | [ADR-006](docs/adr/ADR-006-multi-tenant-integrity.md) | UNIQUE constraint now includes ad_client_id |
+| **SQL Injection Vulnerabilities** | 🔴 Critical | ✅ Fixed | [ADR-002](docs/adr/ADR-002-sql-injection-prevention.md) | Defense-in-depth validation added |
+| **Transaction Isolation** | 🔴 Critical | ✅ Fixed | [ADR-001](docs/adr/ADR-001-transaction-isolation.md) | Index ops use separate transactions |
+| **Slovak Language Config** | 🟡 Medium | ✅ Fixed | [ADR-003](docs/adr/ADR-003-slovak-text-search-configuration.md) | sk_unaccent config support added |
+| **REST API POSITION Hardcoded** | 🟡 Medium | ⚠️ Open | [ADR-004](docs/adr/ADR-004-rest-api-odata-integration.md) | Requires fix in cloudempiere-rest repo |
 | **Cache Invalidation** | 🟡 Medium | Open | N/A | Restart required after config changes |
 
 **For comprehensive analysis and solutions, see:**
@@ -28,7 +30,72 @@ and this project adheres to [Conventional Commits](https://conventionalcommits.o
 
 ## [Unreleased]
 
+### Fixed
+
+#### Security (ADR-002: SQL Injection Prevention)
+- **CRITICAL:** Added SQL injection prevention with defense-in-depth strategy
+  - Created `SearchIndexSecurityValidator` with three-layer protection:
+    1. Input validation (dangerous patterns and safe characters)
+    2. Whitelist verification (table/column names against AD_Table/AD_Column)
+    3. Parameterized queries where possible
+  - Fixed SQL injection vulnerabilities in:
+    - `PGTextSearchIndexProvider.java`: WHERE clause concatenation (lines 148-151, 167-170)
+    - `PGTextSearchIndexProvider.java`: Table name concatenation (lines 144, 163, 361)
+    - `SearchIndexConfigBuilder.java`: WHERE clause concatenation (lines 320-326)
+  - See [ADR-002](docs/adr/ADR-002-sql-injection-prevention.md) for complete analysis
+
+#### Data Integrity (ADR-006: Multi-Tenant Integrity)
+- **CRITICAL:** Fixed multi-tenant data corruption vulnerability
+  - Updated UNIQUE constraint from `(ad_table_id, record_id)` to `(ad_client_id, ad_table_id, record_id)`
+  - Fixed `PGTextSearchIndexProvider.java:116` ON CONFLICT clause
+  - Created migration scripts:
+    - `202512_cleanup_duplicate_search_index_data.sql` - Pre-migration data cleanup
+    - `202512_fix_multi_tenant_unique_index.sql` - Apply new constraint
+  - Prevents cross-client record overwrites
+  - See [ADR-006](docs/adr/ADR-006-multi-tenant-integrity.md) for impact analysis
+
+#### Transaction Isolation (ADR-001: Transaction Isolation Strategy)
+- **CRITICAL:** Implemented separate transaction isolation for search index operations
+  - Refactored `SearchIndexEventHandler` to use dedicated transactions
+  - Removed instance variables `ctx` and `trxName` (thread safety issue)
+  - Added `executeIndexUpdateWithSeparateTransaction()` helper method
+  - Index failures no longer rollback business transactions
+  - Improved performance by reducing lock contention
+  - Updated helper methods to accept ctx/trxName as parameters:
+    - `getMainPOs()`, `getMainPOsOfTable()`, `applyWhereClause()`, `handleSearchIndexConfigChange()`
+  - See [ADR-001](docs/adr/ADR-001-transaction-isolation.md) for rationale
+
+### Changed
+
+#### Performance (ADR-005: SearchType Migration)
+- **CRITICAL:** Changed default SearchType from POSITION to TS_RANK for 100× performance improvement
+  - Updated `ZkSearchIndexUI.java:189` to use `SearchType.TS_RANK` (backend UI)
+  - **Impact:** Search queries complete in <100ms instead of 5-10s for 10K records
+  - **Breaking Change:** Result ranking may differ from POSITION (uses ts_rank instead of regex position)
+  - **Action Required:** REST API still hardcoded to POSITION (cloudempiere-rest repository)
+  - See [ADR-005](docs/adr/ADR-005-searchtype-migration.md) for migration guide
+
+#### Language Support (ADR-005: Slovak/Czech Text Search Configuration)
+- Added Slovak/Czech language diacritics support with proper text search configuration
+  - Updated `getTSConfig()` method to detect Slovak (`sk_SK`) and Czech (`cs_CZ`) languages
+  - Returns `sk_unaccent` configuration for proper diacritics handling
+  - Created migration script: `202512_create_slovak_text_search_config.sql`
+  - Enables searches without diacritics to match text with diacritics
+  - Example: searching "ruza" matches "ruža", "růža", "rúža"
+  - See [ADR-003](docs/adr/ADR-003-slovak-text-search-configuration.md) for architecture
+
 ### Added
+
+#### Database Migration Scripts
+- `202512_cleanup_duplicate_search_index_data.sql` - Clean duplicate entries before migration
+- `202512_fix_multi_tenant_unique_index.sql` - Apply multi-tenant UNIQUE constraint
+- `202512_create_slovak_text_search_config.sql` - Create Slovak text search configuration
+
+#### Security Infrastructure
+- `SearchIndexSecurityValidator` utility class for SQL injection prevention
+  - `validateWhereClause()` - Validates WHERE clause for dangerous patterns
+  - `validateTableName()` - Validates table name against AD_Table whitelist
+  - `validateColumnName()` - Validates column name against AD_Column whitelist
 
 #### Architecture Decision Records
 - **ADR-003: Slovak Text Search Configuration Architecture** - Formalizes Slovak language support using PostgreSQL text search configuration with multi-weight indexing to replace POSITION workaround (see [docs/adr/ADR-003](docs/adr/ADR-003-slovak-text-search-configuration.md))
