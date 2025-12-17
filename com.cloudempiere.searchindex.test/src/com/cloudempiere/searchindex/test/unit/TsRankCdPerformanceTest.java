@@ -9,7 +9,9 @@ import java.util.List;
 
 import org.compiere.util.DB;
 import org.idempiere.test.AbstractTestCase;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -31,38 +33,55 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 
 	private static final String TEST_TABLE = "test_ts_rank_cd";
 
-	@Override
-	@BeforeEach
-	protected void init(TestInfo testInfo) {
-		// CRITICAL: Initialize database connection first
-		super.init(testInfo);
-		System.out.println("✓ Database initialized for: " + testInfo.getDisplayName());
-
-		// Create test table with tsvector column
-		// DDL operations use null transaction to avoid locks between tests
+	/**
+	 * Create test table once for all tests (class-level setup)
+	 * DDL operations outside transaction to avoid locks
+	 */
+	@BeforeAll
+	public static void createTestTable() {
 		String ddl = "CREATE TABLE IF NOT EXISTS " + TEST_TABLE + " (" +
 			"id SERIAL PRIMARY KEY, " +
 			"name TEXT, " +
 			"idx_tsvector tsvector" +
 			")";
-		System.out.println("→ Creating table...");
+		System.out.println("→ Creating test table (once for all tests)...");
 		DB.executeUpdateEx(ddl, null, null); // null trxName for DDL
-		System.out.println("✓ Table created");
 
 		// Create GIN index
 		String indexDdl = "CREATE INDEX IF NOT EXISTS " + TEST_TABLE + "_idx " +
 			"ON " + TEST_TABLE + " USING GIN (idx_tsvector)";
-		System.out.println("→ Creating GIN index...");
 		DB.executeUpdateEx(indexDdl, null, null); // null trxName for DDL
-		System.out.println("✓ GIN index created");
+		System.out.println("✓ Test table and GIN index created\n");
+	}
+
+	/**
+	 * Drop test table after all tests complete (class-level cleanup)
+	 */
+	@AfterAll
+	public static void dropTestTable() {
+		System.out.println("\n→ Dropping test table (after all tests)...");
+		String sql = "DROP TABLE IF EXISTS " + TEST_TABLE + " CASCADE";
+		DB.executeUpdateEx(sql, null, null); // null trxName for DDL
+		System.out.println("✓ Test table dropped");
+	}
+
+	@Override
+	@BeforeEach
+	protected void init(TestInfo testInfo) {
+		// CRITICAL: Initialize database connection first
+		super.init(testInfo);
+		System.out.println("✓ Test: " + testInfo.getDisplayName());
+
+		// Clear table data between tests (transactional operation)
+		// TRUNCATE is faster and safer than DELETE for test cleanup
+		String truncate = "TRUNCATE TABLE " + TEST_TABLE + " RESTART IDENTITY";
+		DB.executeUpdateEx(truncate, null, getTrxName());
 	}
 
 	@AfterEach
 	public void tearDown() {
-		System.out.println("→ Cleaning up test table...");
-		String sql = "DROP TABLE IF EXISTS " + TEST_TABLE + " CASCADE";
-		DB.executeUpdateEx(sql, null, null); // null trxName for DDL
-		System.out.println("✓ Test table dropped");
+		// No cleanup needed - TRUNCATE happens in next test's @BeforeEach
+		// Transaction rollback is automatic via AbstractTestCase
 	}
 
 	/**
