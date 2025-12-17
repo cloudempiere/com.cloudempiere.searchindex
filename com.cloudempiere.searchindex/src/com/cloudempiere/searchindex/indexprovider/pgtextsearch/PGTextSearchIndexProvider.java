@@ -437,16 +437,16 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
             if (columnData != null) {
             	String tsWeight = getTSWeight(columnData.getSearchWeight(), columnData.getMaxSearchWeight());
                 String value = Objects.toString(columnData.getValue(), "");
-                
-                // Add original text with higher weight (A)
+
+                // Add original text with calculated weight based on SearchWeight
                 documentContent.append("setweight(")
                 	.append("to_tsvector('simple'::regconfig,")
                 	.append("?::text)")
-                	.append(",").append("'A')")
+                	.append(",").append("'").append(tsWeight).append("')")
                 	.append(" || ");
                 params.add(value);
-                
-                // Add unaccented text with original weight
+
+                // Add unaccented text with same calculated weight
                 documentContent.append("setweight(")
                 	.append("to_tsvector('")
                 	.append(tsConfig).append("'::regconfig,")
