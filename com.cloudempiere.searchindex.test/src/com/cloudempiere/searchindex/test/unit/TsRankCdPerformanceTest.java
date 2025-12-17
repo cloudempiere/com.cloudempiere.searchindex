@@ -36,24 +36,25 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 		// CRITICAL: Initialize database connection first
 		super.init(testInfo);
 
-		// Create test table with tsvector column
+		// Create test table with tsvector column (DDL uses null transaction for immediate execution)
 		String ddl = "CREATE TABLE IF NOT EXISTS " + TEST_TABLE + " (" +
 			"id SERIAL PRIMARY KEY, " +
 			"name TEXT, " +
 			"idx_tsvector tsvector" +
 			")";
-		DB.executeUpdateEx(ddl, null, getTrxName());
+		DB.executeUpdateEx(ddl, null, null); // null trxName = auto-commit DDL
 
-		// Create GIN index
+		// Create GIN index (DDL uses null transaction for immediate execution)
 		String indexDdl = "CREATE INDEX IF NOT EXISTS " + TEST_TABLE + "_idx " +
 			"ON " + TEST_TABLE + " USING GIN (idx_tsvector)";
-		DB.executeUpdateEx(indexDdl, null, getTrxName());
+		DB.executeUpdateEx(indexDdl, null, null); // null trxName = auto-commit DDL
 	}
 
 	@AfterEach
 	public void tearDown() {
+		// DROP TABLE with null transaction to avoid locks between tests
 		String sql = "DROP TABLE IF EXISTS " + TEST_TABLE + " CASCADE";
-		DB.executeUpdateEx(sql, null, getTrxName());
+		DB.executeUpdateEx(sql, null, null); // null trxName = auto-commit DDL
 	}
 
 	/**
