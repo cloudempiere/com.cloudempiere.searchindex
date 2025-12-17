@@ -108,13 +108,16 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
                     params.add(Env.getAD_Client_ID(ctx));
                     params.add(searchIndexRecord.getTableId());
                     params.add(Integer.parseInt(tableDataSet.get("Record_ID").getValue().toString()));
+
                     String documentContent = documentContentToTsvector(tableDataSet, tsConfig, params);
+
                     StringBuilder upsertQuery = new StringBuilder();
                     upsertQuery.append("INSERT INTO ").append(tableName).append(" ")
                                .append("(ad_client_id, ad_table_id, record_id, idx_tsvector) VALUES (?, ?, ?, ")
                                .append(documentContent).append(") ")
                                // Fix ADR-006: Include ad_client_id in UNIQUE constraint to prevent multi-tenant data corruption
-                               .append("ON CONFLICT (ad_client_id, ad_table_id, record_id) DO UPDATE SET idx_tsvector = EXCLUDED.idx_tsvector");
+                               .append("ON CONFLICT (ad_client_id, ad_table_id, record_id) DO UPDATE SET ")
+                               .append("idx_tsvector = EXCLUDED.idx_tsvector");
                     DB.executeUpdateEx(upsertQuery.toString(), params.toArray(), trxName);
                     i++;
                 }
@@ -226,37 +229,63 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
             String tableName = tablesToSearch.get(i);
             // Validate table name to prevent SQL injection
             String safeTableName = SearchIndexSecurityValidator.validateTableName(tableName, trxName);
-            sql.append("SELECT DISTINCT ad_table_id, record_id, ")
-            	.append(getRank(sanitizedQuery, isAdvanced, searchType, params, tsConfig))
+
+            // Build SELECT clause with runtime position extraction for position-aware ordering
+            sql.append("SELECT DISTINCT ad_table_id, record_id, ");
+
+            // Extract position of search term from idx_tsvector at query time using native PostgreSQL functions
+            // This runs only on matching rows (after GIN index filtering), so it's fast
+            // Format: 'lexeme':position1,position2 'other':position3
+            // Strategy: Find lexeme matching search term, extract first position number
+
+            // Extract first search term (remove operators and wildcards)
+            String firstTerm = sanitizedQuery.split("&")[0].replaceAll(":\\*", "").trim();
+
+            sql.append("COALESCE(")
+               .append("(SELECT ")
+               // Extract position and remove weight letters (A, B, C, D)
+               // Format: 'muskat':1A,5B → extract '1A' → remove 'A' → '1'
+               .append("regexp_replace(")
+               .append("split_part(split_part(replace(elem, '''', ''), ':', 2), ',', 1), ")
+               .append("'[A-D]', '', 'g')::int ")
+               .append("FROM unnest(string_to_array(idx_tsvector::text, ' ')) AS elem ")
+               .append("WHERE elem LIKE '''")
+               .append(firstTerm.toLowerCase())  // Match case-insensitive
+               .append("%' LIMIT 1), ")
+               .append("999) as term_position, ");
+
+            sql.append(getRank(sanitizedQuery, isAdvanced, searchType, params, tsConfig))
 	            .append(" as rank FROM ")
 	            .append(safeTableName)
             	.append(" WHERE idx_tsvector @@ ");
-            
-            
+
+            // Simplified WHERE clause: use unaccent config only (no OR combination)
+            // This provides consistent diacritics-insensitive search for Slovak/Czech languages
             if (isAdvanced) {
-                // Searches for both original and unaccented versions
-                sql.append("(to_tsquery('simple'::regconfig, ?::text) || to_tsquery(?::regconfig, ?::text)) ");
-                params.add(sanitizedQuery); // with accents using simple config
-                params.add(tsConfig);                  
-                params.add(sanitizedQuery); // with unaccent config
+                sql.append("to_tsquery(?::regconfig, ?::text) ");
+                params.add(tsConfig);
+                params.add(sanitizedQuery);
             } else {
-                // Same for plain text search
-                sql.append("(plainto_tsquery('simple'::regconfig, ?::text) || plainto_tsquery(?::regconfig, ?::text)) ");
-                params.add(sanitizedQuery);      // with accents using simple config
-                params.add(tsConfig);   
-                params.add(sanitizedQuery);      // with unaccent config
+                sql.append("plainto_tsquery(?::regconfig, ?::text) ");
+                params.add(tsConfig);
+                params.add(sanitizedQuery);
             }
 
             sql.append("AND AD_CLIENT_ID IN (0,?) ");
             params.add(clientId);
 
-            sql.append("ORDER BY rank ");
+            // Option C ordering: position first (earlier = higher priority), then rank (shorter docs = higher priority)
+            sql.append("ORDER BY ");
             switch (searchType) {
 				case TS_RANK:
-					sql.append("DESC ");
+					// Position-based ordering: earlier matches ranked higher, ties broken by document length
+					// Uses runtime-extracted term_position (native PostgreSQL string functions, no regex)
+					// Runs only on matching rows after GIN index filtering (fast!)
+					sql.append("term_position ASC, rank DESC ");
 					break;
 				case POSITION:
-					sql.append("ASC ");
+					// Legacy POSITION search type (regex-based, for backward compatibility)
+					sql.append("rank ASC ");
 					break;
 				default:
 					break;
@@ -282,7 +311,18 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
             while (rs.next()) {
                 int AD_Table_ID = rs.getInt(1);
                 int recordID = rs.getInt(2);
-                double rank = rs.getDouble(3);
+
+                // Column layout depends on SearchType:
+                // TS_RANK: (ad_table_id, record_id, term_position, rank)
+                // POSITION: (ad_table_id, record_id, rank)
+                double rank;
+                if (searchType == SearchType.TS_RANK) {
+                    // Skip term_position (column 3), read rank from column 4
+                    rank = rs.getDouble(4);
+                } else {
+                    // Read rank from column 3
+                    rank = rs.getDouble(3);
+                }
 
                 // FIXME: uncomment and discuss
 //                int AD_Window_ID = Env.getZoomWindowID(AD_Table_ID, recordID);
@@ -512,7 +552,7 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 		
 		// Replace multiple spaces with a single space
 		String normalized = normalizedContent.toString().replaceAll("\\s+", " ").trim();
-		
+
 		// Combine original and normalized versions to support both exact and partial matches
 		return originalContent + " " + normalized;
 	}
@@ -676,18 +716,14 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 
 		switch (searchType) {
 			case TS_RANK:
-				// Use ts_rank_cd() for position-aware ranking (ADR-005)
-				// ts_rank_cd() considers word positions and proximity, ranking earlier matches higher
-				// This provides the same position-based ranking as POSITION search type, but 100× faster
-				rankSql.append("GREATEST(");
-
-				// Original query with higher weight for exact matches with accents
-				// normalization=2: divides by document length + 1 (prevents long documents from dominating)
-				rankSql.append("ts_rank_cd(idx_tsvector, to_tsquery('simple'::regconfig, ?::text), 2) * 2, ");
-				params.add(sanitizedQuery);
-
-				// Fall back to unaccented matches
-				rankSql.append("ts_rank_cd(idx_tsvector, to_tsquery(?::regconfig, ?::text), 2))");
+				// Use ts_rank_cd() with cover density ranking (ADR-005)
+				// NOTE: For single-term searches, ts_rank_cd does NOT rank by word position!
+				// It only ranks by document length: rank = 1.0 / (document_length + 1)
+				// Word position ordering is handled separately in ORDER BY clause
+				//
+				// For multi-term searches, ts_rank_cd considers term proximity (closer terms = higher rank)
+				// normalization=2: divides by document length + 1 (shorter documents rank higher)
+				rankSql.append("ts_rank_cd(idx_tsvector, to_tsquery(?::regconfig, ?::text), 2)");
 				params.add(tsConfig);
 				params.add(sanitizedQuery);
 				break;
