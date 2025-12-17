@@ -13,6 +13,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.Timeout;
 
 /**
  * Direct SQL tests for ts_rank_cd() position-aware ranking
@@ -35,6 +36,7 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 	protected void init(TestInfo testInfo) {
 		// CRITICAL: Initialize database connection first
 		super.init(testInfo);
+		System.out.println("✓ Database initialized for: " + testInfo.getDisplayName());
 
 		// Create test table with tsvector column
 		String ddl = "CREATE TABLE IF NOT EXISTS " + TEST_TABLE + " (" +
@@ -42,18 +44,24 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 			"name TEXT, " +
 			"idx_tsvector tsvector" +
 			")";
+		System.out.println("→ Creating table...");
 		DB.executeUpdateEx(ddl, null, getTrxName());
+		System.out.println("✓ Table created");
 
 		// Create GIN index
 		String indexDdl = "CREATE INDEX IF NOT EXISTS " + TEST_TABLE + "_idx " +
 			"ON " + TEST_TABLE + " USING GIN (idx_tsvector)";
+		System.out.println("→ Creating GIN index...");
 		DB.executeUpdateEx(indexDdl, null, getTrxName());
+		System.out.println("✓ GIN index created");
 	}
 
 	@AfterEach
 	public void tearDown() {
+		System.out.println("→ Cleaning up test table...");
 		String sql = "DROP TABLE IF EXISTS " + TEST_TABLE + " CASCADE";
 		DB.executeUpdateEx(sql, null, getTrxName());
+		System.out.println("✓ Test table dropped");
 	}
 
 	/**
@@ -173,6 +181,7 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 	 * Test 4: Proximity matters with ts_rank_cd()
 	 */
 	@Test
+	@Timeout(10) // 10 seconds timeout to fail fast instead of hanging
 	public void testProximityMatters() throws Exception {
 		// GIVEN: Two documents with different term proximity
 		// Document 1: Terms close together
