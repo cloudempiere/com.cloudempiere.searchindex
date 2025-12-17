@@ -62,13 +62,15 @@ public class SearchIndexSecurityValidator {
     /**
      * Validates WHERE clause for SQL injection patterns.
      *
-     * Checks for:
-     * - Dangerous SQL keywords (DROP, DELETE, INSERT, etc.)
-     * - SQL comments (-- and /* */)
-     * - Statement terminators (;)
-     * - Unsafe characters
+     * <p>Checks for:
+     * <ul>
+     * <li>Dangerous SQL keywords (DROP, DELETE, INSERT, etc.)</li>
+     * <li>SQL comments (double dash and slash-star)</li>
+     * <li>Statement terminators (semicolon)</li>
+     * <li>Unsafe characters</li>
+     * </ul>
      *
-     * @param whereClause WHERE clause to validate (without "WHERE" keyword)
+     * @param whereClause WHERE clause to validate (without WHERE keyword)
      * @throws AdempiereException if validation fails
      */
     public static void validateWhereClause(String whereClause) {
