@@ -1,9 +1,12 @@
 # ADR-006: Multi-Tenant Data Integrity for Search Indexes
 
-**Status:** Proposed
+**Status:** ✅ Implemented
 **Date:** 2025-12-12
+**Implementation Date:** 2025-12-17
 **Decision Makers:** Development Team, Database Team
 **Related Issues:** Finding 5.2 (CRITICAL)
+**Implementation Commits:** 378ec8b (ON CONFLICT clause fix)
+**Migration Scripts:** docs/migration/001-fix-all-search-index-constraints.sql
 
 ---
 

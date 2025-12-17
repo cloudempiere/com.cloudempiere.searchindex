@@ -1,9 +1,11 @@
 # ADR-001: Transaction Isolation Strategy for Search Index Updates
 
-**Status:** Proposed
+**Status:** ✅ Implemented
 **Date:** 2025-12-12
+**Implementation Date:** 2025-12-17
 **Decision Makers:** Development Team, Architecture Review Board
 **Related Issues:** Finding 2.1 (CRITICAL)
+**Implementation Commits:** 378ec8b, 3026c09
 
 ---
 

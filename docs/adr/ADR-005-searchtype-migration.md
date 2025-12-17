@@ -1,9 +1,12 @@
 # ADR-005: SearchType Migration from POSITION to TS_RANK
 
-**Status:** Proposed
+**Status:** ✅ Implemented (UI), ⚠️ Pending (REST API)
 **Date:** 2025-12-12
+**Implementation Date:** 2025-12-17
 **Decision Makers:** Development Team, Performance Team
 **Related Issues:** Known Issue - SearchType.POSITION Performance (CLAUDE.md:91-124)
+**Implementation Commits:** e4c23b5 (POSITION ranking fix), existing code (Slovak config)
+**Pending:** REST API updates in cloudempiere-rest repository
 
 ---
 
