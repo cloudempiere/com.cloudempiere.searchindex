@@ -306,8 +306,8 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
             log.log(Level.SEVERE, sql.toString(), e);
         } finally {
             DB.close(rs, pstmt);
-            rs = null;
-            pstmt = null;
+            // Clear cache to prevent memory leak across multiple search operations
+            indexQuery.clear();
         }
 
         return results;
@@ -341,28 +341,20 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 		//Bring the table ids that are indexed
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
-		try
-		{
+		try {
 			pstmt = DB.prepareStatement(sql.toString(), trxName);
 			pstmt.setString(1, sanitizedQuery);
 			pstmt.setInt(2, Env.getAD_Client_ID(ctx));
 			pstmt.setInt(3, result.getRecord_ID());
 			rs = pstmt.executeQuery();
 
-			while (!Thread.currentThread().isInterrupted() && rs.next())
-			{
+			while (!Thread.currentThread().isInterrupted() && rs.next()) {
 				result.setHtmlHeadline(rs.getString(1));
 			}
-		}
-		catch (Exception e)
-		{
+		} catch (Exception e) {
 			log.log(Level.SEVERE, sql.toString(), e);
-		}
-		finally
-		{
+		} finally {
 			DB.close(rs, pstmt);
-			rs = null;
-			pstmt = null;
 		}
 	}
 

@@ -28,6 +28,7 @@ public class IndexedTable {
         this.tableName = tableName;
         this.tableId = tableId;
         this.whereClause = whereClause;
+        this.fkTableIDs = new HashSet<>();
         this.fkTableNames = new HashSet<>();
         this.columnIds = new HashSet<>();
     }

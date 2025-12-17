@@ -385,4 +385,23 @@ public class SearchIndexConfigBuilder {
         }
         return parts[1];
     }
+
+    /**
+     * Clear cache for specific search index
+     * Called when search index configuration changes
+     * @param searchIndexId AD_SearchIndex_ID
+     */
+    public static void clearCache(int searchIndexId) {
+        searchIndexConfigCache.remove(searchIndexId);
+        log.info("Cleared search index config cache for AD_SearchIndex_ID=" + searchIndexId);
+    }
+
+    /**
+     * Clear entire search index config cache
+     * Use when bulk configuration changes occur
+     */
+    public static void clearAllCache() {
+        searchIndexConfigCache.clear();
+        log.info("Cleared entire search index config cache");
+    }
 }

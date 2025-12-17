@@ -61,7 +61,7 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 	private static CLogger log = CLogger.getCLogger(SearchIndexEventHandler.class);
 
 	/** Indexed tables set (key: AD_SearchIndex_ID, name: TableName) */
-	private Map<Integer, Set<IndexedTable>> indexedTablesByClient = null; // key is AD_Client_ID
+	private volatile Map<Integer, Set<IndexedTable>> indexedTablesByClient = null; // key is AD_Client_ID
 
 	@Override
 	protected void initialize() {
@@ -102,14 +102,18 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 		PO eventPO = getPO(event);
 		// Fix ADR-001: Use local variables instead of instance variables
 		Properties ctx = Env.getCtx();
-		Set<IndexedTable> indexedTables = indexedTablesByClient.get(Env.getAD_Client_ID(ctx));
-		Set<IndexedTable> indexedTables0 = indexedTablesByClient.get(0);
-		if (indexedTables == null)
-			indexedTables = indexedTables0;
-		else {
-			if (indexedTables0 != null)
-				indexedTables.addAll(indexedTables0);
-		}
+		// Create defensive copy to avoid modifying shared data structure
+		Set<IndexedTable> indexedTables = new HashSet<>();
+		Set<IndexedTable> clientTables = indexedTablesByClient.get(Env.getAD_Client_ID(ctx));
+		Set<IndexedTable> systemTables = indexedTablesByClient.get(0);
+
+		if (clientTables != null)
+			indexedTables.addAll(clientTables);
+		if (systemTables != null)
+			indexedTables.addAll(systemTables);
+
+		if (indexedTables.isEmpty())
+			indexedTables = null;
 		
 		if (eventPO instanceof MSearchIndex
 				|| eventPO instanceof MSearchIndexTable
@@ -390,7 +394,10 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 		// Invalidate the Search Index (config metadata update, use PO's transaction)
 		String sql = "UPDATE AD_SearchIndex SET IsValid='N' WHERE AD_SearchIndex_ID=?";
 		DB.executeUpdateEx(sql, new Object[] {searchIndexId}, po.get_TrxName());
-		
+
+		// Clear configuration cache to prevent stale data
+		SearchIndexConfigBuilder.clearCache(searchIndexId);
+
 		// Register/unregister the modified table
 		IEventManager tempManager = eventManager;
 		unbindEventManager(eventManager);
