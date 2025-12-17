@@ -319,6 +319,8 @@ public class SearchIndexConfigBuilder {
                 params.add(Env.getAD_Client_ID(ctx));
                 String dynamicWhere = tableConfig.getSqlWhere();
                 if (!Util.isEmpty(dynamicWhere)) {
+                    // Validate WHERE clause to prevent SQL injection
+                    SearchIndexSecurityValidator.validateWhereClause(dynamicWhere);
                     if (!dynamicWhere.trim().toUpperCase().startsWith("AND")) {
                         whereClauseBuilder.append("AND ");
                     }

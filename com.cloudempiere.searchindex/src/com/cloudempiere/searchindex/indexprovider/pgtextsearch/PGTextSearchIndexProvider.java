@@ -49,6 +49,7 @@ import org.compiere.util.Util;
 import com.cloudempiere.searchindex.indexprovider.ISearchIndexProvider;
 import com.cloudempiere.searchindex.model.MSearchIndexProvider;
 import com.cloudempiere.searchindex.util.ISearchResult;
+import com.cloudempiere.searchindex.util.SearchIndexSecurityValidator;
 import com.cloudempiere.searchindex.util.pojo.SearchIndexColumnData;
 import com.cloudempiere.searchindex.util.pojo.SearchIndexTableData;
 
@@ -112,7 +113,8 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
                     upsertQuery.append("INSERT INTO ").append(tableName).append(" ")
                                .append("(ad_client_id, ad_table_id, record_id, idx_tsvector) VALUES (?, ?, ?, ")
                                .append(documentContent).append(") ")
-                               .append("ON CONFLICT (ad_table_id, record_id) DO UPDATE SET idx_tsvector = EXCLUDED.idx_tsvector");
+                               // Fix ADR-006: Include ad_client_id in UNIQUE constraint to prevent multi-tenant data corruption
+                               .append("ON CONFLICT (ad_client_id, ad_table_id, record_id) DO UPDATE SET idx_tsvector = EXCLUDED.idx_tsvector");
                     DB.executeUpdateEx(upsertQuery.toString(), params.toArray(), trxName);
                     i++;
                 }
@@ -141,10 +143,14 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
     		String sql;
     		int i = 0;
     		for (String tableName : tables) {
-    			sql = "DELETE FROM " + tableName + " WHERE AD_Client_ID IN (0,?)";
+    			// Validate table name to prevent SQL injection
+    			String safeTableName = SearchIndexSecurityValidator.validateTableName(tableName, trxName);
+    			sql = "DELETE FROM " + safeTableName + " WHERE AD_Client_ID IN (0,?)";
     			params = new ArrayList<>();
     			params.add(Env.getAD_Client_ID(ctx));
     			if (!Util.isEmpty(dynWhere)) {
+    				// Validate WHERE clause to prevent SQL injection
+    				SearchIndexSecurityValidator.validateWhereClause(dynWhere);
     				if (!dynWhere.trim().toUpperCase().startsWith("AND")) {
     					dynWhere = " AND " + dynWhere;
     				}
@@ -160,10 +166,14 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
     			i++;
     		}
     	} else {
-    		String sql = "DELETE FROM " + searchIndexName + " WHERE AD_Client_ID IN (0,?)";
+    		// Validate table name to prevent SQL injection
+    		String safeSearchIndexName = SearchIndexSecurityValidator.validateTableName(searchIndexName, trxName);
+    		String sql = "DELETE FROM " + safeSearchIndexName + " WHERE AD_Client_ID IN (0,?)";
     		params = new ArrayList<>();
     		params.add(Env.getAD_Client_ID(ctx));
     		if (!Util.isEmpty(dynWhere)) {
+    			// Validate WHERE clause to prevent SQL injection
+    			SearchIndexSecurityValidator.validateWhereClause(dynWhere);
     			if (!dynWhere.trim().toUpperCase().startsWith("AND")) {
     				dynWhere = " AND " + dynWhere;
     			}
@@ -172,7 +182,7 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
     				for (Object param : dynParams) {
     					params.add(param);
     				}
-    			}					
+    			}
     		}
     		DB.executeUpdateEx(sql, params.toArray(), trxName);
     	}
@@ -214,10 +224,12 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 
         for (int i = 0; i < tablesToSearch.size(); i++) {
             String tableName = tablesToSearch.get(i);
+            // Validate table name to prevent SQL injection
+            String safeTableName = SearchIndexSecurityValidator.validateTableName(tableName, trxName);
             sql.append("SELECT DISTINCT ad_table_id, record_id, ")
             	.append(getRank(sanitizedQuery, isAdvanced, searchType, params, tsConfig))
 	            .append(" as rank FROM ")
-	            .append(tableName)
+	            .append(safeTableName)
             	.append(" WHERE idx_tsvector @@ ");
             
             
@@ -357,10 +369,12 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 	@Override
 	public boolean isIndexPopulated(Properties ctx, String searchIndexName, String trxName) {
 		int count = 0;
+		// Validate table name to prevent SQL injection
+		String safeSearchIndexName = SearchIndexSecurityValidator.validateTableName(searchIndexName, trxName);
 		String sqlSelect = "SELECT COUNT(1) "
-				+ "FROM " + searchIndexName
+				+ "FROM " + safeSearchIndexName
 				+ " WHERE AD_Client_ID IN (0,?)";
-		
+
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		
@@ -530,24 +544,38 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 	 * @return the text search configuration
 	 */
     private String getTSConfig(Properties ctx, String trxName) {
+		// Fix ADR-005: Add Slovak/Czech language support
+		String languageCode = MClient.get(ctx).getLanguage().getAD_Language();
+		String checkConfigQuery = "SELECT COUNT(*) FROM pg_ts_config WHERE cfgname = ?";
+
+		// Slovak and Czech languages use sk_unaccent configuration for diacritics
+		if ("sk_SK".equals(languageCode) || "cs_CZ".equals(languageCode)) {
+			int skConfigCount = DB.getSQLValue(trxName, checkConfigQuery, "sk_unaccent");
+			if (skConfigCount > 0) {
+				log.log(Level.INFO, "Using sk_unaccent text search configuration for " + languageCode);
+				return "sk_unaccent";
+			} else {
+				log.log(Level.WARNING, "Slovak/Czech text search configuration 'sk_unaccent' not found. Run migration script: 202512_create_slovak_text_search_config.sql");
+			}
+		}
+
 		// Check if the specified text search configuration exists for language
         String tsConfig = MClient.get(ctx).getLanguage().getLocale().getDisplayLanguage(Locale.ENGLISH);
         tsConfig = tsConfig != null ? tsConfig.toLowerCase() : tsConfig;
         String fallbackConfig = "unaccent";
-        String checkConfigQuery = "SELECT COUNT(*) FROM pg_ts_config WHERE cfgname = ?";
         int configCount = DB.getSQLValue(trxName, checkConfigQuery, tsConfig);
 
         if (configCount == 0) {
             log.log(Level.INFO, "Text search configuration '" + tsConfig + "' does not exist. Falling back to '" + fallbackConfig + "'.");
             tsConfig = fallbackConfig;
         }
-        
+
         // Check if simple config exists (needed for our implementation)
         int simpleConfigCount = DB.getSQLValue(trxName, checkConfigQuery, "simple");
         if (simpleConfigCount == 0) {
             log.log(Level.WARNING, "Text search configuration 'simple' does not exist. Prioritization of accented characters may not work correctly.");
         }
-        
+
 		return tsConfig;
 	}
     
