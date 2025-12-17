@@ -103,12 +103,14 @@ public class SearchIndexSecurityValidator {
     }
 
     /**
-     * Validates table name against AD_Table registry.
+     * Validates table name against AD_SearchIndex or AD_Table registry.
      *
+     * Search index tables are dynamically created and stored in AD_SearchIndex.SearchIndexName,
+     * not in AD_Table. This method validates against both sources.
      * This ensures that only existing, active tables can be used in queries,
      * preventing SQL injection through table name manipulation.
      *
-     * @param tableName Table name to validate
+     * @param tableName Table name to validate (can be search index table or AD table)
      * @param trxName Transaction name
      * @return Validated table name from database (canonical form)
      * @throws AdempiereException if table not found or invalid
@@ -118,15 +120,31 @@ public class SearchIndexSecurityValidator {
             throw new AdempiereException("Table name cannot be empty");
         }
 
-        // Query AD_Table to verify table exists
-        String sql = "SELECT TableName FROM AD_Table " +
-                     "WHERE LOWER(TableName) = LOWER(?) " +
-                     "AND IsView='N' AND IsActive='Y'";
+        // Additional pattern-based protection against SQL injection
+        // Allow only alphanumeric, underscore, and hyphen characters
+        if (!tableName.matches("^[a-zA-Z0-9_-]+$")) {
+            log.severe("SECURITY: Table name contains invalid characters: " + tableName);
+            throw new AdempiereException("Invalid table name format: " + tableName);
+        }
+
+        // First, check if it's a search index table (from AD_SearchIndex)
+        String sql = "SELECT SearchIndexName FROM AD_SearchIndex " +
+                     "WHERE LOWER(SearchIndexName) = LOWER(?) " +
+                     "AND IsActive='Y'";
 
         String validatedName = DB.getSQLValueString(trxName, sql, tableName);
 
+        // If not found in AD_SearchIndex, check AD_Table
         if (validatedName == null) {
-            log.severe("SECURITY: Invalid table name rejected: " + tableName);
+            sql = "SELECT TableName FROM AD_Table " +
+                  "WHERE LOWER(TableName) = LOWER(?) " +
+                  "AND IsView='N' AND IsActive='Y'";
+
+            validatedName = DB.getSQLValueString(trxName, sql, tableName);
+        }
+
+        if (validatedName == null) {
+            log.severe("SECURITY: Invalid table name rejected (not in AD_SearchIndex or AD_Table): " + tableName);
             throw new AdempiereException("Invalid table name: " + tableName);
         }
 
