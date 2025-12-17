@@ -39,20 +39,21 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 		System.out.println("✓ Database initialized for: " + testInfo.getDisplayName());
 
 		// Create test table with tsvector column
+		// DDL operations use null transaction to avoid locks between tests
 		String ddl = "CREATE TABLE IF NOT EXISTS " + TEST_TABLE + " (" +
 			"id SERIAL PRIMARY KEY, " +
 			"name TEXT, " +
 			"idx_tsvector tsvector" +
 			")";
 		System.out.println("→ Creating table...");
-		DB.executeUpdateEx(ddl, null, getTrxName());
+		DB.executeUpdateEx(ddl, null, null); // null trxName for DDL
 		System.out.println("✓ Table created");
 
 		// Create GIN index
 		String indexDdl = "CREATE INDEX IF NOT EXISTS " + TEST_TABLE + "_idx " +
 			"ON " + TEST_TABLE + " USING GIN (idx_tsvector)";
 		System.out.println("→ Creating GIN index...");
-		DB.executeUpdateEx(indexDdl, null, getTrxName());
+		DB.executeUpdateEx(indexDdl, null, null); // null trxName for DDL
 		System.out.println("✓ GIN index created");
 	}
 
@@ -60,7 +61,7 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 	public void tearDown() {
 		System.out.println("→ Cleaning up test table...");
 		String sql = "DROP TABLE IF EXISTS " + TEST_TABLE + " CASCADE";
-		DB.executeUpdateEx(sql, null, getTrxName());
+		DB.executeUpdateEx(sql, null, null); // null trxName for DDL
 		System.out.println("✓ Test table dropped");
 	}
 
