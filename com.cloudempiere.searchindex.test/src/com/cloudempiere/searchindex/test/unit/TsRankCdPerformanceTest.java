@@ -66,8 +66,8 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 		DB.executeUpdateEx(insertSQL, new Object[]{"Test Product", "Test Product"}, getTrxName());
 
 		// WHEN: Call ts_rank_cd() function
-		String sql = "SELECT ts_rank_cd(idx_tsvector, to_tsquery('simple', 'test'), 2) as rank " +
-			"FROM " + TEST_TABLE + " WHERE idx_tsvector @@ to_tsquery('simple', 'test')";
+		String sql = "SELECT ts_rank_cd(idx_tsvector, to_tsquery('simple', 'product'), 2) as rank " +
+			"FROM " + TEST_TABLE + " WHERE idx_tsvector @@ to_tsquery('simple', 'product')";
 
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
@@ -91,18 +91,18 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 	@Test
 	public void testEarlierPositionRanksHigher() throws Exception {
 		// GIVEN: Two documents with search term at different positions
-		// Document 1: "muškát" at position 1 (start)
+		// Document 1: "rose" at position 1 (start)
 		String insert1 = "INSERT INTO " + TEST_TABLE + " (name, idx_tsvector) VALUES (?, to_tsvector('simple', ?))";
-		DB.executeUpdateEx(insert1, new Object[]{"Muškát krúžkovaný", "Muškát krúžkovaný"}, getTrxName());
+		DB.executeUpdateEx(insert1, new Object[]{"Rose Garden Plant", "Rose Garden Plant"}, getTrxName());
 
-		// Document 2: "muškát" at position 4 (later)
+		// Document 2: "rose" at position 4 (later)
 		String insert2 = "INSERT INTO " + TEST_TABLE + " (name, idx_tsvector) VALUES (?, to_tsvector('simple', ?))";
-		DB.executeUpdateEx(insert2, new Object[]{"Balkónové kvety pre muškát", "Balkónové kvety pre muškát"}, getTrxName());
+		DB.executeUpdateEx(insert2, new Object[]{"Beautiful flowers like rose", "Beautiful flowers like rose"}, getTrxName());
 
 		// WHEN: Query using ts_rank_cd()
-		String sql = "SELECT id, name, ts_rank_cd(idx_tsvector, to_tsquery('simple', 'muskat'), 2) as rank " +
+		String sql = "SELECT id, name, ts_rank_cd(idx_tsvector, to_tsquery('simple', 'rose'), 2) as rank " +
 			"FROM " + TEST_TABLE + " " +
-			"WHERE idx_tsvector @@ to_tsquery('simple', 'muskat') " +
+			"WHERE idx_tsvector @@ to_tsquery('simple', 'rose') " +
 			"ORDER BY rank DESC";
 
 		List<TestResult> results = new ArrayList<>();
@@ -125,9 +125,9 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 
 		// THEN: Document 1 (earlier position) should rank higher
 		assertThat(results).hasSizeGreaterThanOrEqualTo(2);
-		// Verify first result has "Muškát" at start (earlier position)
-		assertThat(results.get(0).name).as("Earlier position should rank first").startsWith("Muškát");
-		assertThat(results.get(1).name).as("Later position should rank second").startsWith("Balkónové");
+		// Verify first result has "Rose" at start (earlier position)
+		assertThat(results.get(0).name).as("Earlier position should rank first").startsWith("Rose");
+		assertThat(results.get(1).name).as("Later position should rank second").startsWith("Beautiful");
 		assertThat(results.get(0).rank).as("Earlier position should have higher rank score").isGreaterThan(results.get(1).rank);
 	}
 
@@ -138,14 +138,14 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 	public void testTsRankVsTsRankCd() throws Exception {
 		// GIVEN: Document with term at specific position
 		String insert = "INSERT INTO " + TEST_TABLE + " (name, idx_tsvector) VALUES (?, to_tsvector('simple', ?))";
-		DB.executeUpdateEx(insert, new Object[]{"Start muškát end product", "Start muškát end product"}, getTrxName());
+		DB.executeUpdateEx(insert, new Object[]{"Start garden end product", "Start garden end product"}, getTrxName());
 
 		// WHEN: Compare both functions
 		String sql = "SELECT " +
-			"ts_rank(idx_tsvector, to_tsquery('simple', 'muskat')) as ts_rank_score, " +
-			"ts_rank_cd(idx_tsvector, to_tsquery('simple', 'muskat'), 2) as ts_rank_cd_score " +
+			"ts_rank(idx_tsvector, to_tsquery('simple', 'garden')) as ts_rank_score, " +
+			"ts_rank_cd(idx_tsvector, to_tsquery('simple', 'garden'), 2) as ts_rank_cd_score " +
 			"FROM " + TEST_TABLE + " " +
-			"WHERE idx_tsvector @@ to_tsquery('simple', 'muskat')";
+			"WHERE idx_tsvector @@ to_tsquery('simple', 'garden')";
 
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
@@ -177,16 +177,16 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 		// GIVEN: Two documents with different term proximity
 		// Document 1: Terms close together
 		String insert1 = "INSERT INTO " + TEST_TABLE + " (name, idx_tsvector) VALUES (?, to_tsvector('simple', ?))";
-		DB.executeUpdateEx(insert1, new Object[]{"muškát ružový", "muškát ružový"}, getTrxName());
+		DB.executeUpdateEx(insert1, new Object[]{"rose red", "rose red"}, getTrxName());
 
 		// Document 2: Terms far apart
 		String insert2 = "INSERT INTO " + TEST_TABLE + " (name, idx_tsvector) VALUES (?, to_tsvector('simple', ?))";
-		DB.executeUpdateEx(insert2, new Object[]{"muškát krúžkovaný svetlý ružový", "muškát krúžkovaný svetlý ružový"}, getTrxName());
+		DB.executeUpdateEx(insert2, new Object[]{"rose garden beautiful red", "rose garden beautiful red"}, getTrxName());
 
 		// WHEN: Search for both terms using ts_rank_cd()
-		String sql = "SELECT id, name, ts_rank_cd(idx_tsvector, to_tsquery('simple', 'muskat & ruzovy'), 2) as rank " +
+		String sql = "SELECT id, name, ts_rank_cd(idx_tsvector, to_tsquery('simple', 'rose & red'), 2) as rank " +
 			"FROM " + TEST_TABLE + " " +
-			"WHERE idx_tsvector @@ to_tsquery('simple', 'muskat & ruzovy') " +
+			"WHERE idx_tsvector @@ to_tsquery('simple', 'rose & red') " +
 			"ORDER BY rank DESC";
 
 		List<TestResult> results = new ArrayList<>();
@@ -209,9 +209,9 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 
 		// THEN: Document with closer terms should rank higher
 		assertThat(results).hasSizeGreaterThanOrEqualTo(2);
-		// Verify first result has closer terms (no words between "muškát" and "ružový")
-		assertThat(results.get(0).name).as("Closer terms should rank first").isEqualTo("muškát ružový");
-		assertThat(results.get(1).name).as("Farther terms should rank second").contains("krúžkovaný svetlý");
+		// Verify first result has closer terms (no words between "rose" and "red")
+		assertThat(results.get(0).name).as("Closer terms should rank first").isEqualTo("rose red");
+		assertThat(results.get(1).name).as("Farther terms should rank second").contains("garden beautiful");
 		assertThat(results.get(0).rank).as("Closer terms should have higher rank score").isGreaterThan(results.get(1).rank);
 	}
 
@@ -263,8 +263,8 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 	@Test
 	public void testNormalizationParameter() throws Exception {
 		// GIVEN: One short doc, one long doc
-		String shortDoc = "muškát";
-		String longDoc = "muškát " + "other words ".repeat(50);
+		String shortDoc = "garden";
+		String longDoc = "garden " + "other words ".repeat(50);
 
 		String insert1 = "INSERT INTO " + TEST_TABLE + " (name, idx_tsvector) VALUES (?, to_tsvector('simple', ?))";
 		DB.executeUpdateEx(insert1, new Object[]{shortDoc, shortDoc}, getTrxName());
@@ -274,10 +274,10 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 
 		// WHEN: Compare with and without normalization
 		String sql = "SELECT id, " +
-			"ts_rank_cd(idx_tsvector, to_tsquery('simple', 'muskat'), 0) as rank_no_norm, " +
-			"ts_rank_cd(idx_tsvector, to_tsquery('simple', 'muskat'), 2) as rank_with_norm " +
+			"ts_rank_cd(idx_tsvector, to_tsquery('simple', 'garden'), 0) as rank_no_norm, " +
+			"ts_rank_cd(idx_tsvector, to_tsquery('simple', 'garden'), 2) as rank_with_norm " +
 			"FROM " + TEST_TABLE + " " +
-			"WHERE idx_tsvector @@ to_tsquery('simple', 'muskat') " +
+			"WHERE idx_tsvector @@ to_tsquery('simple', 'garden') " +
 			"ORDER BY id";
 
 		PreparedStatement pstmt = null;
