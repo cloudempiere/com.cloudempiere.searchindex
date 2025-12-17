@@ -37,6 +37,7 @@ import org.compiere.model.Query;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
+import org.compiere.util.Trx;
 import org.compiere.util.Util;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -58,18 +59,14 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 
 	/**	Logger */
 	private static CLogger log = CLogger.getCLogger(SearchIndexEventHandler.class);
-	
-	/** Context */
-	private Properties ctx = null;
-	/** Transaction name */
-	private String trxName = null;
+
 	/** Indexed tables set (key: AD_SearchIndex_ID, name: TableName) */
-	private Map<Integer, Set<IndexedTable>> indexedTablesByClient = null; // key is AD_Client_ID
-	
+	private volatile Map<Integer, Set<IndexedTable>> indexedTablesByClient = null; // key is AD_Client_ID
+
 	@Override
 	protected void initialize() {
 
-		indexedTablesByClient = SearchIndexUtils.getSearchIndexConfigs(trxName, -1); // gets data from all clients
+		indexedTablesByClient = SearchIndexUtils.getSearchIndexConfigs(null, -1); // gets data from all clients
 		Set<String> tablesToRegister = new HashSet<>();
 
 		for (Map.Entry<Integer, Set<IndexedTable>> entry : indexedTablesByClient.entrySet()) {
@@ -100,25 +97,29 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 
 	@Override
 	protected void doHandleEvent(Event event) {
-		
+
 		String type = event.getTopic();
 		PO eventPO = getPO(event);
-		ctx = Env.getCtx();
-		trxName = eventPO.get_TrxName();
-		Set<IndexedTable> indexedTables = indexedTablesByClient.get(Env.getAD_Client_ID(ctx));
-		Set<IndexedTable> indexedTables0 = indexedTablesByClient.get(0);
-		if (indexedTables == null)
-			indexedTables = indexedTables0;
-		else {
-			if (indexedTables0 != null)
-				indexedTables.addAll(indexedTables0);
-		}
+		// Fix ADR-001: Use local variables instead of instance variables
+		Properties ctx = Env.getCtx();
+		// Create defensive copy to avoid modifying shared data structure
+		Set<IndexedTable> indexedTables = new HashSet<>();
+		Set<IndexedTable> clientTables = indexedTablesByClient.get(Env.getAD_Client_ID(ctx));
+		Set<IndexedTable> systemTables = indexedTablesByClient.get(0);
+
+		if (clientTables != null)
+			indexedTables.addAll(clientTables);
+		if (systemTables != null)
+			indexedTables.addAll(systemTables);
+
+		if (indexedTables.isEmpty())
+			indexedTables = null;
 		
 		if (eventPO instanceof MSearchIndex
 				|| eventPO instanceof MSearchIndexTable
 				|| eventPO instanceof MSearchIndexColumn) {
-			
-			handleSearchIndexConfigChange(eventPO);
+
+			handleSearchIndexConfigChange(eventPO, ctx);
 			return;
 		}
 		
@@ -129,7 +130,7 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 		
 		// Check if changed column is indexed or if IsActive changed
 		if (type.equals(IEventTopics.PO_AFTER_CHANGE)) {
-			MTable mTableEvt = MTable.get(ctx, eventPO.get_Table_ID(), trxName);
+			MTable mTableEvt = MTable.get(ctx, eventPO.get_Table_ID());
 			boolean updateIndex = false;
 			boolean isActiveChanged = false;
 			Set<Integer> changedColumnIDs = new HashSet<>();
@@ -161,87 +162,146 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 				return;
 		}
 		
-		PO[] mainPOArr = getMainPOs(eventPO, indexedTables);
+		// Fix ADR-001: Get main POs using null transaction (read-only query)
+		PO[] mainPOArr = getMainPOs(eventPO, indexedTables, ctx, null);
 		MSearchIndex[] searchIndexArr;
-		
+
 		for (PO po : mainPOArr) {
-			// Find existing search indexes for the record
+			// Find existing search indexes for the record (read-only query, no transaction needed)
 			if (type.equals(IEventTopics.PO_AFTER_NEW)
 					|| (type.equals(IEventTopics.PO_AFTER_CHANGE) && eventPO.is_ValueChanged("IsActive"))) {
-				searchIndexArr = MSearchIndex.getForTable(ctx, po, eventPO, indexedTables, trxName);
+				searchIndexArr = MSearchIndex.getForTable(ctx, po, eventPO, indexedTables, null);
 			} else {
-				searchIndexArr = MSearchIndex.getForRecord(ctx, po, eventPO, indexedTables, trxName);
+				searchIndexArr = MSearchIndex.getForRecord(ctx, po, eventPO, indexedTables, null);
 			}
-			
+
 			if (searchIndexArr == null)
 				continue;
-			
+
 			for (MSearchIndex searchIndex : searchIndexArr) {
-				ISearchIndexProvider provider = SearchIndexUtils.getSearchIndexProvider(ctx, searchIndex.getAD_SearchIndexProvider_ID(), null, trxName);
 				int tableId = po.get_Table_ID();
 				int recordId = po.get_ID() > 0 ? po.get_ID() : po.get_IDOld();
-				
-				// Initialise builder
-				SearchIndexConfigBuilder builder = new SearchIndexConfigBuilder()
-						.setCtx(ctx)
-						.setTrxName(trxName)
-						.setAD_SearchIndex_ID(searchIndex.getAD_SearchIndex_ID())
-						.setRecord(tableId, recordId);
 
 				// Handle IsActive changes specially
 				if (type.equals(IEventTopics.PO_AFTER_CHANGE) && po.is_ValueChanged("IsActive")) {
 					boolean isActive = po.get_ValueAsBoolean("IsActive");
-					if (provider != null) {
-						if (isActive) {
-							// Record activated - create index
-							provider.createIndex(ctx, builder.build().getData(false), trxName);
-						} else {
-							// Record deactivated - delete index
+					// Fix ADR-001: Use separate transaction for index operations
+					executeIndexUpdateWithSeparateTransaction((indexTrxName) -> {
+						ISearchIndexProvider provider = SearchIndexUtils.getSearchIndexProvider(ctx, searchIndex.getAD_SearchIndexProvider_ID(), null, indexTrxName);
+						if (provider != null) {
+							SearchIndexConfigBuilder builder = new SearchIndexConfigBuilder()
+									.setCtx(ctx)
+									.setTrxName(indexTrxName)
+									.setAD_SearchIndex_ID(searchIndex.getAD_SearchIndex_ID())
+									.setRecord(tableId, recordId);
+
+							if (isActive) {
+								// Record activated - create index
+								provider.createIndex(ctx, builder.build().getData(false), indexTrxName);
+							} else {
+								// Record deactivated - delete index
+								StringBuilder whereClause = new StringBuilder();
+								whereClause.append(" AD_Client_ID=? AND AD_Table_ID=? AND Record_ID=?");
+								Object[] params = new Object[] { po.getAD_Client_ID(), tableId, recordId };
+								provider.deleteIndex(ctx, searchIndex.getSearchIndexName(), whereClause.toString(), params, indexTrxName);
+							}
+						}
+					});
+					continue;
+				}
+
+				// Handle changes
+				if (type.equals(IEventTopics.PO_AFTER_DELETE) && po.equals(eventPO)) {
+					// Fix ADR-001: Use separate transaction for index operations
+					executeIndexUpdateWithSeparateTransaction((indexTrxName) -> {
+						ISearchIndexProvider provider = SearchIndexUtils.getSearchIndexProvider(ctx, searchIndex.getAD_SearchIndexProvider_ID(), null, indexTrxName);
+						if (provider != null) {
 							StringBuilder whereClause = new StringBuilder();
 							whereClause.append(" AD_Client_ID=? AND AD_Table_ID=? AND Record_ID=?");
 							Object[] params = new Object[] { po.getAD_Client_ID(), tableId, recordId };
-							provider.deleteIndex(ctx, searchIndex.getSearchIndexName(), whereClause.toString(), params, trxName);
+							provider.deleteIndex(ctx, searchIndex.getSearchIndexName(), whereClause.toString(), params, indexTrxName);
 						}
-						continue;
-					}
-				}				
-				
-				// Handle changes
-				if (type.equals(IEventTopics.PO_AFTER_DELETE) && po.equals(eventPO)) {
-					if (provider != null) {
-						StringBuilder whereClause = new StringBuilder();
-						whereClause.append(" AD_Client_ID=? AND AD_Table_ID=? AND Record_ID=?");
-						Object[] params = new Object[] { po.getAD_Client_ID(), tableId, recordId };
-						provider.deleteIndex(ctx, searchIndex.getSearchIndexName(), whereClause.toString(), params, trxName);
-					}
+					});
 				} else if (type.equals(IEventTopics.PO_AFTER_CHANGE)
 						|| type.equals(IEventTopics.PO_AFTER_DELETE) && !po.equals(eventPO)
 						|| type.equals(IEventTopics.PO_AFTER_NEW) && !po.equals(eventPO)) {
-					if (provider != null) {
-						provider.updateIndex(ctx, builder.build().getData(false), trxName);
-					}
+					// Fix ADR-001: Use separate transaction for index operations
+					executeIndexUpdateWithSeparateTransaction((indexTrxName) -> {
+						ISearchIndexProvider provider = SearchIndexUtils.getSearchIndexProvider(ctx, searchIndex.getAD_SearchIndexProvider_ID(), null, indexTrxName);
+						if (provider != null) {
+							SearchIndexConfigBuilder builder = new SearchIndexConfigBuilder()
+									.setCtx(ctx)
+									.setTrxName(indexTrxName)
+									.setAD_SearchIndex_ID(searchIndex.getAD_SearchIndex_ID())
+									.setRecord(tableId, recordId);
+							provider.updateIndex(ctx, builder.build().getData(false), indexTrxName);
+						}
+					});
 				} else if (type.equals(IEventTopics.PO_AFTER_NEW) && po.equals(eventPO)) {
-					if (provider != null) {
-						provider.createIndex(ctx, builder.build().getData(false), trxName);
-					}
+					// Fix ADR-001: Use separate transaction for index operations
+					executeIndexUpdateWithSeparateTransaction((indexTrxName) -> {
+						ISearchIndexProvider provider = SearchIndexUtils.getSearchIndexProvider(ctx, searchIndex.getAD_SearchIndexProvider_ID(), null, indexTrxName);
+						if (provider != null) {
+							SearchIndexConfigBuilder builder = new SearchIndexConfigBuilder()
+									.setCtx(ctx)
+									.setTrxName(indexTrxName)
+									.setAD_SearchIndex_ID(searchIndex.getAD_SearchIndex_ID())
+									.setRecord(tableId, recordId);
+							provider.createIndex(ctx, builder.build().getData(false), indexTrxName);
+						}
+					});
 				} else {
 					log.warning("Unsupportet event type");
 				}
 			}
 		}
 	}
-	
-	private PO[] getMainPOs(PO po, Set<IndexedTable> tableConfigs) {
+
+	/**
+	 * Execute index update with separate transaction (ADR-001: Transaction Isolation)
+	 *
+	 * This method wraps index operations in a dedicated transaction to prevent:
+	 * - Index failures from rolling back business transactions
+	 * - Long-running index updates from holding business transaction locks
+	 * - Tight coupling between business logic and index maintenance
+	 *
+	 * @param operation Lambda/Consumer that performs the index operation
+	 */
+	private void executeIndexUpdateWithSeparateTransaction(java.util.function.Consumer<String> operation) {
+		// Create separate transaction for index operations
+		Trx indexTrx = Trx.get(Trx.createTrxName("SearchIdx"), true);
+		try {
+			String indexTrxName = indexTrx.getTrxName();
+
+			// Perform index operation with separate transaction
+			operation.accept(indexTrxName);
+
+			// Commit the index transaction
+			indexTrx.commit();
+		} catch (Exception e) {
+			// Rollback on error
+			indexTrx.rollback();
+			// Log the error but don't throw - index failure shouldn't fail business transaction
+			log.severe("Failed to update search index: " + e.getMessage());
+			if (log.isLoggable(java.util.logging.Level.FINE))
+				log.log(java.util.logging.Level.FINE, "Search index update failed", e);
+		} finally {
+			// Always close the transaction
+			indexTrx.close();
+		}
+	}
+
+	private PO[] getMainPOs(PO po, Set<IndexedTable> tableConfigs, Properties ctx, String trxName) {
 		Set<PO> mainPOSet = new HashSet<>();
 		for (IndexedTable tableConfig : tableConfigs) {
 			// record of an index table
 			if (po.get_TableName().equals(tableConfig.getTableName())) {
-				if (applyWhereClause(po, tableConfig.getWhereClause()))
+				if (applyWhereClause(po, tableConfig.getWhereClause(), ctx, trxName))
 					mainPOSet.add(po);
 			} else { // related to an index table - find the main record
 				for (String fkTableName : tableConfig.getFKTableNames()) {
 					if (po.get_TableName().equals(fkTableName)) {
-						PO[] mainPOsOfTable = getMainPOsOfTable(po, tableConfig.getTableName(), tableConfig.getWhereClause());
+						PO[] mainPOsOfTable = getMainPOsOfTable(po, tableConfig.getTableName(), tableConfig.getWhereClause(), ctx, trxName);
 						for (PO mainPO : mainPOsOfTable) {
 							mainPOSet.add(mainPO);
 						}
@@ -251,8 +311,8 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 		}
 		return mainPOSet.toArray(new PO[0]);
 	}
-	
-	private PO[] getMainPOsOfTable(PO po, String mainTableName, String whereClause) {
+
+	private PO[] getMainPOsOfTable(PO po, String mainTableName, String whereClause, Properties ctx, String trxName) {
 		
 		if (!Util.isEmpty(whereClause))
 			whereClause = " AND " + whereClause;
@@ -290,15 +350,17 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 	 * Check if PO passes the where clause filter
 	 * @param po
 	 * @param whereClause
+	 * @param ctx
+	 * @param trxName
 	 * @return true if po passed the filter
 	 */
-	private boolean applyWhereClause(PO po, String whereClause) {
-		
+	private boolean applyWhereClause(PO po, String whereClause, Properties ctx, String trxName) {
+
 		if (Util.isEmpty(whereClause))
 			return true;
 		else
 			whereClause = " AND " + whereClause;
-		
+
 		MTable table = MTable.get(ctx, po.get_TableName(), trxName);
 		for (String keyCol : po.get_KeyColumns()) {
 			if (table.columnExistsInDictionary(keyCol)) {
@@ -311,8 +373,8 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 		return false;
 	}
 	
-	private void handleSearchIndexConfigChange(PO po) {
-		
+	private void handleSearchIndexConfigChange(PO po, Properties ctx) {
+
 		int searchIndexId;
 		// Get the Search Index
 		if (po instanceof MSearchIndex) {
@@ -322,16 +384,20 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 			searchIndexId = indexTable.getAD_SearchIndex_ID();
 		} else if (po instanceof MSearchIndexColumn) {
 			MSearchIndexColumn indexColumn = (MSearchIndexColumn) po;
-			MSearchIndexTable indexTable = MSearchIndexTable.get(ctx, indexColumn.getAD_SearchIndexTable_ID(), trxName);
+			// Fix ADR-001: Use null transaction for read-only query
+			MSearchIndexTable indexTable = MSearchIndexTable.get(ctx, indexColumn.getAD_SearchIndexTable_ID(), null);
 			searchIndexId = indexTable.getAD_SearchIndex_ID();
 		} else {
 			return;
 		}
-		
-		// Invalidate the Search Index
+
+		// Invalidate the Search Index (config metadata update, use PO's transaction)
 		String sql = "UPDATE AD_SearchIndex SET IsValid='N' WHERE AD_SearchIndex_ID=?";
-		DB.executeUpdateEx(sql, new Object[] {searchIndexId}, trxName);
-		
+		DB.executeUpdateEx(sql, new Object[] {searchIndexId}, po.get_TrxName());
+
+		// Clear configuration cache to prevent stale data
+		SearchIndexConfigBuilder.clearCache(searchIndexId);
+
 		// Register/unregister the modified table
 		IEventManager tempManager = eventManager;
 		unbindEventManager(eventManager);
