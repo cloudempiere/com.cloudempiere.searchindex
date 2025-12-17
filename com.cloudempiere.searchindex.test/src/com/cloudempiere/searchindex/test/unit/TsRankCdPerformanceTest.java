@@ -61,13 +61,6 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 		System.out.println("→ Cleaning up test table...");
 		String sql = "DROP TABLE IF EXISTS " + TEST_TABLE + " CASCADE";
 		DB.executeUpdateEx(sql, null, getTrxName());
-
-		// CRITICAL: Commit the transaction to release table locks
-		// Without this, the next test will hang waiting for the lock
-		if (getTrxName() != null) {
-			getTrx().commit();
-			System.out.println("✓ Transaction committed");
-		}
 		System.out.println("✓ Test table dropped");
 	}
 
