@@ -26,6 +26,12 @@ import org.junit.jupiter.api.Timeout;
  * 3. Earlier matches rank higher than later matches
  * 4. Performance is acceptable
  *
+ * Transaction Strategy:
+ * - All operations on test table use null transaction (auto-commit)
+ * - This prevents PostgreSQL transaction isolation issues where uncommitted
+ *   INSERT data would be invisible to SELECT queries in the same transaction
+ * - Test table is temporary/test-only, safe to create/modify outside transactions
+ *
  * @author CloudEmpiere Team
  * @see docs/adr/ADR-005-searchtype-migration.md
  */
@@ -91,7 +97,7 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 	public void testTsRankCdFunctionExists() throws Exception {
 		// GIVEN: Simple test data
 		String insertSQL = "INSERT INTO " + TEST_TABLE + " (name, idx_tsvector) VALUES (?, to_tsvector('simple', ?))";
-		DB.executeUpdateEx(insertSQL, new Object[]{"Test Product", "Test Product"}, getTrxName());
+		DB.executeUpdateEx(insertSQL, new Object[]{"Test Product", "Test Product"}, null);
 
 		// WHEN: Call ts_rank_cd() function
 		String sql = "SELECT ts_rank_cd(idx_tsvector, to_tsquery('simple', 'product'), 2) as rank " +
@@ -100,7 +106,7 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		try {
-			pstmt = DB.prepareStatement(sql, getTrxName());
+			pstmt = DB.prepareStatement(sql, null);
 			rs = pstmt.executeQuery();
 
 			// THEN: Function should work and return a rank
@@ -121,11 +127,11 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 		// GIVEN: Two documents with search term at different positions
 		// Document 1: "rose" at position 1 (start)
 		String insert1 = "INSERT INTO " + TEST_TABLE + " (name, idx_tsvector) VALUES (?, to_tsvector('simple', ?))";
-		DB.executeUpdateEx(insert1, new Object[]{"Rose Garden Plant", "Rose Garden Plant"}, getTrxName());
+		DB.executeUpdateEx(insert1, new Object[]{"Rose Garden Plant", "Rose Garden Plant"}, null);
 
 		// Document 2: "rose" at position 4 (later)
 		String insert2 = "INSERT INTO " + TEST_TABLE + " (name, idx_tsvector) VALUES (?, to_tsvector('simple', ?))";
-		DB.executeUpdateEx(insert2, new Object[]{"Beautiful flowers like rose", "Beautiful flowers like rose"}, getTrxName());
+		DB.executeUpdateEx(insert2, new Object[]{"Beautiful flowers like rose", "Beautiful flowers like rose"}, null);
 
 		// WHEN: Query using ts_rank_cd()
 		String sql = "SELECT id, name, ts_rank_cd(idx_tsvector, to_tsquery('simple', 'rose'), 2) as rank " +
@@ -137,7 +143,7 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		try {
-			pstmt = DB.prepareStatement(sql, getTrxName());
+			pstmt = DB.prepareStatement(sql, null);
 			rs = pstmt.executeQuery();
 
 			while (rs.next()) {
@@ -166,7 +172,7 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 	public void testTsRankVsTsRankCd() throws Exception {
 		// GIVEN: Document with term at specific position
 		String insert = "INSERT INTO " + TEST_TABLE + " (name, idx_tsvector) VALUES (?, to_tsvector('simple', ?))";
-		DB.executeUpdateEx(insert, new Object[]{"Start garden end product", "Start garden end product"}, getTrxName());
+		DB.executeUpdateEx(insert, new Object[]{"Start garden end product", "Start garden end product"}, null);
 
 		// WHEN: Compare both functions
 		String sql = "SELECT " +
@@ -178,7 +184,7 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		try {
-			pstmt = DB.prepareStatement(sql, getTrxName());
+			pstmt = DB.prepareStatement(sql, null);
 			rs = pstmt.executeQuery();
 
 			assertThat(rs.next()).isTrue();
@@ -206,11 +212,11 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 		// GIVEN: Two documents with different term proximity
 		// Document 1: Terms close together
 		String insert1 = "INSERT INTO " + TEST_TABLE + " (name, idx_tsvector) VALUES (?, to_tsvector('simple', ?))";
-		DB.executeUpdateEx(insert1, new Object[]{"rose red", "rose red"}, getTrxName());
+		DB.executeUpdateEx(insert1, new Object[]{"rose red", "rose red"}, null);
 
 		// Document 2: Terms far apart
 		String insert2 = "INSERT INTO " + TEST_TABLE + " (name, idx_tsvector) VALUES (?, to_tsvector('simple', ?))";
-		DB.executeUpdateEx(insert2, new Object[]{"rose garden beautiful red", "rose garden beautiful red"}, getTrxName());
+		DB.executeUpdateEx(insert2, new Object[]{"rose garden beautiful red", "rose garden beautiful red"}, null);
 
 		// WHEN: Search for both terms using ts_rank_cd()
 		String sql = "SELECT id, name, ts_rank_cd(idx_tsvector, to_tsquery('simple', 'rose & red'), 2) as rank " +
@@ -222,7 +228,7 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		try {
-			pstmt = DB.prepareStatement(sql, getTrxName());
+			pstmt = DB.prepareStatement(sql, null);
 			rs = pstmt.executeQuery();
 
 			while (rs.next()) {
@@ -253,7 +259,7 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 		for (int i = 1; i <= 1000; i++) {
 			String insert = "INSERT INTO " + TEST_TABLE + " (name, idx_tsvector) VALUES (?, to_tsvector('simple', ?))";
 			String name = "Test product " + i;
-			DB.executeUpdateEx(insert, new Object[]{name, name}, getTrxName());
+			DB.executeUpdateEx(insert, new Object[]{name, name}, null);
 		}
 
 		// WHEN: Execute search with ts_rank_cd()
@@ -269,7 +275,7 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		try {
-			pstmt = DB.prepareStatement(sql, getTrxName());
+			pstmt = DB.prepareStatement(sql, null);
 			rs = pstmt.executeQuery();
 
 			while (rs.next()) {
@@ -296,10 +302,10 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 		String longDoc = "garden " + "other words ".repeat(50);
 
 		String insert1 = "INSERT INTO " + TEST_TABLE + " (name, idx_tsvector) VALUES (?, to_tsvector('simple', ?))";
-		DB.executeUpdateEx(insert1, new Object[]{shortDoc, shortDoc}, getTrxName());
+		DB.executeUpdateEx(insert1, new Object[]{shortDoc, shortDoc}, null);
 
 		String insert2 = "INSERT INTO " + TEST_TABLE + " (name, idx_tsvector) VALUES (?, to_tsvector('simple', ?))";
-		DB.executeUpdateEx(insert2, new Object[]{longDoc, longDoc}, getTrxName());
+		DB.executeUpdateEx(insert2, new Object[]{longDoc, longDoc}, null);
 
 		// WHEN: Compare with and without normalization
 		String sql = "SELECT id, " +
@@ -312,7 +318,7 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		try {
-			pstmt = DB.prepareStatement(sql, getTrxName());
+			pstmt = DB.prepareStatement(sql, null);
 			rs = pstmt.executeQuery();
 
 			// Short doc
