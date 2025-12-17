@@ -12,6 +12,7 @@ import org.idempiere.test.AbstractTestCase;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 /**
  * Direct SQL tests for ts_rank_cd() position-aware ranking
@@ -29,8 +30,12 @@ public class TsRankCdPerformanceTest extends AbstractTestCase {
 
 	private static final String TEST_TABLE = "test_ts_rank_cd";
 
+	@Override
 	@BeforeEach
-	public void setUp() {
+	protected void init(TestInfo testInfo) {
+		// CRITICAL: Initialize database connection first
+		super.init(testInfo);
+
 		// Create test table with tsvector column
 		String ddl = "CREATE TABLE IF NOT EXISTS " + TEST_TABLE + " (" +
 			"id SERIAL PRIMARY KEY, " +
