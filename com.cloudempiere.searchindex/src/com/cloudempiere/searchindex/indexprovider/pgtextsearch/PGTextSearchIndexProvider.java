@@ -676,15 +676,18 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 
 		switch (searchType) {
 			case TS_RANK:
-				// First, check for exact matches with accents using simple dictionary
+				// Use ts_rank_cd() for position-aware ranking (ADR-005)
+				// ts_rank_cd() considers word positions and proximity, ranking earlier matches higher
+				// This provides the same position-based ranking as POSITION search type, but 100× faster
 				rankSql.append("GREATEST(");
-				
+
 				// Original query with higher weight for exact matches with accents
-				rankSql.append("ts_rank(idx_tsvector, to_tsquery('simple'::regconfig, ?::text)) * 2, ");
+				// normalization=2: divides by document length + 1 (prevents long documents from dominating)
+				rankSql.append("ts_rank_cd(idx_tsvector, to_tsquery('simple'::regconfig, ?::text), 2) * 2, ");
 				params.add(sanitizedQuery);
-				
+
 				// Fall back to unaccented matches
-				rankSql.append("ts_rank(idx_tsvector, to_tsquery(?::regconfig, ?::text)))");
+				rankSql.append("ts_rank_cd(idx_tsvector, to_tsquery(?::regconfig, ?::text), 2))");
 				params.add(tsConfig);
 				params.add(sanitizedQuery);
 				break;
