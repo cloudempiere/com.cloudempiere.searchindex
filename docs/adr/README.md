@@ -40,6 +40,12 @@ We use the [MADR 3.0 format](https://adr.github.io/madr/) (Markdown Architectura
 | [ADR-002](./ADR-002-sql-injection-prevention.md) | SQL Injection Prevention | **Implemented** | 2025-12-12 | Prevents SQL injection in search queries through input sanitization |
 | [ADR-006](./ADR-006-multi-tenant-integrity.md) | Multi-Tenant Integrity | **Proposed** | 2025-12-12 | Fixes unique constraint to include ad_client_id for proper multi-tenant data isolation |
 
+### Operations & Automation
+
+| ADR | Title | Status | Date | Description |
+|-----|-------|--------|------|-------------|
+| [ADR-010](./ADR-010-automated-search-index-table-ddl.md) | Automated Search Index Table DDL Management | **Proposed** | 2025-12-18 | Automates PostgreSQL table creation for new search indexes, eliminating manual DBA intervention (900-3600× faster setup) |
+
 ---
 
 ## ADR Status Definitions
@@ -69,7 +75,11 @@ ADR-007: Technology Selection (PostgreSQL FTS vs Elasticsearch)
     │               ├─→ ADR-001: Transaction Isolation
     │               └─→ ADR-002: SQL Injection Prevention
     │
-    └─→ ADR-006: Multi-Tenant Integrity
+    ├─→ ADR-006: Multi-Tenant Integrity
+    │       │
+    │       └─→ ADR-010: Automated Table DDL ← ensures ADR-006 schema
+    │
+    └─→ ADR-010: Automated Table DDL Management
 
 Legend:
 ─→ depends on / related to
@@ -138,13 +148,16 @@ Legend:
 **Integration:**
 - [ADR-004: REST API OData Integration](./ADR-004-rest-api-odata-integration.md)
 
+**Operations:**
+- [ADR-010: Automated Table DDL Management](./ADR-010-automated-search-index-table-ddl.md)
+
 ### By Status
 
 **Implemented:**
 - ADR-001, ADR-002, ADR-004, ADR-007
 
 **Proposed (Ready for Implementation):**
-- ADR-003, ADR-005, ADR-006
+- ADR-003, ADR-005, ADR-006, ADR-010
 
 **Deprecated:**
 - None
@@ -159,6 +172,7 @@ Legend:
 | **ADR-005** | Partially | Waiting for ADR-003 Slovak config | Q1 2025 |
 | **ADR-004** | ⚠️ Hardcoded POSITION | SearchType needs update | Q1 2025 |
 | **ADR-006** | Not Started | Requires schema migration | Q2 2025 |
+| **ADR-010** | Not Started | None (ready to implement) | Q1 2025 |
 
 ---
 
@@ -177,5 +191,5 @@ Legend:
 
 ---
 
-**Last Updated:** 2025-12-13
+**Last Updated:** 2025-12-18
 **Maintainer:** Development Team

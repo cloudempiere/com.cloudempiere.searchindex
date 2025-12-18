@@ -222,23 +222,30 @@ See `postgres-fts-performance-recap.md` for detailed analysis and optimization s
 
 ### Known Issues and Bugs
 
-**1. WHERE Clause Alias Bug** (`SearchIndexEventHandler.java:268, 305`):
+**1. Manual Table Creation Required** (`PGTextSearchIndexProvider.java:115`):
+- **CRITICAL**: Search index tables must be created manually by DBA
+- Creating new AD_SearchIndex record fails until DDL executed
+- **Impact**: 15-60 minutes overhead per index, high error rate
+- **Solution**: [ADR-010: Automated Table DDL Management](docs/adr/ADR-010-automated-search-index-table-ddl.md)
+- **Estimated Savings**: 900-3600× faster setup time
+
+**2. WHERE Clause Alias Bug** (`SearchIndexEventHandler.java:268, 305`):
 - Cannot use "main" alias in AD_SearchIndexTable WHERE clauses
 - Causes "missing FROM-clause entry for table main" error
 - **Workaround**: Use actual table name or no prefix in WHERE clauses
 
-**2. Multi-Client Index Uniqueness** (`PGTextSearchIndexProvider.java:115`):
+**3. Multi-Client Index Uniqueness** (`PGTextSearchIndexProvider.java:115`):
 - UNIQUE constraint is `(ad_table_id, record_id)` - missing `ad_client_id`
 - Record updated by Client B overwrites Client A's index entry
 - **Impact**: Multi-tenant index corruption possible
-- **Fix needed**: Change constraint to `(ad_client_id, ad_table_id, record_id)`
+- **Solution**: [ADR-006: Multi-Tenant Integrity](docs/adr/ADR-006-multi-tenant-integrity.md)
 
-**3. Cache Invalidation** (`SearchIndexConfigBuilder.java:39, 256`):
+**4. Cache Invalidation** (`SearchIndexConfigBuilder.java:39, 256`):
 - Configuration cache is never explicitly cleared
 - Stale entries persist after AD_SearchIndex modifications
 - **Workaround**: Restart OSGi bundle or trigger event handler re-initialization
 
-**4. FK Traversal Depth** (`SearchIndexConfigBuilder.java:288-312`):
+**5. FK Traversal Depth** (`SearchIndexConfigBuilder.java:288-312`):
 - Only supports 1-level FK relationships
 - Multi-level FK chains not fully implemented
 
@@ -423,8 +430,14 @@ chore: Standardize repository with CloudEmpiere governance
 **Existing ADRs:**
 - ADR-001: Transaction Isolation
 - ADR-002: SQL Injection Prevention
+- ADR-003: Slovak Text Search Configuration
+- ADR-004: REST API OData Integration
 - ADR-005: SearchType Migration (POSITION → TS_RANK)
 - ADR-006: Multi-Tenant Integrity
+- ADR-007: Search Technology Selection
+- ADR-008: Search Service Layer
+- ADR-009: Multilanguage Search Index
+- ADR-010: Automated Search Index Table DDL Management
 
 ### Project Governance
 
