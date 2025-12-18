@@ -30,7 +30,8 @@ We use the [MADR 3.0 format](https://adr.github.io/madr/) (Markdown Architectura
 
 | ADR | Title | Status | Date | Description |
 |-----|-------|--------|------|-------------|
-| [ADR-004](./ADR-004-rest-api-odata-integration.md) | REST API OData Integration Architecture | **Implemented** | 2025-12-13 | Integrates search index with REST API via OData `searchindex()` filter function |
+| [ADR-004](./ADR-004-rest-api-odata-integration.md) | REST API OData Integration Architecture | **⚠️ Partially Superseded** | 2025-12-13 | Integrates search index with REST API via OData `searchindex()` filter function (superseded by ADR-008) |
+| [ADR-008](./ADR-008-search-service-layer.md) | Search Service Layer Architecture | **Proposed** | 2025-12-18 | Service layer with caching, security, and OSGi best practices (supersedes ADR-004) |
 
 ### Security & Data Integrity
 
@@ -71,9 +72,14 @@ ADR-007: Technology Selection (PostgreSQL FTS vs Elasticsearch)
     │       │
     │       └─→ ADR-005: SearchType Migration (POSITION → TS_RANK)
     │               │
-    │               ├─→ ADR-004: REST API OData Integration
-    │               ├─→ ADR-001: Transaction Isolation
-    │               └─→ ADR-002: SQL Injection Prevention
+    │               ├─→ ADR-004: REST API OData Integration (current)
+    │               │       │
+    │               │       └─→ ADR-008: Service Layer ← supersedes ADR-004
+    │               │               │
+    │               │               ├─→ ADR-001: Transaction Isolation
+    │               │               └─→ ADR-002: SQL Injection Prevention
+    │               │
+    │               └─→ ADR-001: Transaction Isolation
     │
     ├─→ ADR-006: Multi-Tenant Integrity
     │       │
@@ -82,7 +88,7 @@ ADR-007: Technology Selection (PostgreSQL FTS vs Elasticsearch)
     └─→ ADR-010: Automated Table DDL Management
 
 Legend:
-─→ depends on / related to
+─→ depends on / related to / evolves to
 ```
 
 ---
@@ -146,7 +152,8 @@ Legend:
 - [ADR-006: Multi-Tenant Integrity](./ADR-006-multi-tenant-integrity.md)
 
 **Integration:**
-- [ADR-004: REST API OData Integration](./ADR-004-rest-api-odata-integration.md)
+- [ADR-004: REST API OData Integration](./ADR-004-rest-api-odata-integration.md) (⚠️ partially superseded by ADR-008)
+- [ADR-008: Search Service Layer](./ADR-008-search-service-layer.md) (supersedes ADR-004)
 
 **Operations:**
 - [ADR-010: Automated Table DDL Management](./ADR-010-automated-search-index-table-ddl.md)
@@ -154,10 +161,11 @@ Legend:
 ### By Status
 
 **Implemented:**
-- ADR-001, ADR-002, ADR-004, ADR-007
+- ADR-001, ADR-002, ADR-007
+- ADR-004 (⚠️ partially superseded by ADR-008)
 
 **Proposed (Ready for Implementation):**
-- ADR-003, ADR-005, ADR-006, ADR-010
+- ADR-003, ADR-005, ADR-006, ADR-008, ADR-010
 
 **Deprecated:**
 - None
@@ -170,8 +178,9 @@ Legend:
 |-----|----------------------|---------|-------------|
 | **ADR-003** | Not Started | Requires database migration script | Q1 2025 |
 | **ADR-005** | Partially | Waiting for ADR-003 Slovak config | Q1 2025 |
-| **ADR-004** | ⚠️ Hardcoded POSITION | SearchType needs update | Q1 2025 |
+| **ADR-004** | ⚠️ Implemented with gaps | Superseded by ADR-008 | Q1 2025 |
 | **ADR-006** | Not Started | Requires schema migration | Q2 2025 |
+| **ADR-008** | Not Started | None (ready to implement) | Q1 2025 |
 | **ADR-010** | Not Started | None (ready to implement) | Q1 2025 |
 
 ---

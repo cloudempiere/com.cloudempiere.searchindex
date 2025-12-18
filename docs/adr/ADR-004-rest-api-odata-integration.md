@@ -1,9 +1,10 @@
 # ADR-004: REST API OData Integration Architecture
 
-**Status:** Implemented
+**Status:** ⚠️ Partially Superseded (see ADR-008)
 **Date:** 2025-12-13
 **Issue:** N/A
 **Deciders:** Development Team, API Team
+**Superseded By:** [ADR-008: Search Service Layer Architecture](./ADR-008-search-service-layer.md) (architectural improvements)
 
 ## Context
 
@@ -154,13 +155,22 @@ fetch('/api/v1/models/m_product?$filter=searchindex("product_idx", "ruža")&$ord
 - ✅ **Easy to Use** - Simple filter syntax for frontend developers
 - ✅ **OSGi Compatible** - Proper bundle dependencies via MANIFEST.MF
 
-### Negative
+### Negative (⚠️ Addressed by ADR-008)
 
 - ⚠️ **SearchType Hardcoded** - Currently hardcoded to POSITION (performance issue)
+  - **→ ADR-008 Solution:** MSysConfig-driven SearchType configuration
 - ⚠️ **No Configuration** - SearchType not configurable from API
+  - **→ ADR-008 Solution:** ISearchIndexService with flexible configuration
+- ⚠️ **Business Logic in REST Layer** - SQL generation and search logic in query converters
+  - **→ ADR-008 Solution:** Service layer with proper separation of concerns
+- ⚠️ **SQL Injection Risk** - `convertSearchIndexResults()` builds SQL without validation
+  - **→ ADR-008 Solution:** Security validators and safe SQL generation
+- ⚠️ **No Caching** - Provider instantiated on every request
+  - **→ ADR-008 Solution:** 3-tier caching (provider, index, results)
+- ⚠️ **Two Implementations** - DefaultQueryConverter and ProductAttributeQueryConverter both implement
+  - **→ ADR-008 Solution:** Single service implementation reused by all converters
 - ⚠️ **String Parameters Only** - Cannot pass complex configuration as JSON
 - ⚠️ **OData Parser Dependency** - Requires OData filter parser extension
-- ⚠️ **Two Implementations** - DefaultQueryConverter and ProductAttributeQueryConverter both implement
 
 ### Neutral
 
@@ -351,9 +361,26 @@ return provider.getSearchResults(ctx, searchIndex.getSearchIndexName(),
 
 ## Related
 
+- **Superseded by:** [ADR-008: Search Service Layer Architecture](./ADR-008-search-service-layer.md) - Architectural improvements to address issues identified in this ADR
 - **Related to:** [ADR-003: Slovak Text Search Configuration](./ADR-003-slovak-text-search-configuration.md) - Fixes Slovak language support
 - **Related to:** [ADR-005: SearchType Migration](./ADR-005-searchtype-migration.md) - Addresses POSITION → TS_RANK migration
 - **Related to:** [ADR-002: SQL Injection Prevention](./ADR-002-sql-injection-prevention.md) - Query sanitization applies here too
+
+## Migration Path to ADR-008
+
+This ADR describes the **current implementation** (as of 2025-12-13). The following issues have been identified:
+
+| Issue | Current State (ADR-004) | Future State (ADR-008) | Status |
+|-------|------------------------|------------------------|--------|
+| **SearchType** | Hardcoded to POSITION | MSysConfig-driven | Proposed |
+| **Business Logic** | In REST query converters | In service layer | Proposed |
+| **SQL Injection** | Risk in `convertSearchIndexResults()` | Security validators | Proposed |
+| **Caching** | None | 3-tier caching | Proposed |
+| **Code Duplication** | 2 implementations | Single service | Proposed |
+
+**Recommendation:** Implement ADR-008 to resolve architectural gaps while maintaining OData integration pattern.
+
+**Timeline:** 4 working days (31 hours) - see ADR-008 for details
 
 ## References
 
@@ -375,5 +402,6 @@ return provider.getSearchResults(ctx, searchIndex.getSearchIndexName(),
 
 ---
 
-**Last Updated:** 2025-12-13
-**Review Date:** 2025-06-13 (6 months from decision date)
+**Last Updated:** 2025-12-18
+**Review Date:** Upon ADR-008 implementation
+**Migration Status:** Architectural gaps identified, ADR-008 proposed for resolution
