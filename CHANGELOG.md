@@ -30,6 +30,42 @@ and this project adheres to [Conventional Commits](https://conventionalcommits.o
 
 ## [Unreleased]
 
+### Added
+
+### Changed
+
+### Fixed
+
+---
+
+## [migration-2025-12-18] - 2025-12-18
+
+Migration scripts release for Slovak text search configuration and multi-tenant integrity fixes (CLD-1652).
+
+### Added
+
+#### Database Migration Scripts (CLD-1652)
+- `postgresql/migration/202512180801_Slovak_Text_Search_And_MultiTenant_Fix.sql` - Comprehensive PostgreSQL migration
+  - Creates Slovak text search configuration (sk_unaccent) for proper diacritics handling
+  - Fixes multi-tenant UNIQUE constraint to include ad_client_id
+  - Cleans up duplicate search index data
+  - Includes rollback procedures
+- `oracle/migration/202512180801_MultiTenant_Fix.sql` - Oracle-specific multi-tenant fix
+  - Applies UNIQUE constraint fix for Oracle databases
+  - Includes rollback procedures
+- `MIGRATION_README.md` - Migration governance documentation
+  - Timestamped naming convention (YYYYMMDDHHmm_Description.sql)
+  - PostgreSQL and Oracle migration standards
+  - Rollback procedure requirements
+
+### Changed
+
+#### Migration Script Governance
+- Standardized migration script naming to use timestamps for ordering
+- Organized scripts into database-specific directories (postgresql/, oracle/)
+- Removed deprecated migration scripts with non-standard naming
+- Enhanced migration documentation with rollback procedures
+
 ### Fixed
 
 #### Security (ADR-002: SQL Injection Prevention)
@@ -48,9 +84,7 @@ and this project adheres to [Conventional Commits](https://conventionalcommits.o
 - **CRITICAL:** Fixed multi-tenant data corruption vulnerability
   - Updated UNIQUE constraint from `(ad_table_id, record_id)` to `(ad_client_id, ad_table_id, record_id)`
   - Fixed `PGTextSearchIndexProvider.java:116` ON CONFLICT clause
-  - Created migration scripts:
-    - `202512_cleanup_duplicate_search_index_data.sql` - Pre-migration data cleanup
-    - `202512_fix_multi_tenant_unique_index.sql` - Apply new constraint
+  - Migration scripts standardized in `postgresql/migration/202512180801_Slovak_Text_Search_And_MultiTenant_Fix.sql`
   - Prevents cross-client record overwrites
   - See [ADR-006](docs/adr/ADR-006-multi-tenant-integrity.md) for impact analysis
 
@@ -75,21 +109,14 @@ and this project adheres to [Conventional Commits](https://conventionalcommits.o
   - **Action Required:** REST API still hardcoded to POSITION (cloudempiere-rest repository)
   - See [ADR-005](docs/adr/ADR-005-searchtype-migration.md) for migration guide
 
-#### Language Support (ADR-005: Slovak/Czech Text Search Configuration)
+#### Language Support (ADR-003: Slovak/Czech Text Search Configuration)
 - Added Slovak/Czech language diacritics support with proper text search configuration
   - Updated `getTSConfig()` method to detect Slovak (`sk_SK`) and Czech (`cs_CZ`) languages
   - Returns `sk_unaccent` configuration for proper diacritics handling
-  - Created migration script: `202512_create_slovak_text_search_config.sql`
+  - Migration scripts in `postgresql/migration/202512180801_Slovak_Text_Search_And_MultiTenant_Fix.sql`
   - Enables searches without diacritics to match text with diacritics
   - Example: searching "ruza" matches "ruža", "růža", "rúža"
   - See [ADR-003](docs/adr/ADR-003-slovak-text-search-configuration.md) for architecture
-
-### Added
-
-#### Database Migration Scripts
-- `202512_cleanup_duplicate_search_index_data.sql` - Clean duplicate entries before migration
-- `202512_fix_multi_tenant_unique_index.sql` - Apply multi-tenant UNIQUE constraint
-- `202512_create_slovak_text_search_config.sql` - Create Slovak text search configuration
 
 #### Security Infrastructure
 - `SearchIndexSecurityValidator` utility class for SQL injection prevention
