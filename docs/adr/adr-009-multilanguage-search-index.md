@@ -554,9 +554,9 @@ CREATE INDEX idx_product_ts_search_en ON idx_product_ts USING GIN(idx_tsvector) 
 ## Related
 
 - **Implements:** User language preferences for search
-- **Enhances:** [ADR-003: Slovak Text Search Configuration](./ADR-003-slovak-text-search-configuration.md) - Multi-language extends Slovak support
+- **Enhances:** [ADR-003: Slovak Text Search Configuration](./adr-003-slovak-text-search-configuration.md) - Multi-language extends Slovak support
 - **Integrates with:** cloudempiere-rest REST API locale handling
-- **Related to:** [ADR-004: REST API OData Integration](./ADR-004-rest-api-odata-integration.md) - Uses locale from REST context
+- **Related to:** [ADR-004: REST API OData Integration](./adr-004-rest-api-odata-integration.md) - Uses locale from REST context
 
 ## References
 

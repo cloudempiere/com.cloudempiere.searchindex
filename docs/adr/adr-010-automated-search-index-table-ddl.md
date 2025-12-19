@@ -44,7 +44,7 @@ Currently, when a new search index is created via the iDempiere UI (AD_SearchInd
 | **Human error risk** | Wrong table name, missing columns, incorrect indexes | 20-30% failure rate |
 | **Time overhead** | 15-60 minutes per index creation | High |
 | **Documentation lag** | DDL templates outdated after schema changes | Medium |
-| **Multi-tenant errors** | Forgot `ad_client_id` in UNIQUE constraint ([ADR-006](ADR-006-multi-tenant-integrity.md)) | Critical |
+| **Multi-tenant errors** | Forgot `ad_client_id` in UNIQUE constraint ([ADR-006](adr-006-multi-tenant-integrity.md)) | Critical |
 | **No rollback** | Failed index creation leaves orphan tables | Medium |
 
 ### Real-World Example

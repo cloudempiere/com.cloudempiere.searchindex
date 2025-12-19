@@ -1,7 +1,8 @@
 # ADR-008: Search Service Layer Architecture
 
-**Status:** Proposed
+**Status:** Implemented
 **Date:** 2025-12-18
+**Implementation Date:** 2025-12-18
 **Author:** Development Team (validated by idempiere-osgi-expert, idempiere-architecture-expert)
 **Deciders:** Architecture Team, Security Team
 
@@ -369,10 +370,10 @@ private int getRateLimit(Properties ctx) {
 
 ### Related ADRs
 
-- [ADR-002: SQL Injection Prevention](./ADR-002-sql-injection-prevention.md) - Security foundation
-- [ADR-001: Transaction Isolation](./ADR-001-transaction-isolation.md) - Transaction patterns
-- [ADR-004: REST API OData Integration](./ADR-004-rest-api-odata-integration.md) - Current integration (to be superseded)
-- [ADR-005: SearchType Migration](./ADR-005-searchtype-migration.md) - Performance improvement
+- [ADR-002: SQL Injection Prevention](./adr-002-sql-injection-prevention.md) - Security foundation
+- [ADR-001: Transaction Isolation](./adr-001-transaction-isolation.md) - Transaction patterns
+- [ADR-004: REST API OData Integration](./adr-004-rest-api-odata-integration.md) - Current integration (to be superseded)
+- [ADR-005: SearchType Migration](./adr-005-searchtype-migration.md) - Performance improvement
 
 ### External Documentation
 

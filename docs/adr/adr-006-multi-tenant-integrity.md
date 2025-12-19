@@ -598,4 +598,4 @@ CREATE TABLE searchindex_product_1000 PARTITION OF searchindex_product FOR VALUE
 
 ---
 
-**Next ADR:** [ADR-007: Role-Based Access Control](ADR-007-rbac-enforcement.md)
+**Next ADR:** [ADR-007: Role-Based Access Control](adr-007-rbac-enforcement.md)

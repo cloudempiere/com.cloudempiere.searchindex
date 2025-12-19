@@ -362,8 +362,8 @@ Search Query: "ruža" OR "ruza"
 
 ## Related
 
-- **Related to:** [ADR-005: SearchType Migration](./ADR-005-searchtype-migration.md) - This ADR provides Slovak language support; ADR-005 addresses performance by migrating to TS_RANK
-- **Related to:** [ADR-002: SQL Injection Prevention](./ADR-002-sql-injection-prevention.md) - Sanitization still applies to tsquery
+- **Related to:** [ADR-005: SearchType Migration](./adr-005-searchtype-migration.md) - This ADR provides Slovak language support; ADR-005 addresses performance by migrating to TS_RANK
+- **Related to:** [ADR-002: SQL Injection Prevention](./adr-002-sql-injection-prevention.md) - Sanitization still applies to tsquery
 - **Supersedes:** Undocumented POSITION search workaround (2024)
 
 ## References

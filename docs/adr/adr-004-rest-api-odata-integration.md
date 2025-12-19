@@ -4,7 +4,7 @@
 **Date:** 2025-12-13
 **Issue:** N/A
 **Deciders:** Development Team, API Team
-**Superseded By:** [ADR-008: Search Service Layer Architecture](./ADR-008-search-service-layer.md) (architectural improvements)
+**Superseded By:** [ADR-008: Search Service Layer Architecture](./adr-008-search-service-layer.md) (architectural improvements)
 
 ## Context
 
@@ -361,10 +361,10 @@ return provider.getSearchResults(ctx, searchIndex.getSearchIndexName(),
 
 ## Related
 
-- **Superseded by:** [ADR-008: Search Service Layer Architecture](./ADR-008-search-service-layer.md) - Architectural improvements to address issues identified in this ADR
-- **Related to:** [ADR-003: Slovak Text Search Configuration](./ADR-003-slovak-text-search-configuration.md) - Fixes Slovak language support
-- **Related to:** [ADR-005: SearchType Migration](./ADR-005-searchtype-migration.md) - Addresses POSITION → TS_RANK migration
-- **Related to:** [ADR-002: SQL Injection Prevention](./ADR-002-sql-injection-prevention.md) - Query sanitization applies here too
+- **Superseded by:** [ADR-008: Search Service Layer Architecture](./adr-008-search-service-layer.md) - Architectural improvements to address issues identified in this ADR
+- **Related to:** [ADR-003: Slovak Text Search Configuration](./adr-003-slovak-text-search-configuration.md) - Fixes Slovak language support
+- **Related to:** [ADR-005: SearchType Migration](./adr-005-searchtype-migration.md) - Addresses POSITION → TS_RANK migration
+- **Related to:** [ADR-002: SQL Injection Prevention](./adr-002-sql-injection-prevention.md) - Query sanitization applies here too
 
 ## Migration Path to ADR-008
 

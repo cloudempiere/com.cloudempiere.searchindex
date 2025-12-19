@@ -404,8 +404,8 @@ USING rum(idx_tsvector rum_tsvector_ops);
 
 ## Related
 
-- **Implements:** [ADR-003: Slovak Text Search Configuration](./ADR-003-slovak-text-search-configuration.md) - Slovak language support
-- **Related to:** [ADR-005: SearchType Migration](./ADR-005-searchtype-migration.md) - Performance optimization
+- **Implements:** [ADR-003: Slovak Text Search Configuration](./adr-003-slovak-text-search-configuration.md) - Slovak language support
+- **Related to:** [ADR-005: SearchType Migration](./adr-005-searchtype-migration.md) - Performance optimization
 - **Future:** ElasticSearchIndexProvider (stubbed, not implemented)
 
 ## References

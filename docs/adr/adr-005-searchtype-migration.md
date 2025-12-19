@@ -770,9 +770,9 @@ If TS_RANK causes issues:
 ---
 
 **Related ADRs:**
-- [ADR-001: Transaction Isolation](ADR-001-transaction-isolation.md)
-- [ADR-002: SQL Injection Prevention](ADR-002-sql-injection-prevention.md)
-- [ADR-003: Slovak Text Search Configuration](ADR-003-slovak-text-search-configuration.md) - **Root cause solution** for Slovak language support
-- [ADR-004: REST API OData Integration](ADR-004-rest-api-odata-integration.md) - REST API also needs SearchType migration
-- [ADR-006: Multi-Tenant Integrity](ADR-006-multi-tenant-integrity.md)
-- [ADR-007: Search Technology Selection](ADR-007-search-technology-selection.md) - Why PostgreSQL FTS was chosen
+- [ADR-001: Transaction Isolation](adr-001-transaction-isolation.md)
+- [ADR-002: SQL Injection Prevention](adr-002-sql-injection-prevention.md)
+- [ADR-003: Slovak Text Search Configuration](adr-003-slovak-text-search-configuration.md) - **Root cause solution** for Slovak language support
+- [ADR-004: REST API OData Integration](adr-004-rest-api-odata-integration.md) - REST API also needs SearchType migration
+- [ADR-006: Multi-Tenant Integrity](adr-006-multi-tenant-integrity.md)
+- [ADR-007: Search Technology Selection](adr-007-search-technology-selection.md) - Why PostgreSQL FTS was chosen

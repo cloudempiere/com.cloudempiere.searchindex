@@ -326,4 +326,4 @@ If separate transaction isolation causes issues:
 
 ---
 
-**Next ADR:** [ADR-002: SQL Injection Prevention](ADR-002-sql-injection-prevention.md)
+**Next ADR:** [ADR-002: SQL Injection Prevention](adr-002-sql-injection-prevention.md)
