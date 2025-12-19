@@ -41,9 +41,9 @@ The search index module has a clear roadmap for immediate fixes (performance) an
 
 ## Related ADRs
 
-- [ADR-003: Slovak Text Search Configuration](../../adr/ADR-003-slovak-text-search-configuration.md) - Immediate priority
-- [ADR-005: SearchType Migration](../../adr/ADR-005-searchtype-migration.md) - Quick win (1 hour)
-- [ADR-007: Search Technology Selection](../../adr/ADR-007-search-technology-selection.md) - Technology foundation
+- [ADR-003: Slovak Text Search Configuration](../../adr/adr-003-slovak-text-search-configuration.md) - Immediate priority
+- [ADR-005: SearchType Migration](../../adr/adr-005-searchtype-migration.md) - Quick win (1 hour)
+- [ADR-007: Search Technology Selection](../../adr/adr-007-search-technology-selection.md) - Technology foundation
 
 ## Implementation Timeline
 

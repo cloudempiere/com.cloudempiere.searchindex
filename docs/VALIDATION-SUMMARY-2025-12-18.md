@@ -35,7 +35,7 @@
 ### Created
 
 **ADRs**:
-- `docs/adr/ADR-008-search-service-layer.md` - Service layer architecture decision
+- `docs/adr/adr-008-search-service-layer.md` - Service layer architecture decision
 
 **Guide INDEX Files**:
 - `docs/guides/slovak-language/INDEX.md`
@@ -120,7 +120,7 @@ docs/
 │   ├── README.md                             # ✅ Updated - ADR index with dependency graph
 │   ├── 000-template.md                       # ✅ Kept - MADR 3.0 template
 │   ├── ADR-001 through ADR-007              # ✅ Kept - Existing ADRs
-│   └── ADR-008-search-service-layer.md      # ✅ New - Service layer architecture
+│   └── adr-008-search-service-layer.md      # ✅ New - Service layer architecture
 │
 ├── guides/                                   # ✅ New structure
 │   ├── slovak-language/

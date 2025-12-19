@@ -16,7 +16,7 @@ This folder contains architectural analysis documents that were used to create f
 
 ### Architecture Decisions
 - **ADRs**: [`docs/adr/README.md`](../../adr/README.md)
-  - [ADR-008: Search Service Layer](../../adr/ADR-008-search-service-layer.md) - Based on analysis docs
+  - [ADR-008: Search Service Layer](../../adr/adr-008-search-service-layer.md) - Based on analysis docs
 
 ### Implementation Guides
 - **Slovak Language**: [`docs/guides/slovak-language/`](../../guides/slovak-language/)

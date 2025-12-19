@@ -271,9 +271,9 @@ mvn test -Dtest=MultiTenantIntegrityTest
 
 ## References
 
-- ADR-001: `docs/adr/ADR-001-transaction-isolation.md`
-- ADR-002: `docs/adr/ADR-002-sql-injection-prevention.md`
-- ADR-006: `docs/adr/ADR-006-multi-tenant-integrity.md`
+- ADR-001: `docs/adr/adr-001-transaction-isolation.md`
+- ADR-002: `docs/adr/adr-002-sql-injection-prevention.md`
+- ADR-006: `docs/adr/adr-006-multi-tenant-integrity.md`
 - Test Framework: `CLAUDE.md` (Development Standards)
 
 ---

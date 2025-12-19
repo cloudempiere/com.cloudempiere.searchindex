@@ -257,7 +257,7 @@ The final solution uses **runtime position extraction** - no schema changes need
 
 - `docs/POSITION-vs-TSRANK-COMPARISON.md` - Detailed comparison
 - `docs/IMPLEMENTATION-PLAN-TSRANK-MIGRATION.md` - Original migration plan
-- `docs/adr/ADR-005-searchtype-migration.md` - Architecture decision record
+- `docs/adr/adr-005-searchtype-migration.md` - Architecture decision record
 - `migration-add-position-column.sql` - Schema migration script
 
 ---

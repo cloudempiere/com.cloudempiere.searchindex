@@ -22,30 +22,30 @@ We use the [MADR 3.0 format](https://adr.github.io/madr/) (Markdown Architectura
 
 | ADR | Title | Status | Date | Description |
 |-----|-------|--------|------|-------------|
-| [ADR-003](./ADR-003-slovak-text-search-configuration.md) | Slovak Text Search Configuration Architecture | **Proposed** | 2025-12-13 | Implements Slovak language support using PostgreSQL text search configuration with multi-weight indexing to replace POSITION workaround |
-| [ADR-005](./ADR-005-searchtype-migration.md) | SearchType Migration from POSITION to TS_RANK | **Proposed** | 2025-12-12 | Migrates default SearchType from POSITION (regex-based, 100× slower) to TS_RANK (native PostgreSQL function) |
-| [ADR-007](./ADR-007-search-technology-selection.md) | Search Technology Selection | **Implemented** | 2025-12-13 | Chose PostgreSQL FTS over Elasticsearch/Algolia (€36,700 cost savings, adequate for 10K-1M products) |
+| [ADR-003](./adr-003-slovak-text-search-configuration.md) | Slovak Text Search Configuration Architecture | **Proposed** | 2025-12-13 | Implements Slovak language support using PostgreSQL text search configuration with multi-weight indexing to replace POSITION workaround |
+| [ADR-005](./adr-005-searchtype-migration.md) | SearchType Migration from POSITION to TS_RANK | **Proposed** | 2025-12-12 | Migrates default SearchType from POSITION (regex-based, 100× slower) to TS_RANK (native PostgreSQL function) |
+| [ADR-007](./adr-007-search-technology-selection.md) | Search Technology Selection | **Implemented** | 2025-12-13 | Chose PostgreSQL FTS over Elasticsearch/Algolia (€36,700 cost savings, adequate for 10K-1M products) |
 
 ### API & Integration
 
 | ADR | Title | Status | Date | Description |
 |-----|-------|--------|------|-------------|
-| [ADR-004](./ADR-004-rest-api-odata-integration.md) | REST API OData Integration Architecture | **⚠️ Partially Superseded** | 2025-12-13 | Integrates search index with REST API via OData `searchindex()` filter function (superseded by ADR-008) |
-| [ADR-008](./ADR-008-search-service-layer.md) | Search Service Layer Architecture | **Proposed** | 2025-12-18 | Service layer with caching, security, and OSGi best practices (supersedes ADR-004) |
+| [ADR-004](./adr-004-rest-api-odata-integration.md) | REST API OData Integration Architecture | **⚠️ Partially Superseded** | 2025-12-13 | Integrates search index with REST API via OData `searchindex()` filter function (superseded by ADR-008) |
+| [ADR-008](./adr-008-search-service-layer.md) | Search Service Layer Architecture | **Proposed** | 2025-12-18 | Service layer with caching, security, and OSGi best practices (supersedes ADR-004) |
 
 ### Security & Data Integrity
 
 | ADR | Title | Status | Date | Description |
 |-----|-------|--------|------|-------------|
-| [ADR-001](./ADR-001-transaction-isolation.md) | Transaction Isolation | **Implemented** | 2025-12-12 | Ensures proper transaction isolation for search index operations |
-| [ADR-002](./ADR-002-sql-injection-prevention.md) | SQL Injection Prevention | **Implemented** | 2025-12-12 | Prevents SQL injection in search queries through input sanitization |
-| [ADR-006](./ADR-006-multi-tenant-integrity.md) | Multi-Tenant Integrity | **Proposed** | 2025-12-12 | Fixes unique constraint to include ad_client_id for proper multi-tenant data isolation |
+| [ADR-001](./adr-001-transaction-isolation.md) | Transaction Isolation | **Implemented** | 2025-12-12 | Ensures proper transaction isolation for search index operations |
+| [ADR-002](./adr-002-sql-injection-prevention.md) | SQL Injection Prevention | **Implemented** | 2025-12-12 | Prevents SQL injection in search queries through input sanitization |
+| [ADR-006](./adr-006-multi-tenant-integrity.md) | Multi-Tenant Integrity | **Proposed** | 2025-12-12 | Fixes unique constraint to include ad_client_id for proper multi-tenant data isolation |
 
 ### Operations & Automation
 
 | ADR | Title | Status | Date | Description |
 |-----|-------|--------|------|-------------|
-| [ADR-010](./ADR-010-automated-search-index-table-ddl.md) | Automated Search Index Table DDL Management | **Proposed** | 2025-12-18 | Automates PostgreSQL table creation for new search indexes, eliminating manual DBA intervention (900-3600× faster setup) |
+| [ADR-010](./adr-010-automated-search-index-table-ddl.md) | Automated Search Index Table DDL Management | **Proposed** | 2025-12-18 | Automates PostgreSQL table creation for new search indexes, eliminating manual DBA intervention (900-3600× faster setup) |
 
 ---
 
@@ -142,21 +142,21 @@ Legend:
 ### By Topic
 
 **Performance:**
-- [ADR-003: Slovak Text Search Configuration](./ADR-003-slovak-text-search-configuration.md)
-- [ADR-005: SearchType Migration](./ADR-005-searchtype-migration.md)
-- [ADR-007: Search Technology Selection](./ADR-007-search-technology-selection.md)
+- [ADR-003: Slovak Text Search Configuration](./adr-003-slovak-text-search-configuration.md)
+- [ADR-005: SearchType Migration](./adr-005-searchtype-migration.md)
+- [ADR-007: Search Technology Selection](./adr-007-search-technology-selection.md)
 
 **Security:**
-- [ADR-001: Transaction Isolation](./ADR-001-transaction-isolation.md)
-- [ADR-002: SQL Injection Prevention](./ADR-002-sql-injection-prevention.md)
-- [ADR-006: Multi-Tenant Integrity](./ADR-006-multi-tenant-integrity.md)
+- [ADR-001: Transaction Isolation](./adr-001-transaction-isolation.md)
+- [ADR-002: SQL Injection Prevention](./adr-002-sql-injection-prevention.md)
+- [ADR-006: Multi-Tenant Integrity](./adr-006-multi-tenant-integrity.md)
 
 **Integration:**
-- [ADR-004: REST API OData Integration](./ADR-004-rest-api-odata-integration.md) (⚠️ partially superseded by ADR-008)
-- [ADR-008: Search Service Layer](./ADR-008-search-service-layer.md) (supersedes ADR-004)
+- [ADR-004: REST API OData Integration](./adr-004-rest-api-odata-integration.md) (⚠️ partially superseded by ADR-008)
+- [ADR-008: Search Service Layer](./adr-008-search-service-layer.md) (supersedes ADR-004)
 
 **Operations:**
-- [ADR-010: Automated Table DDL Management](./ADR-010-automated-search-index-table-ddl.md)
+- [ADR-010: Automated Table DDL Management](./adr-010-automated-search-index-table-ddl.md)
 
 ### By Status
 

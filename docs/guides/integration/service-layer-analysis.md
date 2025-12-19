@@ -380,7 +380,7 @@ public List<ISearchResult> searchByTransactionCode(...) {
 
 private String sanitizeSearchQuery(String query, boolean isAdvanced) {
     // Use existing sanitization from PGTextSearchIndexProvider
-    // See: com.cloudempiere.searchindex/docs/adr/ADR-002-sql-injection-prevention.md
+    // See: com.cloudempiere.searchindex/docs/adr/adr-002-sql-injection-prevention.md
     return SearchIndexUtils.sanitizeQuery(query, isAdvanced);
 }
 ```
@@ -1228,7 +1228,7 @@ Before deploying to production, verify:
 
 - `docs/COMPLETE-ANALYSIS-SUMMARY.md` - Performance analysis
 - `docs/rest-api-searchindex-integration.md` - Current integration
-- `docs/adr/ADR-002-sql-injection-prevention.md` - SQL injection mitigations
+- `docs/adr/adr-002-sql-injection-prevention.md` - SQL injection mitigations
 - `docs/LOW-COST-SLOVAK-ECOMMERCE-SEARCH.md` - Implementation guide
 - `CLAUDE.md` - Project guidance
 - `FEATURES.md` - Feature matrix

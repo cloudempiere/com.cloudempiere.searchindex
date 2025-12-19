@@ -42,10 +42,10 @@ The search index module provides OSGi-based service integration for external con
 
 ## Related ADRs
 
-- [ADR-004: REST API OData Integration](../../adr/ADR-004-rest-api-odata-integration.md) - Current implementation
-- [ADR-008: Search Service Layer Architecture](../../adr/ADR-008-search-service-layer.md) - Proposed architecture *(In Progress)*
-- [ADR-002: SQL Injection Prevention](../../adr/ADR-002-sql-injection-prevention.md) - Security considerations
-- [ADR-001: Transaction Isolation](../../adr/ADR-001-transaction-isolation.md) - Transaction management
+- [ADR-004: REST API OData Integration](../../adr/adr-004-rest-api-odata-integration.md) - Current implementation
+- [ADR-008: Search Service Layer Architecture](../../adr/adr-008-search-service-layer.md) - Proposed architecture *(In Progress)*
+- [ADR-002: SQL Injection Prevention](../../adr/adr-002-sql-injection-prevention.md) - Security considerations
+- [ADR-001: Transaction Isolation](../../adr/adr-001-transaction-isolation.md) - Transaction management
 
 ## REST API Usage Examples
 

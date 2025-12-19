@@ -20,10 +20,10 @@ Comprehensive testing ensures search functionality works correctly across all us
 
 ## Related ADRs
 
-- [ADR-001: Transaction Isolation](../../adr/ADR-001-transaction-isolation.md) - Transaction testing
-- [ADR-002: SQL Injection Prevention](../../adr/ADR-002-sql-injection-prevention.md) - Security testing
-- [ADR-003: Slovak Text Search Configuration](../../adr/ADR-003-slovak-text-search-configuration.md) - Language testing
-- [ADR-006: Multi-Tenant Integrity](../../adr/ADR-006-multi-tenant-integrity.md) - Multi-tenant testing
+- [ADR-001: Transaction Isolation](../../adr/adr-001-transaction-isolation.md) - Transaction testing
+- [ADR-002: SQL Injection Prevention](../../adr/adr-002-sql-injection-prevention.md) - Security testing
+- [ADR-003: Slovak Text Search Configuration](../../adr/adr-003-slovak-text-search-configuration.md) - Language testing
+- [ADR-006: Multi-Tenant Integrity](../../adr/adr-006-multi-tenant-integrity.md) - Multi-tenant testing
 
 ## Test Categories
 

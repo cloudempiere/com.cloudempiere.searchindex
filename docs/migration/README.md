@@ -338,7 +338,7 @@ END;
 ## Related Documentation
 
 - **ADR-005**: SearchType Migration & Slovak Language Support
-  - Location: `docs/adr/ADR-005-searchtype-migration.md`
+  - Location: `docs/adr/adr-005-searchtype-migration.md`
   - Explains root cause of POSITION search type and Slovak language issues
 
 - **ADR-006**: Multi-Tenant Data Integrity

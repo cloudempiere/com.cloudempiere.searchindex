@@ -10,8 +10,8 @@
 
 ### 🚀 **Getting Started**
 - **New to the project?** → Start with [ADR README](./adr/README.md)
-- **Need to fix performance?** → See [ADR-005: SearchType Migration](./adr/ADR-005-searchtype-migration.md)
-- **Planning multi-language?** → See [ADR-009: Multi-Language Search](./adr/ADR-009-multilanguage-search-index.md)
+- **Need to fix performance?** → See [ADR-005: SearchType Migration](./adr/adr-005-searchtype-migration.md)
+- **Planning multi-language?** → See [ADR-009: Multi-Language Search](./adr/adr-009-multilanguage-search-index.md)
 
 ### 🎯 **By Role**
 
@@ -21,8 +21,8 @@
 - [Testing](./guides/testing/) - Test coverage and validation
 
 **Architects:**
-- [ADR-007: Technology Selection](./adr/ADR-007-search-technology-selection.md) - PostgreSQL vs Elasticsearch
-- [ADR-003: Slovak Language](./adr/ADR-003-slovak-text-search-configuration.md) - Language support architecture
+- [ADR-007: Technology Selection](./adr/adr-007-search-technology-selection.md) - PostgreSQL vs Elasticsearch
+- [ADR-003: Slovak Language](./adr/adr-003-slovak-text-search-configuration.md) - Language support architecture
 - [Service Layer Analysis](./guides/integration/service-layer-analysis.md)
 
 **Product/Business:**
@@ -65,13 +65,13 @@ docs/
 **Key ADRs:**
 | ADR | Title | Status | Priority |
 |-----|-------|--------|----------|
-| [ADR-001](./adr/ADR-001-transaction-isolation.md) | Transaction Isolation | Implemented | Critical |
-| [ADR-002](./adr/ADR-002-sql-injection-prevention.md) | SQL Injection Prevention | Implemented | Critical |
-| [ADR-003](./adr/ADR-003-slovak-text-search-configuration.md) | Slovak Text Search | Proposed | High |
-| [ADR-005](./adr/ADR-005-searchtype-migration.md) | SearchType Migration | Proposed | Critical |
-| [ADR-006](./adr/ADR-006-multi-tenant-integrity.md) | Multi-Tenant Integrity | Implemented | Critical |
-| [ADR-007](./adr/ADR-007-search-technology-selection.md) | Technology Selection | Implemented | High |
-| [ADR-009](./adr/ADR-009-multilanguage-search-index.md) | Multi-Language Search | Proposed | High |
+| [ADR-001](./adr/adr-001-transaction-isolation.md) | Transaction Isolation | Implemented | Critical |
+| [ADR-002](./adr/adr-002-sql-injection-prevention.md) | SQL Injection Prevention | Implemented | Critical |
+| [ADR-003](./adr/adr-003-slovak-text-search-configuration.md) | Slovak Text Search | Proposed | High |
+| [ADR-005](./adr/adr-005-searchtype-migration.md) | SearchType Migration | Proposed | Critical |
+| [ADR-006](./adr/adr-006-multi-tenant-integrity.md) | Multi-Tenant Integrity | Implemented | Critical |
+| [ADR-007](./adr/adr-007-search-technology-selection.md) | Technology Selection | Implemented | High |
+| [ADR-009](./adr/adr-009-multilanguage-search-index.md) | Multi-Language Search | Proposed | High |
 
 **When to read:** Before making any architectural changes
 
@@ -147,7 +147,7 @@ Historical analysis from 2025 reorganization. Kept for reference:
 ### "I need to fix slow search performance"
 
 **Quick Win (1 hour):**
-1. Read [ADR-005: SearchType Migration](./adr/ADR-005-searchtype-migration.md)
+1. Read [ADR-005: SearchType Migration](./adr/adr-005-searchtype-migration.md)
 2. Change `SearchType.POSITION` → `SearchType.TS_RANK` in 3 files:
    - `ZkSearchIndexUI.java:189`
    - `DefaultQueryConverter.java:689` (REST API)
@@ -161,7 +161,7 @@ Historical analysis from 2025 reorganization. Kept for reference:
 ### "I need to implement Slovak language support"
 
 **Full Solution (2 weeks):**
-1. Read [ADR-003: Slovak Text Search](./adr/ADR-003-slovak-text-search-configuration.md)
+1. Read [ADR-003: Slovak Text Search](./adr/adr-003-slovak-text-search-configuration.md)
 2. Follow [Slovak Implementation Guide](./guides/slovak-language/implementation.md)
 3. Run database migration (1 day)
 4. Update code (2-3 days)
@@ -174,7 +174,7 @@ Historical analysis from 2025 reorganization. Kept for reference:
 ### "I need to add multi-language search"
 
 **Implementation (2 weeks):**
-1. Read [ADR-009: Multi-Language Search](./adr/ADR-009-multilanguage-search-index.md)
+1. Read [ADR-009: Multi-Language Search](./adr/adr-009-multilanguage-search-index.md)
 2. Add `ad_language` column to index tables
 3. Update `PGTextSearchIndexProvider` for multi-language indexing
 4. Configure languages in MSysConfig
@@ -188,7 +188,7 @@ Historical analysis from 2025 reorganization. Kept for reference:
 
 **Read:**
 1. [REST API Integration Guide](./guides/integration/rest-api.md)
-2. [ADR-004: REST API OData Integration](./adr/ADR-004-rest-api-odata-integration.md)
+2. [ADR-004: REST API OData Integration](./adr/adr-004-rest-api-odata-integration.md)
 
 **Focus on:**
 - OData `searchindex()` filter function
@@ -200,7 +200,7 @@ Historical analysis from 2025 reorganization. Kept for reference:
 ### "I need to compare search technologies"
 
 **Read:**
-1. [ADR-007: Technology Selection](./adr/ADR-007-search-technology-selection.md)
+1. [ADR-007: Technology Selection](./adr/adr-007-search-technology-selection.md)
 2. [Technology Comparison](./guides/performance/technology-comparison.md)
 
 **Decision Matrix:**
@@ -350,16 +350,16 @@ Historical analysis from 2025 reorganization. Kept for reference:
 **A:** Read [adr/README.md](./adr/README.md) for architectural overview, then the specific ADR for your task.
 
 **Q: Why is POSITION search slow?**
-**A:** It uses regex on tsvector, bypassing GIN index. See [ADR-005](./adr/ADR-005-searchtype-migration.md).
+**A:** It uses regex on tsvector, bypassing GIN index. See [ADR-005](./adr/adr-005-searchtype-migration.md).
 
 **Q: Can I switch to TS_RANK without Slovak config?**
-**A:** Yes! 100× faster immediately. Slovak quality comes later. See [ADR-005](./adr/ADR-005-searchtype-migration.md).
+**A:** Yes! 100× faster immediately. Slovak quality comes later. See [ADR-005](./adr/adr-005-searchtype-migration.md).
 
 **Q: How do I add a new language?**
-**A:** See [ADR-009: Multi-Language Search](./adr/ADR-009-multilanguage-search-index.md).
+**A:** See [ADR-009: Multi-Language Search](./adr/adr-009-multilanguage-search-index.md).
 
 **Q: What about Elasticsearch?**
-**A:** PostgreSQL FTS is sufficient for <1M products. See [ADR-007](./adr/ADR-007-search-technology-selection.md).
+**A:** PostgreSQL FTS is sufficient for <1M products. See [ADR-007](./adr/adr-007-search-technology-selection.md).
 
 **Q: Where are the migration scripts?**
 **A:** See [migration/README.md](./migration/README.md).

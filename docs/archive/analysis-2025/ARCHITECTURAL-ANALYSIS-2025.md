@@ -442,13 +442,13 @@ Before deploying to production:
 
 The following ADRs document key architectural decisions made during remediation:
 
-1. [ADR-001: Transaction Isolation Strategy](adr/ADR-001-transaction-isolation.md)
-2. [ADR-002: SQL Injection Prevention](adr/ADR-002-sql-injection-prevention.md)
+1. [ADR-001: Transaction Isolation Strategy](adr/adr-001-transaction-isolation.md)
+2. [ADR-002: SQL Injection Prevention](adr/adr-002-sql-injection-prevention.md)
 3. [ADR-003: Thread Safety Model](adr/ADR-003-thread-safety.md)
 4. [ADR-004: Cache Invalidation Strategy](adr/ADR-004-cache-invalidation.md)
-5. [ADR-005: SearchType Migration](adr/ADR-005-searchtype-migration.md)
-6. [ADR-006: Multi-Tenant Data Integrity](adr/ADR-006-multi-tenant-integrity.md)
-7. [ADR-007: Role-Based Access Control](adr/ADR-007-rbac-enforcement.md)
+5. [ADR-005: SearchType Migration](adr/adr-005-searchtype-migration.md)
+6. [ADR-006: Multi-Tenant Data Integrity](adr/adr-006-multi-tenant-integrity.md)
+7. [ADR-007: Role-Based Access Control](adr/adr-007-rbac-enforcement.md)
 8. [ADR-008: OSGi Service Lifecycle](adr/ADR-008-osgi-lifecycle.md)
 
 ---

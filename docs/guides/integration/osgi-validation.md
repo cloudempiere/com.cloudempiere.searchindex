@@ -303,7 +303,7 @@ public class SearchInputSanitizer {
      */
     public static String sanitizeSearchQuery(String query, boolean isAdvanced) {
         // Implement logic from PGTextSearchIndexProvider
-        // See ADR-002-sql-injection-prevention.md
+        // See adr-002-sql-injection-prevention.md
         if (query == null || query.trim().isEmpty()) {
             return "";
         }
@@ -684,8 +684,8 @@ Based on agent findings, here's the revised checklist:
 ## Related Documents
 
 - `docs/REST-API-ARCHITECTURAL-GAPS.md` - Original analysis (needs update)
-- `docs/adr/ADR-002-sql-injection-prevention.md` - SQL injection mitigations
-- `docs/adr/ADR-001-transaction-isolation.md` - Transaction patterns (validated ✅)
+- `docs/adr/adr-002-sql-injection-prevention.md` - SQL injection mitigations
+- `docs/adr/adr-001-transaction-isolation.md` - Transaction patterns (validated ✅)
 - `CLAUDE.md` - Project guidance
 
 ---

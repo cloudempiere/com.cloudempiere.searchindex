@@ -53,16 +53,16 @@ Slovak language support is a critical feature due to the unique diacritical mark
 
 ## Related ADRs
 
-- [ADR-003: Slovak Text Search Configuration](../../adr/ADR-003-slovak-text-search-configuration.md) - Architecture decision for Slovak support
-- [ADR-005: SearchType Migration](../../adr/ADR-005-searchtype-migration.md) - POSITION → TS_RANK migration
-- [ADR-007: Search Technology Selection](../../adr/ADR-007-search-technology-selection.md) - PostgreSQL FTS decision
+- [ADR-003: Slovak Text Search Configuration](../../adr/adr-003-slovak-text-search-configuration.md) - Architecture decision for Slovak support
+- [ADR-005: SearchType Migration](../../adr/adr-005-searchtype-migration.md) - POSITION → TS_RANK migration
+- [ADR-007: Search Technology Selection](../../adr/adr-007-search-technology-selection.md) - PostgreSQL FTS decision
 
 ## Quick Links
 
 - **Problem**: Search is 100× slower than expected
 - **Root Cause**: POSITION search uses regex on tsvector (bypasses GIN index)
-- **Quick Fix**: Change SearchType.POSITION → TS_RANK (1 hour, documented in [ADR-005](../../adr/ADR-005-searchtype-migration.md))
-- **Proper Solution**: Implement Slovak text search configuration (2 weeks, documented in [ADR-003](../../adr/ADR-003-slovak-text-search-configuration.md))
+- **Quick Fix**: Change SearchType.POSITION → TS_RANK (1 hour, documented in [ADR-005](../../adr/adr-005-searchtype-migration.md))
+- **Proper Solution**: Implement Slovak text search configuration (2 weeks, documented in [ADR-003](../../adr/adr-003-slovak-text-search-configuration.md))
 
 ## Navigation
 

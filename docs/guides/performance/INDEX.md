@@ -72,9 +72,9 @@ Performance is critical for production search systems. These guides cover Postgr
 
 ## Related ADRs
 
-- [ADR-005: SearchType Migration](../../adr/ADR-005-searchtype-migration.md) - POSITION → TS_RANK (100× faster)
-- [ADR-007: Search Technology Selection](../../adr/ADR-007-search-technology-selection.md) - PostgreSQL FTS decision
-- [ADR-003: Slovak Text Search Configuration](../../adr/ADR-003-slovak-text-search-configuration.md) - Slovak optimization
+- [ADR-005: SearchType Migration](../../adr/adr-005-searchtype-migration.md) - POSITION → TS_RANK (100× faster)
+- [ADR-007: Search Technology Selection](../../adr/adr-007-search-technology-selection.md) - PostgreSQL FTS decision
+- [ADR-003: Slovak Text Search Configuration](../../adr/adr-003-slovak-text-search-configuration.md) - Slovak optimization
 
 ## Performance Quick Reference
 
