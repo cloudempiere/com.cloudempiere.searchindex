@@ -53,7 +53,7 @@ import com.cloudempiere.searchindex.model.MSearchIndexTable;
 import com.cloudempiere.searchindex.util.SearchIndexConfigBuilder;
 import com.cloudempiere.searchindex.util.SearchIndexUtils;
 
-@Component( reference = @Reference( name = "IEventManager", bind = "bindEventManager", unbind="unbindEventManager", 
+@Component( reference = @Reference( name = "IEventManager", bind = "bindEventManager", unbind="unbindEventManager",
 policy = ReferencePolicy.STATIC, cardinality =ReferenceCardinality.MANDATORY, service = IEventManager.class))
 public class SearchIndexEventHandler extends AbstractEventHandler {
 
@@ -63,31 +63,16 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 	/** Indexed tables set (key: AD_SearchIndex_ID, name: TableName) */
 	private volatile Map<Integer, Set<IndexedTable>> indexedTablesByClient = null; // key is AD_Client_ID
 
+	/** Flag to track if dynamic tables have been registered (lazy initialization) */
+	private volatile boolean tablesRegistered = false;
+
 	@Override
 	protected void initialize() {
+		// Defer database access - will be done lazily when DB is ready
+		// This prevents NullPointerException during OSGi startup when DB isn't connected yet
+		// Pattern follows iDempiere core classes: Msg.java, Language.java, EMail.java
 
-		indexedTablesByClient = SearchIndexUtils.getSearchIndexConfigs(null, -1); // gets data from all clients
-		Set<String> tablesToRegister = new HashSet<>();
-
-		for (Map.Entry<Integer, Set<IndexedTable>> entry : indexedTablesByClient.entrySet()) {
-			Set<IndexedTable> indexedTables = entry.getValue();
-			for (IndexedTable indexTable : indexedTables) {
-				String tableName = indexTable.getTableName();
-				tablesToRegister.add(tableName);
-				//Index the FK tables
-				for (String fkTableName : indexTable.getFKTableNames()) {
-					tablesToRegister.add(fkTableName);
-				}
-			}
-		}
-		
-		for (String tableName : tablesToRegister) {
-			registerTableEvent(IEventTopics.PO_AFTER_NEW, tableName);
-			registerTableEvent(IEventTopics.PO_AFTER_CHANGE, tableName);
-			registerTableEvent(IEventTopics.PO_AFTER_DELETE, tableName);
-		}
-
-		// Handle the changes in the Search Index definition to update the index
+		// Only register SearchIndex config tables - these don't require DB query
 		registerTableEvent(IEventTopics.PO_AFTER_NEW, MSearchIndexColumn.Table_Name);
 		registerTableEvent(IEventTopics.PO_AFTER_CHANGE, MSearchIndexColumn.Table_Name);
 		registerTableEvent(IEventTopics.PO_AFTER_DELETE, MSearchIndexColumn.Table_Name);
@@ -95,8 +80,63 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 		registerTableEvent(IEventTopics.PO_AFTER_CHANGE, MSearchIndex.Table_Name);
 	}
 
+	/**
+	 * Lazy initialization of indexed tables configuration.
+	 * Defers database access until DB connection is available.
+	 * Thread-safe with double-checked locking pattern.
+	 */
+	private void ensureTablesRegistered() {
+		if (tablesRegistered) {
+			return;
+		}
+
+		// Check if database is available (standard iDempiere pattern)
+		if (!DB.isConnected()) {
+			if (log.isLoggable(java.util.logging.Level.FINE))
+				log.fine("Database not yet connected, deferring table registration");
+			return;
+		}
+
+		synchronized (this) {
+			// Double-check after acquiring lock
+			if (tablesRegistered) {
+				return;
+			}
+
+			try {
+				indexedTablesByClient = SearchIndexUtils.getSearchIndexConfigs(null, -1); // gets data from all clients
+				Set<String> tablesToRegister = new HashSet<>();
+
+				for (Map.Entry<Integer, Set<IndexedTable>> entry : indexedTablesByClient.entrySet()) {
+					Set<IndexedTable> indexedTables = entry.getValue();
+					for (IndexedTable indexTable : indexedTables) {
+						String tableName = indexTable.getTableName();
+						tablesToRegister.add(tableName);
+						//Index the FK tables
+						for (String fkTableName : indexTable.getFKTableNames()) {
+							tablesToRegister.add(fkTableName);
+						}
+					}
+				}
+
+				for (String tableName : tablesToRegister) {
+					registerTableEvent(IEventTopics.PO_AFTER_NEW, tableName);
+					registerTableEvent(IEventTopics.PO_AFTER_CHANGE, tableName);
+					registerTableEvent(IEventTopics.PO_AFTER_DELETE, tableName);
+				}
+
+				tablesRegistered = true;
+				log.info("SearchIndex event handler: registered " + tablesToRegister.size() + " tables for indexing");
+			} catch (Exception e) {
+				log.log(java.util.logging.Level.WARNING, "Failed to register search index tables, will retry on next event", e);
+			}
+		}
+	}
+
 	@Override
 	protected void doHandleEvent(Event event) {
+		// Lazy initialization - ensure tables are registered when DB is ready
+		ensureTablesRegistered();
 
 		String type = event.getTopic();
 		PO eventPO = getPO(event);
@@ -104,8 +144,11 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 		Properties ctx = Env.getCtx();
 		// Create defensive copy to avoid modifying shared data structure
 		Set<IndexedTable> indexedTables = new HashSet<>();
-		Set<IndexedTable> clientTables = indexedTablesByClient.get(Env.getAD_Client_ID(ctx));
-		Set<IndexedTable> systemTables = indexedTablesByClient.get(0);
+
+		// Handle null safely - indexedTablesByClient may be null if DB wasn't ready yet
+		Map<Integer, Set<IndexedTable>> tablesByClient = indexedTablesByClient;
+		Set<IndexedTable> clientTables = tablesByClient != null ? tablesByClient.get(Env.getAD_Client_ID(ctx)) : null;
+		Set<IndexedTable> systemTables = tablesByClient != null ? tablesByClient.get(0) : null;
 
 		if (clientTables != null)
 			indexedTables.addAll(clientTables);
@@ -398,10 +441,9 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 		// Clear configuration cache to prevent stale data
 		SearchIndexConfigBuilder.clearCache(searchIndexId);
 
-		// Register/unregister the modified table
-		IEventManager tempManager = eventManager;
-		unbindEventManager(eventManager);
-		bindEventManager(tempManager);
+		// Reset lazy init flag to re-register tables on next event
+		tablesRegistered = false;
+		indexedTablesByClient = null;
 	}
 
 }

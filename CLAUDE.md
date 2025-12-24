@@ -438,6 +438,7 @@ chore: Standardize repository with CloudEmpiere governance
 - ADR-008: Search Service Layer
 - ADR-009: Multilanguage Search Index
 - ADR-010: Automated Search Index Table DDL Management
+- ADR-011: Lazy Initialization for SearchIndexEventHandler
 
 ### Project Governance
 
