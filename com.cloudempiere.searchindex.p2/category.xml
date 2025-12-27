@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature id="com.cloudempiere.searchindex.feature">
+      <category name="com.cloudempiere.searchindex"/>
+   </feature>
+   <category-def name="com.cloudempiere.searchindex" label="CloudEmpiere Search Index"/>
+</site>
