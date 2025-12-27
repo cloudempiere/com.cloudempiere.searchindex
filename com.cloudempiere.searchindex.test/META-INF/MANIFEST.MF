@@ -7,7 +7,10 @@ Bundle-Vendor: Cloudempiere
 Fragment-Host: com.cloudempiere.searchindex;bundle-version="10.0.0"
 Automatic-Module-Name: com.cloudempiere.searchindex.test
 Bundle-RequiredExecutionEnvironment: JavaSE-11
+Require-Bundle: org.idempiere.test;bundle-version="10.0.0",
+ org.adempiere.base;bundle-version="10.0.0"
 Import-Package: org.assertj.core.api;version="3.22.0",
  org.junit.jupiter.api;version="5.6.0",
- org.junit.jupiter.api.extension;version="5.6.0"
-Require-Bundle: org.idempiere.test;bundle-version="10.0.0"
+ org.junit.jupiter.api.extension;version="5.6.0",
+ org.compiere.model,
+ org.compiere.util

@@ -44,7 +44,24 @@
               <id>com.cloudempiere.searchindex</id>
               <versionRange>0.0.0</versionRange>
             </requirement>
+            <requirement>
+              <type>eclipse-plugin</type>
+              <id>org.idempiere.test</id>
+              <versionRange>0.0.0</versionRange>
+            </requirement>
+            <requirement>
+              <type>eclipse-plugin</type>
+              <id>org.adempiere.base</id>
+              <versionRange>0.0.0</versionRange>
+            </requirement>
           </extraRequirements>
+          <dependencies>
+            <dependency>
+              <type>eclipse-plugin</type>
+              <artifactId>org.idempiere.test</artifactId>
+              <version>0.0.0</version>
+            </dependency>
+          </dependencies>
         </configuration>
       </plugin>
     </plugins>
