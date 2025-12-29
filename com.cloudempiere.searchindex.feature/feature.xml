@@ -2,7 +2,7 @@
 <feature
       id="com.cloudempiere.searchindex.feature"
       label="CloudEmpiere Search Index"
-      version="10.1.0"
+      version="10.2.0.qualifier"
       provider-name="CloudEmpiere">
 
    <description url="https://github.com/cloudempiere/com.cloudempiere.searchindex">
