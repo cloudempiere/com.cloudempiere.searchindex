@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.cloudempiere.searchindex</groupId>
+    <artifactId>com.cloudempiere.searchindex.parent</artifactId>
+    <version>10.0.0-SNAPSHOT</version>
+    <relativePath>com.cloudempiere.searchindex.parent/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>com.cloudempiere.searchindex.reactor</artifactId>
+  <packaging>pom</packaging>
+  <name>CloudEmpiere Search Index - Reactor Build</name>
+
+  <modules>
+    <module>com.cloudempiere.searchindex</module>
+    <module>com.cloudempiere.searchindex.ui</module>
+    <!-- Temporarily exclude test module due to missing AssertJ dependency -->
+    <!-- <module>com.cloudempiere.searchindex.test</module> -->
+    <module>com.cloudempiere.searchindex.feature</module>
+    <module>com.cloudempiere.searchindex.p2</module>
+  </modules>
+</project>
