@@ -38,6 +38,27 @@ and this project adheres to [Conventional Commits](https://conventionalcommits.o
 
 ---
 
+## [10.1.0] - 2025-12-29
+
+Release with event handler lazy initialization optimization for improved startup reliability.
+
+### Added
+
+- Release configuration file for Maven/Tycho automated releases
+
+### Changed
+
+- Optimized SearchIndexEventHandler lazy initialization with exponential backoff polling
+- Replaced ScheduledExecutorService with simpler Thread-based approach for one-time startup
+- Fixed chicken-and-egg problem where dynamic tables were never registered
+
+### Fixed
+
+- CLD-1677: NullPointerException during OSGi startup when DB not yet connected
+- Event registration now uses fast-response polling (10ms → 500ms exponential backoff)
+
+---
+
 ## [10.0.0] - 2025-12-29
 
 Major release with P2 repository structure for iDempiere plugin distribution.
