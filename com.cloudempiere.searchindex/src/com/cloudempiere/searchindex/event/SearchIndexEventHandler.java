@@ -68,76 +68,92 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 
 	@Override
 	protected void initialize() {
-		// Defer database access - will be done lazily when DB is ready
-		// This prevents NullPointerException during OSGi startup when DB isn't connected yet
-		// Pattern follows iDempiere core classes: Msg.java, Language.java, EMail.java
-
-		// Only register SearchIndex config tables - these don't require DB query
+		// Register static config tables immediately (these don't require DB query)
 		registerTableEvent(IEventTopics.PO_AFTER_NEW, MSearchIndexColumn.Table_Name);
 		registerTableEvent(IEventTopics.PO_AFTER_CHANGE, MSearchIndexColumn.Table_Name);
 		registerTableEvent(IEventTopics.PO_AFTER_DELETE, MSearchIndexColumn.Table_Name);
 		registerTableEvent(IEventTopics.PO_AFTER_CHANGE, MSearchIndexTable.Table_Name);
 		registerTableEvent(IEventTopics.PO_AFTER_CHANGE, MSearchIndex.Table_Name);
+
+		// Try immediate registration if DB is already connected
+		if (DB.isConnected()) {
+			registerDynamicTables();
+			return;
+		}
+
+		// DB not ready yet - start background polling thread with exponential backoff
+		Thread initThread = new Thread(() -> {
+			long deadline = System.currentTimeMillis() + 60_000; // 60 second timeout
+			int interval = 10; // Start at 10ms for fast response
+
+			while (System.currentTimeMillis() < deadline && !tablesRegistered) {
+				if (DB.isConnected()) {
+					synchronized (SearchIndexEventHandler.this) {
+						if (!tablesRegistered) {
+							registerDynamicTables();
+						}
+					}
+					return; // Success - exit immediately
+				}
+
+				try {
+					Thread.sleep(interval);
+					// Exponential backoff: 10ms → 20ms → 40ms → 80ms → 160ms → 320ms → 500ms (max)
+					interval = Math.min(interval * 2, 500);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					log.log(java.util.logging.Level.FINE, "Table registration thread interrupted", e);
+					return;
+				}
+			}
+
+			// Timeout reached
+			if (!tablesRegistered) {
+				log.warning("Database not available after 60 seconds, dynamic table registration skipped");
+			}
+		}, "SearchIndexEventHandler-Init");
+
+		initThread.setDaemon(true);
+		initThread.start();
 	}
 
 	/**
-	 * Lazy initialization of indexed tables configuration.
-	 * Defers database access until DB connection is available.
-	 * Thread-safe with double-checked locking pattern.
+	 * Register dynamic tables from search index configuration.
+	 * Called either immediately if DB is ready, or from polling thread once DB becomes available.
+	 * Must be called within synchronized block or from initialize() when DB is connected.
 	 */
-	private void ensureTablesRegistered() {
-		if (tablesRegistered) {
-			return;
-		}
+	private void registerDynamicTables() {
+		try {
+			indexedTablesByClient = SearchIndexUtils.getSearchIndexConfigs(null, -1); // gets data from all clients
+			Set<String> tablesToRegister = new HashSet<>();
 
-		// Check if database is available (standard iDempiere pattern)
-		if (!DB.isConnected()) {
-			if (log.isLoggable(java.util.logging.Level.FINE))
-				log.fine("Database not yet connected, deferring table registration");
-			return;
-		}
-
-		synchronized (this) {
-			// Double-check after acquiring lock
-			if (tablesRegistered) {
-				return;
-			}
-
-			try {
-				indexedTablesByClient = SearchIndexUtils.getSearchIndexConfigs(null, -1); // gets data from all clients
-				Set<String> tablesToRegister = new HashSet<>();
-
-				for (Map.Entry<Integer, Set<IndexedTable>> entry : indexedTablesByClient.entrySet()) {
-					Set<IndexedTable> indexedTables = entry.getValue();
-					for (IndexedTable indexTable : indexedTables) {
-						String tableName = indexTable.getTableName();
-						tablesToRegister.add(tableName);
-						//Index the FK tables
-						for (String fkTableName : indexTable.getFKTableNames()) {
-							tablesToRegister.add(fkTableName);
-						}
+			for (Map.Entry<Integer, Set<IndexedTable>> entry : indexedTablesByClient.entrySet()) {
+				Set<IndexedTable> indexedTables = entry.getValue();
+				for (IndexedTable indexTable : indexedTables) {
+					String tableName = indexTable.getTableName();
+					tablesToRegister.add(tableName);
+					//Index the FK tables
+					for (String fkTableName : indexTable.getFKTableNames()) {
+						tablesToRegister.add(fkTableName);
 					}
 				}
-
-				for (String tableName : tablesToRegister) {
-					registerTableEvent(IEventTopics.PO_AFTER_NEW, tableName);
-					registerTableEvent(IEventTopics.PO_AFTER_CHANGE, tableName);
-					registerTableEvent(IEventTopics.PO_AFTER_DELETE, tableName);
-				}
-
-				tablesRegistered = true;
-				log.info("SearchIndex event handler: registered " + tablesToRegister.size() + " tables for indexing");
-			} catch (Exception e) {
-				log.log(java.util.logging.Level.WARNING, "Failed to register search index tables, will retry on next event", e);
 			}
+
+			for (String tableName : tablesToRegister) {
+				registerTableEvent(IEventTopics.PO_AFTER_NEW, tableName);
+				registerTableEvent(IEventTopics.PO_AFTER_CHANGE, tableName);
+				registerTableEvent(IEventTopics.PO_AFTER_DELETE, tableName);
+			}
+
+			tablesRegistered = true;
+			log.info("SearchIndex event handler: registered " + tablesToRegister.size() + " tables for indexing");
+		} catch (Exception e) {
+			log.log(java.util.logging.Level.SEVERE, "Failed to register search index tables", e);
 		}
 	}
 
 	@Override
 	protected void doHandleEvent(Event event) {
-		// Lazy initialization - ensure tables are registered when DB is ready
-		ensureTablesRegistered();
-
 		String type = event.getTopic();
 		PO eventPO = getPO(event);
 		// Fix ADR-001: Use local variables instead of instance variables
@@ -145,10 +161,15 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 		// Create defensive copy to avoid modifying shared data structure
 		Set<IndexedTable> indexedTables = new HashSet<>();
 
-		// Handle null safely - indexedTablesByClient may be null if DB wasn't ready yet
+		// Handle null safely - indexedTablesByClient may be null if DB isn't ready yet
 		Map<Integer, Set<IndexedTable>> tablesByClient = indexedTablesByClient;
-		Set<IndexedTable> clientTables = tablesByClient != null ? tablesByClient.get(Env.getAD_Client_ID(ctx)) : null;
-		Set<IndexedTable> systemTables = tablesByClient != null ? tablesByClient.get(0) : null;
+		if (tablesByClient == null) {
+			// Tables not registered yet - skip event processing
+			return;
+		}
+
+		Set<IndexedTable> clientTables = tablesByClient.get(Env.getAD_Client_ID(ctx));
+		Set<IndexedTable> systemTables = tablesByClient.get(0);
 
 		if (clientTables != null)
 			indexedTables.addAll(clientTables);
@@ -229,18 +250,20 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 				if (type.equals(IEventTopics.PO_AFTER_CHANGE) && po.is_ValueChanged("IsActive")) {
 					boolean isActive = po.get_ValueAsBoolean("IsActive");
 					// Fix ADR-001: Use separate transaction for index operations
+					// Use business transaction for reading (sees uncommitted changes)
+					final String businessTrxName = po.get_TrxName();
 					executeIndexUpdateWithSeparateTransaction((indexTrxName) -> {
 						ISearchIndexProvider provider = SearchIndexUtils.getSearchIndexProvider(ctx, searchIndex.getAD_SearchIndexProvider_ID(), null, indexTrxName);
 						if (provider != null) {
 							SearchIndexConfigBuilder builder = new SearchIndexConfigBuilder()
 									.setCtx(ctx)
-									.setTrxName(indexTrxName)
+									.setTrxName(businessTrxName)  // Use business transaction to READ data (sees uncommitted changes)
 									.setAD_SearchIndex_ID(searchIndex.getAD_SearchIndex_ID())
 									.setRecord(tableId, recordId);
 
 							if (isActive) {
 								// Record activated - create index
-								provider.createIndex(ctx, builder.build().getData(false), indexTrxName);
+								provider.createIndex(ctx, builder.build().getData(false), indexTrxName);  // Use separate transaction to WRITE index
 							} else {
 								// Record deactivated - delete index
 								StringBuilder whereClause = new StringBuilder();
@@ -269,28 +292,32 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 						|| type.equals(IEventTopics.PO_AFTER_DELETE) && !po.equals(eventPO)
 						|| type.equals(IEventTopics.PO_AFTER_NEW) && !po.equals(eventPO)) {
 					// Fix ADR-001: Use separate transaction for index operations
+					// Use business transaction for reading (sees uncommitted changes)
+					final String businessTrxName = po.get_TrxName();
 					executeIndexUpdateWithSeparateTransaction((indexTrxName) -> {
 						ISearchIndexProvider provider = SearchIndexUtils.getSearchIndexProvider(ctx, searchIndex.getAD_SearchIndexProvider_ID(), null, indexTrxName);
 						if (provider != null) {
 							SearchIndexConfigBuilder builder = new SearchIndexConfigBuilder()
 									.setCtx(ctx)
-									.setTrxName(indexTrxName)
+									.setTrxName(businessTrxName)  // Use business transaction to READ data (sees uncommitted changes)
 									.setAD_SearchIndex_ID(searchIndex.getAD_SearchIndex_ID())
 									.setRecord(tableId, recordId);
-							provider.updateIndex(ctx, builder.build().getData(false), indexTrxName);
+							provider.updateIndex(ctx, builder.build().getData(false), indexTrxName);  // Use separate transaction to WRITE index
 						}
 					});
 				} else if (type.equals(IEventTopics.PO_AFTER_NEW) && po.equals(eventPO)) {
 					// Fix ADR-001: Use separate transaction for index operations
+					// Use business transaction for reading (sees uncommitted changes)
+					final String businessTrxName = po.get_TrxName();
 					executeIndexUpdateWithSeparateTransaction((indexTrxName) -> {
 						ISearchIndexProvider provider = SearchIndexUtils.getSearchIndexProvider(ctx, searchIndex.getAD_SearchIndexProvider_ID(), null, indexTrxName);
 						if (provider != null) {
 							SearchIndexConfigBuilder builder = new SearchIndexConfigBuilder()
 									.setCtx(ctx)
-									.setTrxName(indexTrxName)
+									.setTrxName(businessTrxName)  // Use business transaction to READ data (sees uncommitted changes)
 									.setAD_SearchIndex_ID(searchIndex.getAD_SearchIndex_ID())
 									.setRecord(tableId, recordId);
-							provider.createIndex(ctx, builder.build().getData(false), indexTrxName);
+							provider.createIndex(ctx, builder.build().getData(false), indexTrxName);  // Use separate transaction to WRITE index
 						}
 					});
 				} else {
@@ -441,9 +468,22 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 		// Clear configuration cache to prevent stale data
 		SearchIndexConfigBuilder.clearCache(searchIndexId);
 
-		// Reset lazy init flag to re-register tables on next event
-		tablesRegistered = false;
-		indexedTablesByClient = null;
+		// Reset state to trigger re-initialization
+		// Note: Any running background thread will exit naturally once tablesRegistered becomes true
+		synchronized (this) {
+			tablesRegistered = false;
+			indexedTablesByClient = null;
+		}
+
+		// Re-initialize with new configuration
+		initialize();
+	}
+
+	@Override
+	public void unbindEventManager(IEventManager manager) {
+		// No explicit cleanup needed - background thread is daemon and will exit naturally
+		// when JVM shuts down or when tablesRegistered becomes true
+		super.unbindEventManager(manager);
 	}
 
 }
