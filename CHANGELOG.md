@@ -38,6 +38,23 @@ and this project adheres to [Conventional Commits](https://conventionalcommits.o
 
 ---
 
+## [10.0.0] - 2025-12-29
+
+Major release with P2 repository structure for iDempiere plugin distribution.
+
+### Added
+
+- P2 repository structure for OSGi plugin deployment
+- Feature bundle for grouped plugin installation
+- Maven Tycho build configuration for Eclipse plugin packaging
+
+### Changed
+
+- Reorganized project structure for Tycho/P2 build system
+- Updated parent POM to support P2 repository generation
+
+---
+
 ## [migration-2025-12-18] - 2025-12-18
 
 Migration scripts release for Slovak text search configuration and multi-tenant integrity fixes (CLD-1652).

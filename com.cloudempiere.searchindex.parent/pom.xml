@@ -5,7 +5,7 @@
 
 	<groupId>com.cloudempiere.searchindex</groupId>
 	<artifactId>com.cloudempiere.searchindex.parent</artifactId>
-	<version>10.0.0-SNAPSHOT</version>
+	<version>10.0.0</version>
 	<packaging>pom</packaging>
 	<name>Maven parent project for CloudEmpiere Search Index</name>
 
