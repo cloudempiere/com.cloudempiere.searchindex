@@ -1,102 +1,124 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>com.cloudempiere.searchindex</groupId>
-    <artifactId>com.cloudempiere.searchindex.parent</artifactId>
-    <version>10.2.0-SNAPSHOT</version>
-    <relativePath>../com.cloudempiere.searchindex.parent/pom.xml</relativePath>
-  </parent>
-  <artifactId>com.cloudempiere.searchindex.test</artifactId>
-  <packaging>eclipse-test-plugin</packaging>
-  <name>CloudEmpiere Search Index Tests</name>
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-  <properties>
-    <idempiere.home>..</idempiere.home>
-    <skipTests>false</skipTests>
+    <!-- Use iDempiere parent for Tycho configuration and test dependencies -->
+    <parent>
+        <groupId>org.idempiere</groupId>
+        <artifactId>org.idempiere.parent</artifactId>
+        <version>${revision}</version>
+        <relativePath>../../iDempiereCLDE/org.idempiere.parent/pom.xml</relativePath>
+    </parent>
 
-    <!-- JUnit 5 Parallel Execution Configuration -->
-    <p1>-Djunit.jupiter.execution.parallel.enabled=true</p1>
-    <p2>-Djunit.jupiter.execution.parallel.mode.default=concurrent</p2>
-    <p3>-Djunit.jupiter.execution.parallel.config.strategy=fixed</p3>
-    <p4>-Djunit.jupiter.execution.parallel.config.fixed.parallelism=4</p4>
-    <p5>-Djunit.jupiter.execution.parallel.mode.classes.default=same_thread</p5>
-  </properties>
+    <artifactId>com.cloudempiere.searchindex.test</artifactId>
+    <packaging>eclipse-test-plugin</packaging>
+    <name>CloudEmpiere Search Index Tests</name>
+    <description>Unit and integration tests for com.cloudempiere.searchindex</description>
 
-  <build>
-    <plugins>
-      <!-- Tycho Surefire Plugin for JUnit 5 Tests -->
-      <plugin>
-        <groupId>org.eclipse.tycho</groupId>
-        <artifactId>tycho-surefire-plugin</artifactId>
-        <configuration>
-          <argLine>
-            -DIDEMPIERE_HOME=${idempiere.home} ${p1} ${p2} ${p3} ${p4} ${p5}
-          </argLine>
-          <testRuntime>p2Installed</testRuntime>
-          <skipTests>${skipTests}</skipTests>
-          <providerHint>junit58</providerHint>
-          <useUIHarness>false</useUIHarness>
-          <includes>
-            <include>**/*Test.java</include>
-          </includes>
-          <extraRequirements>
-            <requirement>
-              <type>eclipse-plugin</type>
-              <id>com.cloudempiere.searchindex</id>
-              <versionRange>0.0.0</versionRange>
-            </requirement>
-            <requirement>
-              <type>eclipse-plugin</type>
-              <id>org.idempiere.test</id>
-              <versionRange>0.0.0</versionRange>
-            </requirement>
-            <requirement>
-              <type>eclipse-plugin</type>
-              <id>org.adempiere.base</id>
-              <versionRange>0.0.0</versionRange>
-            </requirement>
-          </extraRequirements>
-          <dependencies>
-            <dependency>
-              <type>eclipse-plugin</type>
-              <artifactId>org.idempiere.test</artifactId>
-              <version>0.0.0</version>
-            </dependency>
-          </dependencies>
-        </configuration>
-      </plugin>
-    </plugins>
+    <properties>
+        <skipTests>false</skipTests>
+        <sonar.skip>true</sonar.skip>
+        <idempiere.home>../../iDempiereCLDE</idempiere.home>
+        <!-- JUnit 5 parallel execution -->
+        <p1>-Djunit.jupiter.execution.parallel.enabled=true</p1>
+        <p2>-Djunit.jupiter.execution.parallel.mode.default=concurrent</p2>
+        <p3>-Djunit.jupiter.execution.parallel.config.strategy=fixed</p3>
+        <p4>-Djunit.jupiter.execution.parallel.config.fixed.parallelism=4</p4>
+        <p5>-Djunit.jupiter.execution.parallel.mode.classes.default=same_thread</p5>
+        <!-- Testing Pyramid: Default profile runs unit tests only -->
+        <test.groups>unit</test.groups>
+        <test.excludedGroups>integration,e2e,slow</test.excludedGroups>
+    </properties>
 
-    <pluginManagement>
-      <plugins>
-        <!-- Tell m2e to ignore Tycho lifecycle (this is an OSGi test fragment) -->
-        <plugin>
-          <groupId>org.eclipse.m2e</groupId>
-          <artifactId>lifecycle-mapping</artifactId>
-          <version>1.0.0</version>
-          <configuration>
-            <lifecycleMappingMetadata>
-              <pluginExecutions>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>org.eclipse.tycho</groupId>
-                    <artifactId>tycho-surefire-plugin</artifactId>
-                    <versionRange>[0.0.0,)</versionRange>
-                    <goals>
-                      <goal>test</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore />
-                  </action>
-                </pluginExecution>
-              </pluginExecutions>
-            </lifecycleMappingMetadata>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
-  </build>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.eclipse.tycho</groupId>
+                <artifactId>tycho-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>-DIDEMPIERE_HOME=${idempiere.home} ${p1} ${p2} ${p3} ${p4} ${p5}</argLine>
+                    <testRuntime>p2Installed</testRuntime>
+                    <skipTests>${skipTests}</skipTests>
+                    <providerHint>junit58</providerHint>
+                    <useUIHarness>false</useUIHarness>
+                    <includes>
+                        <include>**/*Test.java</include>
+                    </includes>
+                    <!-- Testing Pyramid: JUnit 5 tag filtering -->
+                    <groups>${test.groups}</groups>
+                    <excludedGroups>${test.excludedGroups}</excludedGroups>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.eclipse.tycho</groupId>
+                <artifactId>target-platform-configuration</artifactId>
+                <version>${tycho.version}</version>
+                <configuration>
+                    <dependency-resolution>
+                        <extraRequirements>
+                            <requirement>
+                                <type>eclipse-plugin</type>
+                                <id>com.cloudempiere.searchindex</id>
+                                <versionRange>0.0.0</versionRange>
+                            </requirement>
+                        </extraRequirements>
+                    </dependency-resolution>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <!-- Testing Pyramid: Maven Profiles -->
+    <profiles>
+        <!-- Profile: unit (DEFAULT) -->
+        <profile>
+            <id>unit</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <test.groups>unit</test.groups>
+                <test.excludedGroups>integration,e2e,slow</test.excludedGroups>
+            </properties>
+        </profile>
+
+        <!-- Profile: integration -->
+        <profile>
+            <id>integration</id>
+            <properties>
+                <test.groups>integration</test.groups>
+                <test.excludedGroups>unit,e2e</test.excludedGroups>
+                <p1>-Djunit.jupiter.execution.parallel.enabled=false</p1>
+            </properties>
+        </profile>
+
+        <!-- Profile: e2e -->
+        <profile>
+            <id>e2e</id>
+            <properties>
+                <test.groups>e2e</test.groups>
+                <test.excludedGroups>unit,integration</test.excludedGroups>
+                <p1>-Djunit.jupiter.execution.parallel.enabled=false</p1>
+            </properties>
+        </profile>
+
+        <!-- Profile: fast -->
+        <profile>
+            <id>fast</id>
+            <properties>
+                <test.groups>fast</test.groups>
+                <test.excludedGroups>slow,e2e</test.excludedGroups>
+            </properties>
+        </profile>
+
+        <!-- Profile: all-tests -->
+        <profile>
+            <id>all-tests</id>
+            <properties>
+                <test.groups></test.groups>
+                <test.excludedGroups></test.excludedGroups>
+            </properties>
+        </profile>
+    </profiles>
 </project>

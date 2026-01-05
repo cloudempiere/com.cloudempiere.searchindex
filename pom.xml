@@ -18,7 +18,7 @@
   <modules>
     <module>com.cloudempiere.searchindex</module>
     <module>com.cloudempiere.searchindex.ui</module>
-    <!-- Temporarily exclude test module due to missing AssertJ dependency -->
+    <!-- Test module requires Eclipse IDE or special target platform with org.idempiere.test -->
     <!-- <module>com.cloudempiere.searchindex.test</module> -->
     <module>com.cloudempiere.searchindex.feature</module>
     <module>com.cloudempiere.searchindex.p2</module>
