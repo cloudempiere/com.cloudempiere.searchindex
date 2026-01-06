@@ -46,6 +46,7 @@ We use the [MADR 3.0 format](https://adr.github.io/madr/) (Markdown Architectura
 | ADR | Title | Status | Date | Description |
 |-----|-------|--------|------|-------------|
 | [ADR-010](./adr-010-automated-search-index-table-ddl.md) | Automated Search Index Table DDL Management | **Proposed** | 2025-12-18 | Automates PostgreSQL table creation for new search indexes, eliminating manual DBA intervention (900-3600× faster setup) |
+| [ADR-011](./adr-011-lazy-initialization-event-handler.md) | Lazy Initialization for SearchIndexEventHandler | **Accepted** | 2025-12-29 | Fixes startup NullPointerException and chicken-and-egg problem with exponential backoff polling |
 
 ---
 
@@ -157,15 +158,16 @@ Legend:
 
 **Operations:**
 - [ADR-010: Automated Table DDL Management](./adr-010-automated-search-index-table-ddl.md)
+- [ADR-011: Lazy Initialization](./adr-011-lazy-initialization-event-handler.md)
 
 ### By Status
 
-**Implemented:**
-- ADR-001, ADR-002, ADR-007
+**Implemented/Accepted:**
+- ADR-001, ADR-002, ADR-007, ADR-011
 - ADR-004 (⚠️ partially superseded by ADR-008)
 
 **Proposed (Ready for Implementation):**
-- ADR-003, ADR-005, ADR-006, ADR-008, ADR-010
+- ADR-003, ADR-005, ADR-006, ADR-008, ADR-009, ADR-010
 
 **Deprecated:**
 - None
@@ -176,12 +178,14 @@ Legend:
 
 | ADR | Implementation Status | Blocker | Target Date |
 |-----|----------------------|---------|-------------|
-| **ADR-003** | Not Started | Requires database migration script | Q1 2025 |
-| **ADR-005** | Partially | Waiting for ADR-003 Slovak config | Q1 2025 |
-| **ADR-004** | ⚠️ Implemented with gaps | Superseded by ADR-008 | Q1 2025 |
-| **ADR-006** | Not Started | Requires schema migration | Q2 2025 |
-| **ADR-008** | Not Started | None (ready to implement) | Q1 2025 |
-| **ADR-010** | Not Started | None (ready to implement) | Q1 2025 |
+| **ADR-003** | Not Started | Requires database migration script | Q1 2026 |
+| **ADR-005** | ✅ UI Done, REST Open | REST API in cloudempiere-rest repo | Q1 2026 |
+| **ADR-004** | ⚠️ Implemented with gaps | Superseded by ADR-008 | Q1 2026 |
+| **ADR-006** | Not Started | Requires schema migration | Q2 2026 |
+| **ADR-008** | Not Started | None (ready to implement) | Q1 2026 |
+| **ADR-009** | Not Started | None (ready to implement) | Q2 2026 |
+| **ADR-010** | Not Started | None (ready to implement) | Q1 2026 |
+| **ADR-011** | ✅ Done | Released in v10.1.0 | Done |
 
 ---
 
@@ -200,5 +204,5 @@ Legend:
 
 ---
 
-**Last Updated:** 2025-12-18
+**Last Updated:** 2026-01-06
 **Maintainer:** Development Team

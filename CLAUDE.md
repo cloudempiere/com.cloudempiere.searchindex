@@ -168,13 +168,12 @@ The plugin uses **MSysConfig** for runtime configuration:
 ### 🔴 CRITICAL: Slovak Language Root Cause
 
 **See Complete Documentation**:
-- `docs/COMPLETE-ANALYSIS-SUMMARY.md` - Executive summary of all findings
-- `docs/slovak-language-architecture.md` - Root cause deep dive
-- `docs/NEXT-STEPS.md` - Implementation roadmap (2 weeks)
-- `docs/slovak-language-use-cases.md` - Real-world scenarios & best practices
-- `docs/rest-api-searchindex-integration.md` - REST API analysis
-- `docs/LOW-COST-SLOVAK-ECOMMERCE-SEARCH.md` ⭐ - Complete implementation guide (€36K savings)
-- `docs/SEARCH-TECHNOLOGY-COMPARISON.md` 🔍 - Big picture comparison (PostgreSQL vs Elasticsearch vs Algolia)
+- `docs/complete-analysis-summary.md` - Executive summary of all findings
+- `docs/guides/slovak-language/architecture.md` - Root cause deep dive
+- `docs/guides/roadmap/next-steps.md` - Implementation roadmap
+- `docs/guides/slovak-language/use-cases.md` - Real-world scenarios & best practices
+- `docs/guides/integration/rest-api.md` - REST API analysis
+- `docs/guides/performance/technology-comparison.md` - Technology comparison (PostgreSQL vs Elasticsearch vs Algolia)
 
 **TL;DR**: POSITION search type was created to handle **Slovak language diacritics** (č, š, ž, á, etc.) because PostgreSQL lacked proper Slovak text search configuration. This workaround uses regex on tsvector text, causing 100× performance degradation.
 
@@ -216,9 +215,9 @@ The plugin supports two ranking algorithms with **drastically different performa
 **Migration Path**:
 1. Use `SearchType.TS_RANK` for all production indexes
 2. For position-aware ranking, consider migrating to `ts_rank_cd()` with weight arrays
-3. UI currently hardcodes POSITION search type (`ZkSearchIndexUI.java:189`) - modify to use TS_RANK
+3. ✅ Backend UI now uses TS_RANK (`ZkSearchIndexUI.java:190`) - fixed per ADR-005
 
-See `postgres-fts-performance-recap.md` for detailed analysis and optimization strategies.
+See `docs/guides/performance/postgres-fts.md` for detailed analysis and optimization strategies.
 
 ### Known Issues and Bugs
 
@@ -226,7 +225,7 @@ See `postgres-fts-performance-recap.md` for detailed analysis and optimization s
 - **CRITICAL**: Search index tables must be created manually by DBA
 - Creating new AD_SearchIndex record fails until DDL executed
 - **Impact**: 15-60 minutes overhead per index, high error rate
-- **Solution**: [ADR-010: Automated Table DDL Management](docs/adr/ADR-010-automated-search-index-table-ddl.md)
+- **Solution**: [ADR-010: Automated Table DDL Management](docs/adr/adr-010-automated-search-index-table-ddl.md)
 - **Estimated Savings**: 900-3600× faster setup time
 
 **2. WHERE Clause Alias Bug** (`SearchIndexEventHandler.java:268, 305`):
@@ -238,7 +237,7 @@ See `postgres-fts-performance-recap.md` for detailed analysis and optimization s
 - UNIQUE constraint is `(ad_table_id, record_id)` - missing `ad_client_id`
 - Record updated by Client B overwrites Client A's index entry
 - **Impact**: Multi-tenant index corruption possible
-- **Solution**: [ADR-006: Multi-Tenant Integrity](docs/adr/ADR-006-multi-tenant-integrity.md)
+- **Solution**: [ADR-006: Multi-Tenant Integrity](docs/adr/adr-006-multi-tenant-integrity.md)
 
 **4. Cache Invalidation** (`SearchIndexConfigBuilder.java:39, 256`):
 - Configuration cache is never explicitly cleared
@@ -253,7 +252,7 @@ See `postgres-fts-performance-recap.md` for detailed analysis and optimization s
 
 The search index module is integrated with the **cloudempiere-rest** repository (https://github.com/cloudempiere/cloudempiere-rest, cloudempiere-development branch) through OData filter functions.
 
-**See**: `docs/rest-api-searchindex-integration.md` for comprehensive analysis
+**See**: `docs/guides/integration/rest-api.md` for comprehensive analysis
 
 ### Integration Architecture
 
@@ -334,9 +333,9 @@ SearchType.TS_RANK
 - `AD_SearchIndexProvider_ID` (mandatory)
 - `AD_SearchIndex_ID` (optional, omit to rebuild all indexes for the provider)
 
-**Switching to TS_RANK search** (recommended):
-- Modify `ZkSearchIndexUI.java:189` to use `SearchType.TS_RANK`
-- Or implement UI toggle for search type selection
+**TS_RANK search status**:
+- ✅ Backend UI already uses `SearchType.TS_RANK` (`ZkSearchIndexUI.java:190`)
+- ⚠️ REST API still hardcodes `SearchType.POSITION` (see ADR-004, fix in cloudempiere-rest repo)
 
 **Debugging event handlers**: Check if `SearchIndexEventHandler` is properly registered via OSGi console
 
@@ -442,8 +441,8 @@ chore: Standardize repository with CloudEmpiere governance
 
 ### Project Governance
 
-- **Strategic Review:** `docs/STRATEGIC_REVIEW.md` - High-level project assessment
-- **Implementation Plan:** `docs/IMPLEMENTATION_PLAN.md` - Roadmap and milestones
+- **Strategic Review Template:** `docs/implementation-plan/strategic-review-template.md`
+- **Roadmap:** `docs/implementation-plan/roadmap-2025.md`
 - **Commands:** `.claude/commands/` - Symlinked to workspace
 - **Agents:** `.claude/agents/` - Symlinked to workspace
 
@@ -497,10 +496,10 @@ mvn clean install -pl com.cloudempiere.searchindex.extensions.p2
 | `CLAUDE.md` | This file - Claude Code guidance |
 | `README.md` | User-facing documentation |
 | `docs/adr/` | Architecture decisions |
-| `docs/STRATEGIC_REVIEW.md` | Strategic assessment |
-| `docs/IMPLEMENTATION_PLAN.md` | Roadmap |
+| `docs/implementation-plan/roadmap-2025.md` | Implementation roadmap |
+| `docs/guides/` | Technical guides by topic |
 
 ---
 
-**Last Updated:** 2025-12-13
+**Last Updated:** 2026-01-06
 **Governance Version:** CloudEmpiere Workspace v1.0

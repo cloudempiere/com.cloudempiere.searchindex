@@ -2,7 +2,7 @@
 
 **Full-text search plugin for iDempiere ERP with PostgreSQL and Elasticsearch support**
 
-[![Version](https://img.shields.io/badge/version-8.2+-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-10.2.0-blue.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-GPL--2.0-green.svg)](LICENSE)
 [![iDempiere](https://img.shields.io/badge/iDempiere-10+-orange.svg)](https://www.idempiere.org)
 
@@ -62,32 +62,16 @@ See [CLAUDE.md](CLAUDE.md) for detailed configuration guide.
 The project is undergoing strategic improvements to address performance, architecture, and operational challenges:
 
 ### ✅ **Phase 1: Performance & Quality** (Q1 2025)
-1. **SearchType Migration** ([ADR-005](docs/adr/ADR-005-searchtype-migration.md)) - 100× faster search
-2. **Slovak Language Support** ([ADR-003](docs/adr/ADR-003-slovak-text-search-configuration.md)) - Proper diacritic handling
-3. **Multi-Language Search** ([ADR-009](docs/adr/ADR-009-multilanguage-search-index.md)) - Per-language indexing
+1. **SearchType Migration** ([ADR-005](docs/adr/adr-005-searchtype-migration.md)) - 100× faster search
+2. **Slovak Language Support** ([ADR-003](docs/adr/adr-003-slovak-text-search-configuration.md)) - Proper diacritic handling
+3. **Multi-Language Search** ([ADR-009](docs/adr/adr-009-multilanguage-search-index.md)) - Per-language indexing
 
 ### 🔄 **Phase 2: Architecture & Security** (Q1-Q2 2025)
-4. **Service Layer** ([ADR-008](docs/adr/ADR-008-search-service-layer.md)) - Proper separation of concerns
-5. **Multi-Tenant Integrity** ([ADR-006](docs/adr/ADR-006-multi-tenant-integrity.md)) - Fix data isolation
-6. **Automated Table DDL** ([ADR-010](docs/adr/ADR-010-automated-search-index-table-ddl.md)) - Zero-touch deployment
+4. **Service Layer** ([ADR-008](docs/adr/adr-008-search-service-layer.md)) - Proper separation of concerns
+5. **Multi-Tenant Integrity** ([ADR-006](docs/adr/adr-006-multi-tenant-integrity.md)) - Fix data isolation
+6. **Automated Table DDL** ([ADR-010](docs/adr/adr-010-automated-search-index-table-ddl.md)) - Zero-touch deployment
 
 **See [docs/adr/](docs/adr/) for complete Architecture Decision Records**
-
----
-
-## ⚠️ Known Issues & Workarounds
-
-| Issue | Severity | Impact | Status | Workaround |
-|-------|----------|--------|--------|------------|
-| **POSITION Search Type** | 🔴 Critical | 100× slower | ADR-005 proposed | Change to TS_RANK (3 files) |
-| **Manual Table Creation** | 🔴 Critical | 15-60 min overhead | ADR-010 proposed | Run DDL manually |
-| **Multi-Tenant Data Corruption** | 🔴 Critical | Cross-tenant leakage | ADR-006 proposed | Run migration script |
-| **REST API Service Layer** | 🟡 High | Security & performance | ADR-008 proposed | Use with caution |
-| **Single Language Index** | 🟡 Medium | No user locale support | ADR-009 proposed | One index per language |
-
-**Quick Fix:** Change `SearchType.POSITION` → `SearchType.TS_RANK` for 100× faster search immediately!
-
-See [CHANGELOG.md](CHANGELOG.md) and [FEATURES.md](FEATURES.md) for complete tracking.
 
 ---
 
@@ -131,12 +115,12 @@ See [CLAUDE.md](CLAUDE.md) for complete developer guide and troubleshooting.
 
 | Priority | ADR | Focus | Status |
 |----------|-----|-------|--------|
-| 🔴 Critical | [ADR-005](docs/adr/ADR-005-searchtype-migration.md) | SearchType Migration (100× faster) | Proposed |
-| 🔴 Critical | [ADR-006](docs/adr/ADR-006-multi-tenant-integrity.md) | Multi-Tenant Data Integrity | Proposed |
-| 🔴 Critical | [ADR-010](docs/adr/ADR-010-automated-search-index-table-ddl.md) | Automated Table Creation | Proposed |
-| 🟡 High | [ADR-003](docs/adr/ADR-003-slovak-text-search-configuration.md) | Slovak Language Support | Proposed |
-| 🟡 High | [ADR-008](docs/adr/ADR-008-search-service-layer.md) | Service Layer Architecture | Proposed |
-| 🟡 High | [ADR-009](docs/adr/ADR-009-multilanguage-search-index.md) | Multi-Language Search | Proposed |
+| 🔴 Critical | [ADR-005](docs/adr/adr-005-searchtype-migration.md) | SearchType Migration (100× faster) | Proposed |
+| 🔴 Critical | [ADR-006](docs/adr/adr-006-multi-tenant-integrity.md) | Multi-Tenant Data Integrity | Proposed |
+| 🔴 Critical | [ADR-010](docs/adr/adr-010-automated-search-index-table-ddl.md) | Automated Table Creation | Proposed |
+| 🟡 High | [ADR-003](docs/adr/adr-003-slovak-text-search-configuration.md) | Slovak Language Support | Proposed |
+| 🟡 High | [ADR-008](docs/adr/adr-008-search-service-layer.md) | Service Layer Architecture | Proposed |
+| 🟡 High | [ADR-009](docs/adr/adr-009-multilanguage-search-index.md) | Multi-Language Search | Proposed |
 
 **See [docs/adr/README.md](docs/adr/README.md) for complete ADR index and implementation roadmap**
 
@@ -197,28 +181,14 @@ See [CLAUDE.md](CLAUDE.md) for complete development workflow.
 
 ## Project Status & Roadmap
 
-**Maturity:** Production (Since 2016) | **Active Development:** Yes (2025) | **Commits:** 150+ | **Version:** 8.2+
+**Maturity:** Production (Since 2016) | **Active Development:** Yes | **Version:** 10.2.0
 
-### 🎯 **Q1 2025 Goals**
-
-**Performance & Quality:**
-- ✅ ADR governance established (10 ADRs documented)
-- 🔄 SearchType migration to TS_RANK (100× faster) - [ADR-005](docs/adr/ADR-005-searchtype-migration.md)
-- 🔄 Slovak language configuration - [ADR-003](docs/adr/ADR-003-slovak-text-search-configuration.md)
-- 📋 Multi-language search support - [ADR-009](docs/adr/ADR-009-multilanguage-search-index.md)
-
-**Architecture & Operations:**
-- 📋 Service layer refactoring - [ADR-008](docs/adr/ADR-008-search-service-layer.md)
-- 📋 Automated table DDL - [ADR-010](docs/adr/ADR-010-automated-search-index-table-ddl.md)
-- 📋 Multi-tenant integrity fix - [ADR-006](docs/adr/ADR-006-multi-tenant-integrity.md)
-
-**Recent Activity:**
-- 2025-12: ADR governance, architecture planning (10 ADRs)
+### Recent Activity
+- 2025-12: v10.1.0 release with lazy initialization fix (CLD-1677)
 - 2025-10: Security improvements (CLD-1528, CLD-1535)
-- 2025-09: Diacritics support (CLD-1487)
-- 2025-02: Performance & caching (CLD-1206, CLD-2784)
+- 2025-09: Diacritics support, TS_RANK migration (CLD-1487)
 
-**Legend:** ✅ Done | 🔄 In Progress | 📋 Planned
+See [CHANGELOG.md](CHANGELOG.md) for complete history and [docs/adr/](docs/adr/) for architecture decisions (11 ADRs documented).
 
 ---
 
@@ -245,4 +215,4 @@ GPL-2.0 - See [LICENSE](LICENSE)
 
 ---
 
-**Last Updated:** 2025-12-18 | **Governance:** CloudEmpiere Workspace v1.0 | **ADRs:** 10 documented decisions
+**Last Updated:** 2026-01-06 | **Governance:** CloudEmpiere Workspace v1.0 | **ADRs:** 11 documented decisions
