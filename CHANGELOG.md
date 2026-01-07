@@ -11,24 +11,98 @@ and this project adheres to [Conventional Commits](https://conventionalcommits.o
 
 | Issue | Severity | Status | ADR Reference | Impact |
 |-------|----------|--------|---------------|--------|
-| **POSITION Search Performance (UI)** | 🔴 Critical | ✅ Fixed | [ADR-005](docs/adr/ADR-005-searchtype-migration.md) | Backend UI now uses TS_RANK (100× faster) |
-| **Multi-Tenant Data Integrity** | 🔴 Critical | ✅ Fixed | [ADR-006](docs/adr/ADR-006-multi-tenant-integrity.md) | UNIQUE constraint now includes ad_client_id |
-| **SQL Injection Vulnerabilities** | 🔴 Critical | ✅ Fixed | [ADR-002](docs/adr/ADR-002-sql-injection-prevention.md) | Defense-in-depth validation added |
-| **Transaction Isolation** | 🔴 Critical | ✅ Fixed | [ADR-001](docs/adr/ADR-001-transaction-isolation.md) | Index ops use separate transactions |
-| **Slovak Language Config** | 🟡 Medium | ✅ Fixed | [ADR-003](docs/adr/ADR-003-slovak-text-search-configuration.md) | sk_unaccent config support added |
-| **REST API POSITION Hardcoded** | 🟡 Medium | ⚠️ Open | [ADR-004](docs/adr/ADR-004-rest-api-odata-integration.md) | Requires fix in cloudempiere-rest repo |
+| **POSITION Search Performance (UI)** | 🔴 Critical | ✅ Fixed | [ADR-005](docs/adr/adr-005-searchtype-migration.md) | Backend UI now uses TS_RANK (100× faster) |
+| **Multi-Tenant Data Integrity** | 🔴 Critical | ✅ Fixed | [ADR-006](docs/adr/adr-006-multi-tenant-integrity.md) | UNIQUE constraint now includes ad_client_id |
+| **SQL Injection Vulnerabilities** | 🔴 Critical | ✅ Fixed | [ADR-002](docs/adr/adr-002-sql-injection-prevention.md) | Defense-in-depth validation added |
+| **Transaction Isolation** | 🔴 Critical | ✅ Fixed | [ADR-001](docs/adr/adr-001-transaction-isolation.md) | Index ops use separate transactions |
+| **Slovak Language Config** | 🟡 Medium | ✅ Fixed | [ADR-003](docs/adr/adr-003-slovak-text-search-configuration.md) | sk_unaccent config support added |
+| **REST API POSITION Hardcoded** | 🟡 Medium | ⚠️ Open | [ADR-004](docs/adr/adr-004-rest-api-odata-integration.md) | Requires fix in cloudempiere-rest repo |
 | **Cache Invalidation** | 🟡 Medium | Open | N/A | Restart required after config changes |
 
 **For comprehensive analysis and solutions, see:**
 - **Architecture Decisions:** [docs/adr/README.md](docs/adr/README.md) - Complete ADR catalog with implementation roadmap
-- **Root Cause Analysis:** [ADR-003: Slovak Text Search Configuration](docs/adr/ADR-003-slovak-text-search-configuration.md)
-- **Performance Migration:** [ADR-005: SearchType Migration](docs/adr/ADR-005-searchtype-migration.md)
-- **Cost Analysis:** [ADR-007: Search Technology Selection](docs/adr/ADR-007-search-technology-selection.md) (€36,700 savings)
-- **Implementation Guide:** `docs/NEXT-STEPS.md` - 2-week implementation timeline
+- **Root Cause Analysis:** [ADR-003: Slovak Text Search Configuration](docs/adr/adr-003-slovak-text-search-configuration.md)
+- **Performance Migration:** [ADR-005: SearchType Migration](docs/adr/adr-005-searchtype-migration.md)
+- **Cost Analysis:** [ADR-007: Search Technology Selection](docs/adr/adr-007-search-technology-selection.md) (€36,700 savings)
+- **Implementation Guide:** [Next Steps](docs/guides/roadmap/next-steps.md) - Implementation roadmap
 
 ---
 
 ## [Unreleased]
+
+### Added
+
+### Changed
+
+### Fixed
+
+---
+
+## [10.1.0] - 2025-12-29
+
+Release with event handler lazy initialization optimization for improved startup reliability.
+
+### Added
+
+- Release configuration file for Maven/Tycho automated releases
+
+### Changed
+
+- Optimized SearchIndexEventHandler lazy initialization with exponential backoff polling
+- Replaced ScheduledExecutorService with simpler Thread-based approach for one-time startup
+- Fixed chicken-and-egg problem where dynamic tables were never registered
+
+### Fixed
+
+- CLD-1677: NullPointerException during OSGi startup when DB not yet connected
+- Event registration now uses fast-response polling (10ms → 500ms exponential backoff)
+
+---
+
+## [10.0.0] - 2025-12-29
+
+Major release with P2 repository structure for iDempiere plugin distribution.
+
+### Added
+
+- P2 repository structure for OSGi plugin deployment
+- Feature bundle for grouped plugin installation
+- Maven Tycho build configuration for Eclipse plugin packaging
+
+### Changed
+
+- Reorganized project structure for Tycho/P2 build system
+- Updated parent POM to support P2 repository generation
+
+---
+
+## [migration-2025-12-18] - 2025-12-18
+
+Migration scripts release for Slovak text search configuration and multi-tenant integrity fixes (CLD-1652).
+
+### Added
+
+#### Database Migration Scripts (CLD-1652)
+- `postgresql/migration/202512180801_Slovak_Text_Search_And_MultiTenant_Fix.sql` - Comprehensive PostgreSQL migration
+  - Creates Slovak text search configuration (sk_unaccent) for proper diacritics handling
+  - Fixes multi-tenant UNIQUE constraint to include ad_client_id
+  - Cleans up duplicate search index data
+  - Includes rollback procedures
+- `oracle/migration/202512180801_MultiTenant_Fix.sql` - Oracle-specific multi-tenant fix
+  - Applies UNIQUE constraint fix for Oracle databases
+  - Includes rollback procedures
+- `MIGRATION_README.md` - Migration governance documentation
+  - Timestamped naming convention (YYYYMMDDHHmm_Description.sql)
+  - PostgreSQL and Oracle migration standards
+  - Rollback procedure requirements
+
+### Changed
+
+#### Migration Script Governance
+- Standardized migration script naming to use timestamps for ordering
+- Organized scripts into database-specific directories (postgresql/, oracle/)
+- Removed deprecated migration scripts with non-standard naming
+- Enhanced migration documentation with rollback procedures
 
 ### Fixed
 
@@ -42,17 +116,15 @@ and this project adheres to [Conventional Commits](https://conventionalcommits.o
     - `PGTextSearchIndexProvider.java`: WHERE clause concatenation (lines 148-151, 167-170)
     - `PGTextSearchIndexProvider.java`: Table name concatenation (lines 144, 163, 361)
     - `SearchIndexConfigBuilder.java`: WHERE clause concatenation (lines 320-326)
-  - See [ADR-002](docs/adr/ADR-002-sql-injection-prevention.md) for complete analysis
+  - See [ADR-002](docs/adr/adr-002-sql-injection-prevention.md) for complete analysis
 
 #### Data Integrity (ADR-006: Multi-Tenant Integrity)
 - **CRITICAL:** Fixed multi-tenant data corruption vulnerability
   - Updated UNIQUE constraint from `(ad_table_id, record_id)` to `(ad_client_id, ad_table_id, record_id)`
   - Fixed `PGTextSearchIndexProvider.java:116` ON CONFLICT clause
-  - Created migration scripts:
-    - `202512_cleanup_duplicate_search_index_data.sql` - Pre-migration data cleanup
-    - `202512_fix_multi_tenant_unique_index.sql` - Apply new constraint
+  - Migration scripts standardized in `postgresql/migration/202512180801_Slovak_Text_Search_And_MultiTenant_Fix.sql`
   - Prevents cross-client record overwrites
-  - See [ADR-006](docs/adr/ADR-006-multi-tenant-integrity.md) for impact analysis
+  - See [ADR-006](docs/adr/adr-006-multi-tenant-integrity.md) for impact analysis
 
 #### Transaction Isolation (ADR-001: Transaction Isolation Strategy)
 - **CRITICAL:** Implemented separate transaction isolation for search index operations
@@ -63,7 +135,7 @@ and this project adheres to [Conventional Commits](https://conventionalcommits.o
   - Improved performance by reducing lock contention
   - Updated helper methods to accept ctx/trxName as parameters:
     - `getMainPOs()`, `getMainPOsOfTable()`, `applyWhereClause()`, `handleSearchIndexConfigChange()`
-  - See [ADR-001](docs/adr/ADR-001-transaction-isolation.md) for rationale
+  - See [ADR-001](docs/adr/adr-001-transaction-isolation.md) for rationale
 
 ### Changed
 
@@ -73,23 +145,16 @@ and this project adheres to [Conventional Commits](https://conventionalcommits.o
   - **Impact:** Search queries complete in <100ms instead of 5-10s for 10K records
   - **Breaking Change:** Result ranking may differ from POSITION (uses ts_rank instead of regex position)
   - **Action Required:** REST API still hardcoded to POSITION (cloudempiere-rest repository)
-  - See [ADR-005](docs/adr/ADR-005-searchtype-migration.md) for migration guide
+  - See [ADR-005](docs/adr/adr-005-searchtype-migration.md) for migration guide
 
-#### Language Support (ADR-005: Slovak/Czech Text Search Configuration)
+#### Language Support (ADR-003: Slovak/Czech Text Search Configuration)
 - Added Slovak/Czech language diacritics support with proper text search configuration
   - Updated `getTSConfig()` method to detect Slovak (`sk_SK`) and Czech (`cs_CZ`) languages
   - Returns `sk_unaccent` configuration for proper diacritics handling
-  - Created migration script: `202512_create_slovak_text_search_config.sql`
+  - Migration scripts in `postgresql/migration/202512180801_Slovak_Text_Search_And_MultiTenant_Fix.sql`
   - Enables searches without diacritics to match text with diacritics
   - Example: searching "ruza" matches "ruža", "růža", "rúža"
-  - See [ADR-003](docs/adr/ADR-003-slovak-text-search-configuration.md) for architecture
-
-### Added
-
-#### Database Migration Scripts
-- `202512_cleanup_duplicate_search_index_data.sql` - Clean duplicate entries before migration
-- `202512_fix_multi_tenant_unique_index.sql` - Apply multi-tenant UNIQUE constraint
-- `202512_create_slovak_text_search_config.sql` - Create Slovak text search configuration
+  - See [ADR-003](docs/adr/adr-003-slovak-text-search-configuration.md) for architecture
 
 #### Security Infrastructure
 - `SearchIndexSecurityValidator` utility class for SQL injection prevention
@@ -98,9 +163,9 @@ and this project adheres to [Conventional Commits](https://conventionalcommits.o
   - `validateColumnName()` - Validates column name against AD_Column whitelist
 
 #### Architecture Decision Records
-- **ADR-003: Slovak Text Search Configuration Architecture** - Formalizes Slovak language support using PostgreSQL text search configuration with multi-weight indexing to replace POSITION workaround (see [docs/adr/ADR-003](docs/adr/ADR-003-slovak-text-search-configuration.md))
-- **ADR-004: REST API OData Integration Architecture** - Documents REST API integration via OData `searchindex()` filter function (see [docs/adr/ADR-004](docs/adr/ADR-004-rest-api-odata-integration.md))
-- **ADR-007: Search Technology Selection** - Captures decision to use PostgreSQL FTS over Elasticsearch/Algolia, saving €36,700 over 5 years (see [docs/adr/ADR-007](docs/adr/ADR-007-search-technology-selection.md))
+- **ADR-003: Slovak Text Search Configuration Architecture** - Formalizes Slovak language support using PostgreSQL text search configuration with multi-weight indexing to replace POSITION workaround (see [docs/adr/ADR-003](docs/adr/adr-003-slovak-text-search-configuration.md))
+- **ADR-004: REST API OData Integration Architecture** - Documents REST API integration via OData `searchindex()` filter function (see [docs/adr/ADR-004](docs/adr/adr-004-rest-api-odata-integration.md))
+- **ADR-007: Search Technology Selection** - Captures decision to use PostgreSQL FTS over Elasticsearch/Algolia, saving €36,700 over 5 years (see [docs/adr/ADR-007](docs/adr/adr-007-search-technology-selection.md))
 - **ADR Index** - Created comprehensive ADR catalog with dependency graph and implementation tracking (see [docs/adr/README.md](docs/adr/README.md))
 
 #### Documentation
@@ -123,18 +188,18 @@ and this project adheres to [Conventional Commits](https://conventionalcommits.o
 - **ADR-005: SearchType Migration** - Enhanced with cross-references to ADR-003 (Slovak config root cause), ADR-004 (REST API impact), and ADR-007 (technology selection rationale)
 
 #### Documentation Structure
-- Documented critical performance issues with POSITION search type (see [ADR-005](docs/adr/ADR-005-searchtype-migration.md))
-- Documented Slovak language root cause analysis (see [ADR-003](docs/adr/ADR-003-slovak-text-search-configuration.md))
-- Documented REST API performance impact (see [ADR-004](docs/adr/ADR-004-rest-api-odata-integration.md))
-- Documented cost analysis and technology comparison (see [ADR-007](docs/adr/ADR-007-search-technology-selection.md))
+- Documented critical performance issues with POSITION search type (see [ADR-005](docs/adr/adr-005-searchtype-migration.md))
+- Documented Slovak language root cause analysis (see [ADR-003](docs/adr/adr-003-slovak-text-search-configuration.md))
+- Documented REST API performance impact (see [ADR-004](docs/adr/adr-004-rest-api-odata-integration.md))
+- Documented cost analysis and technology comparison (see [ADR-007](docs/adr/adr-007-search-technology-selection.md))
 
 ### Known Issues
 
 #### Performance (Critical - See ADR-003, ADR-005)
 - **POSITION Search Type:** 100× slower than TS_RANK due to regex operations bypassing GIN index
   - **Impact:** 5 seconds for 10,000 products (unusable at scale)
-  - **Root Cause:** Workaround for Slovak diacritics without proper text search configuration (see [ADR-003](docs/adr/ADR-003-slovak-text-search-configuration.md))
-  - **Solution:** Migrate to TS_RANK + Slovak text search config (see [ADR-005](docs/adr/ADR-005-searchtype-migration.md))
+  - **Root Cause:** Workaround for Slovak diacritics without proper text search configuration (see [ADR-003](docs/adr/adr-003-slovak-text-search-configuration.md))
+  - **Solution:** Migrate to TS_RANK + Slovak text search config (see [ADR-005](docs/adr/adr-005-searchtype-migration.md))
   - **Files Affected:**
     - `ZkSearchIndexUI.java:189` (backend UI)
     - `DefaultQueryConverter.java:689` (REST API)
@@ -145,7 +210,7 @@ and this project adheres to [Conventional Commits](https://conventionalcommits.o
   - **Impact:** Records can be overwritten across clients (data corruption)
   - **Current Constraint:** `UNIQUE (ad_table_id, record_id)`
   - **Required Constraint:** `UNIQUE (ad_client_id, ad_table_id, record_id)`
-  - **Solution:** See [ADR-006](docs/adr/ADR-006-multi-tenant-integrity.md)
+  - **Solution:** See [ADR-006](docs/adr/adr-006-multi-tenant-integrity.md)
 
 #### Operations (Medium)
 - **Cache Invalidation:** Configuration cache does not invalidate automatically
@@ -156,7 +221,7 @@ and this project adheres to [Conventional Commits](https://conventionalcommits.o
 - **Slovak Language Configuration:** Not yet implemented, missing €36,700 cost savings
   - **Impact:** Using POSITION workaround instead of proper Slovak text search config
   - **Benefit:** 100× performance improvement + €36,700 savings vs Elasticsearch
-  - **Solution:** See [ADR-003](docs/adr/ADR-003-slovak-text-search-configuration.md)
+  - **Solution:** See [ADR-003](docs/adr/adr-003-slovak-text-search-configuration.md)
 
 ---
 

@@ -4,12 +4,15 @@
 
 | Version | Date | Key Features |
 |---------|------|--------------|
+| 10.2.0 | 2026-01 | Current development (iDempiere 10 alignment) |
+| 10.1.0 | 2025-12 | Lazy initialization fix (CLD-1677), TS_RANK migration |
+| 10.0.0 | 2025-12 | P2 repository structure, Tycho build |
 | 8.2 | 2020-12-26 | Full-text search with PostgreSQL, event-driven indexing, multi-weight columns |
 | Initial | 2016-08-10 | First prototype omnisearch plugin |
 
-## Current Version: 8.2+
+## Current Version: 10.2.0-SNAPSHOT
 
-**Last Updated:** 2025-12-13
+**Last Updated:** 2026-01-06
 **Modules:** 2 OSGi bundles (core + UI fragment)
 **Java Classes:** 35 (30 core + 5 UI)
 
@@ -47,6 +50,7 @@
 | **FK Table Support** | ✅ Implemented | 1-level FK relationships | Cascade updates |
 | **Configuration Caching** | ✅ Implemented | ImmutableIntPOCache | 20-entry cache |
 | **Multi-Tenant Support** | ⚠️ Partial | Index isolation | Known bug: unique constraint |
+| **Automated Table DDL** | 📋 Proposed | Auto-create PostgreSQL tables | ADR-010 (not implemented) |
 
 ### User Interface
 
@@ -97,22 +101,41 @@
 | **WHERE Clause Alias Bug** | Cannot use "main" alias | Open | SearchIndexEventHandler:268 |
 | **Cache Invalidation** | Stale config after changes | Open | SearchIndexConfigBuilder:256 |
 
+### Operational Issues
+
+| Issue | Impact | Status | Reference |
+|-------|--------|--------|-----------|
+| **Manual Table Creation** | 15-60 min overhead per index, 20-30% error rate | Open | ADR-010 |
+| **Inconsistent Table Schema** | Missing ad_client_id in UNIQUE constraint | Open | ADR-006, ADR-010 |
+| **No Schema Validation** | Wrong DDL deployed to production | Open | ADR-010 |
+
 ### Feature Gaps
 
 | Feature | Status | Notes |
 |---------|--------|-------|
 | **Multi-level FK Traversal** | Not Implemented | Only 1-level FK supported |
 | **Elasticsearch Production Support** | Not Implemented | Stub only |
-| **Search Type UI Toggle** | Not Implemented | Hardcoded to POSITION |
+| **Search Type UI Toggle** | ✅ Implemented | Backend UI uses TS_RANK (REST API still POSITION) |
 
 ---
 
 ## Roadmap
 
-See `docs/NEXT-STEPS.md` and `docs/LOW-COST-SLOVAK-ECOMMERCE-SEARCH.md` for:
-- Slovak text search configuration (€36K cost savings)
+### Proposed Features (See ADRs)
+
+| Feature | Status | Priority | Estimated Savings | Reference |
+|---------|--------|----------|------------------|-----------|
+| **Automated Table DDL** | Proposed | High | 900-3600× faster setup | ADR-010 |
+| **Slovak Text Search Config** | Proposed | High | €36K vs Algolia | ADR-003 |
+| **SearchType Migration (UI)** | ✅ Done | Critical | 100× performance | ADR-005 |
+| **SearchType Migration (REST)** | Open | Critical | 100× performance | ADR-004 |
+| **Multi-Tenant Fix** | Proposed | Critical | Data integrity | ADR-006 |
+
+See [docs/guides/roadmap/next-steps.md](docs/guides/roadmap/next-steps.md) for:
+- Slovak text search configuration
 - Migration from POSITION to TS_RANK
 - Multi-tenant unique constraint fix
+- Automated table creation mechanism
 - Performance optimization strategies
 
 ---
@@ -122,13 +145,14 @@ See `docs/NEXT-STEPS.md` and `docs/LOW-COST-SLOVAK-ECOMMERCE-SEARCH.md` for:
 | Document | Description |
 |----------|-------------|
 | `CLAUDE.md` | Claude Code guidance, build commands |
-| `docs/COMPLETE-ANALYSIS-SUMMARY.md` | Executive summary of all findings |
-| `docs/slovak-language-architecture.md` | Root cause analysis |
-| `docs/adr/ADR-001-transaction-isolation.md` | Transaction handling patterns |
-| `docs/adr/ADR-002-sql-injection-prevention.md` | Security patterns |
-| `docs/adr/ADR-005-searchtype-migration.md` | Performance optimization plan |
-| `docs/adr/ADR-006-multi-tenant-integrity.md` | Multi-tenancy fixes |
+| `docs/complete-analysis-summary.md` | Executive summary of all findings |
+| `docs/guides/slovak-language/architecture.md` | Root cause analysis |
+| `docs/adr/adr-001-transaction-isolation.md` | Transaction handling patterns |
+| `docs/adr/adr-002-sql-injection-prevention.md` | Security patterns |
+| `docs/adr/adr-005-searchtype-migration.md` | Performance optimization plan |
+| `docs/adr/adr-006-multi-tenant-integrity.md` | Multi-tenancy fixes |
+| `docs/adr/adr-010-automated-search-index-table-ddl.md` | Automated table creation |
 
 ---
 
-**Note:** This feature matrix was generated during repository standardization on 2025-12-13. Please update as features evolve.
+**Note:** This feature matrix was last updated on 2026-01-06. Please update as features evolve.

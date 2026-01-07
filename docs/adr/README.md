@@ -22,23 +22,31 @@ We use the [MADR 3.0 format](https://adr.github.io/madr/) (Markdown Architectura
 
 | ADR | Title | Status | Date | Description |
 |-----|-------|--------|------|-------------|
-| [ADR-003](./ADR-003-slovak-text-search-configuration.md) | Slovak Text Search Configuration Architecture | **Proposed** | 2025-12-13 | Implements Slovak language support using PostgreSQL text search configuration with multi-weight indexing to replace POSITION workaround |
-| [ADR-005](./ADR-005-searchtype-migration.md) | SearchType Migration from POSITION to TS_RANK | **Proposed** | 2025-12-12 | Migrates default SearchType from POSITION (regex-based, 100× slower) to TS_RANK (native PostgreSQL function) |
-| [ADR-007](./ADR-007-search-technology-selection.md) | Search Technology Selection | **Implemented** | 2025-12-13 | Chose PostgreSQL FTS over Elasticsearch/Algolia (€36,700 cost savings, adequate for 10K-1M products) |
+| [ADR-003](./adr-003-slovak-text-search-configuration.md) | Slovak Text Search Configuration Architecture | **Proposed** | 2025-12-13 | Implements Slovak language support using PostgreSQL text search configuration with multi-weight indexing to replace POSITION workaround |
+| [ADR-005](./adr-005-searchtype-migration.md) | SearchType Migration from POSITION to TS_RANK | **Proposed** | 2025-12-12 | Migrates default SearchType from POSITION (regex-based, 100× slower) to TS_RANK (native PostgreSQL function) |
+| [ADR-007](./adr-007-search-technology-selection.md) | Search Technology Selection | **Implemented** | 2025-12-13 | Chose PostgreSQL FTS over Elasticsearch/Algolia (€36,700 cost savings, adequate for 10K-1M products) |
 
 ### API & Integration
 
 | ADR | Title | Status | Date | Description |
 |-----|-------|--------|------|-------------|
-| [ADR-004](./ADR-004-rest-api-odata-integration.md) | REST API OData Integration Architecture | **Implemented** | 2025-12-13 | Integrates search index with REST API via OData `searchindex()` filter function |
+| [ADR-004](./adr-004-rest-api-odata-integration.md) | REST API OData Integration Architecture | **⚠️ Partially Superseded** | 2025-12-13 | Integrates search index with REST API via OData `searchindex()` filter function (superseded by ADR-008) |
+| [ADR-008](./adr-008-search-service-layer.md) | Search Service Layer Architecture | **Proposed** | 2025-12-18 | Service layer with caching, security, and OSGi best practices (supersedes ADR-004) |
 
 ### Security & Data Integrity
 
 | ADR | Title | Status | Date | Description |
 |-----|-------|--------|------|-------------|
-| [ADR-001](./ADR-001-transaction-isolation.md) | Transaction Isolation | **Implemented** | 2025-12-12 | Ensures proper transaction isolation for search index operations |
-| [ADR-002](./ADR-002-sql-injection-prevention.md) | SQL Injection Prevention | **Implemented** | 2025-12-12 | Prevents SQL injection in search queries through input sanitization |
-| [ADR-006](./ADR-006-multi-tenant-integrity.md) | Multi-Tenant Integrity | **Proposed** | 2025-12-12 | Fixes unique constraint to include ad_client_id for proper multi-tenant data isolation |
+| [ADR-001](./adr-001-transaction-isolation.md) | Transaction Isolation | **Implemented** | 2025-12-12 | Ensures proper transaction isolation for search index operations |
+| [ADR-002](./adr-002-sql-injection-prevention.md) | SQL Injection Prevention | **Implemented** | 2025-12-12 | Prevents SQL injection in search queries through input sanitization |
+| [ADR-006](./adr-006-multi-tenant-integrity.md) | Multi-Tenant Integrity | **Proposed** | 2025-12-12 | Fixes unique constraint to include ad_client_id for proper multi-tenant data isolation |
+
+### Operations & Automation
+
+| ADR | Title | Status | Date | Description |
+|-----|-------|--------|------|-------------|
+| [ADR-010](./adr-010-automated-search-index-table-ddl.md) | Automated Search Index Table DDL Management | **Proposed** | 2025-12-18 | Automates PostgreSQL table creation for new search indexes, eliminating manual DBA intervention (900-3600× faster setup) |
+| [ADR-011](./adr-011-lazy-initialization-event-handler.md) | Lazy Initialization for SearchIndexEventHandler | **Accepted** | 2025-12-29 | Fixes startup NullPointerException and chicken-and-egg problem with exponential backoff polling |
 
 ---
 
@@ -65,14 +73,23 @@ ADR-007: Technology Selection (PostgreSQL FTS vs Elasticsearch)
     │       │
     │       └─→ ADR-005: SearchType Migration (POSITION → TS_RANK)
     │               │
-    │               ├─→ ADR-004: REST API OData Integration
-    │               ├─→ ADR-001: Transaction Isolation
-    │               └─→ ADR-002: SQL Injection Prevention
+    │               ├─→ ADR-004: REST API OData Integration (current)
+    │               │       │
+    │               │       └─→ ADR-008: Service Layer ← supersedes ADR-004
+    │               │               │
+    │               │               ├─→ ADR-001: Transaction Isolation
+    │               │               └─→ ADR-002: SQL Injection Prevention
+    │               │
+    │               └─→ ADR-001: Transaction Isolation
     │
-    └─→ ADR-006: Multi-Tenant Integrity
+    ├─→ ADR-006: Multi-Tenant Integrity
+    │       │
+    │       └─→ ADR-010: Automated Table DDL ← ensures ADR-006 schema
+    │
+    └─→ ADR-010: Automated Table DDL Management
 
 Legend:
-─→ depends on / related to
+─→ depends on / related to / evolves to
 ```
 
 ---
@@ -126,25 +143,31 @@ Legend:
 ### By Topic
 
 **Performance:**
-- [ADR-003: Slovak Text Search Configuration](./ADR-003-slovak-text-search-configuration.md)
-- [ADR-005: SearchType Migration](./ADR-005-searchtype-migration.md)
-- [ADR-007: Search Technology Selection](./ADR-007-search-technology-selection.md)
+- [ADR-003: Slovak Text Search Configuration](./adr-003-slovak-text-search-configuration.md)
+- [ADR-005: SearchType Migration](./adr-005-searchtype-migration.md)
+- [ADR-007: Search Technology Selection](./adr-007-search-technology-selection.md)
 
 **Security:**
-- [ADR-001: Transaction Isolation](./ADR-001-transaction-isolation.md)
-- [ADR-002: SQL Injection Prevention](./ADR-002-sql-injection-prevention.md)
-- [ADR-006: Multi-Tenant Integrity](./ADR-006-multi-tenant-integrity.md)
+- [ADR-001: Transaction Isolation](./adr-001-transaction-isolation.md)
+- [ADR-002: SQL Injection Prevention](./adr-002-sql-injection-prevention.md)
+- [ADR-006: Multi-Tenant Integrity](./adr-006-multi-tenant-integrity.md)
 
 **Integration:**
-- [ADR-004: REST API OData Integration](./ADR-004-rest-api-odata-integration.md)
+- [ADR-004: REST API OData Integration](./adr-004-rest-api-odata-integration.md) (⚠️ partially superseded by ADR-008)
+- [ADR-008: Search Service Layer](./adr-008-search-service-layer.md) (supersedes ADR-004)
+
+**Operations:**
+- [ADR-010: Automated Table DDL Management](./adr-010-automated-search-index-table-ddl.md)
+- [ADR-011: Lazy Initialization](./adr-011-lazy-initialization-event-handler.md)
 
 ### By Status
 
-**Implemented:**
-- ADR-001, ADR-002, ADR-004, ADR-007
+**Implemented/Accepted:**
+- ADR-001, ADR-002, ADR-007, ADR-011
+- ADR-004 (⚠️ partially superseded by ADR-008)
 
 **Proposed (Ready for Implementation):**
-- ADR-003, ADR-005, ADR-006
+- ADR-003, ADR-005, ADR-006, ADR-008, ADR-009, ADR-010
 
 **Deprecated:**
 - None
@@ -155,10 +178,14 @@ Legend:
 
 | ADR | Implementation Status | Blocker | Target Date |
 |-----|----------------------|---------|-------------|
-| **ADR-003** | Not Started | Requires database migration script | Q1 2025 |
-| **ADR-005** | Partially | Waiting for ADR-003 Slovak config | Q1 2025 |
-| **ADR-004** | ⚠️ Hardcoded POSITION | SearchType needs update | Q1 2025 |
-| **ADR-006** | Not Started | Requires schema migration | Q2 2025 |
+| **ADR-003** | Not Started | Requires database migration script | Q1 2026 |
+| **ADR-005** | ✅ UI Done, REST Open | REST API in cloudempiere-rest repo | Q1 2026 |
+| **ADR-004** | ⚠️ Implemented with gaps | Superseded by ADR-008 | Q1 2026 |
+| **ADR-006** | Not Started | Requires schema migration | Q2 2026 |
+| **ADR-008** | Not Started | None (ready to implement) | Q1 2026 |
+| **ADR-009** | Not Started | None (ready to implement) | Q2 2026 |
+| **ADR-010** | Not Started | None (ready to implement) | Q1 2026 |
+| **ADR-011** | ✅ Done | Released in v10.1.0 | Done |
 
 ---
 
@@ -177,5 +204,5 @@ Legend:
 
 ---
 
-**Last Updated:** 2025-12-13
+**Last Updated:** 2026-01-06
 **Maintainer:** Development Team

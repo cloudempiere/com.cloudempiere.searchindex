@@ -1,2 +1,14 @@
 /*/bin/
 .DS_Store
+
+# Eclipse IDE files
+.project
+.settings/
+.classpath
+.metadata/
+
+# Maven target directories
+target/
+
+# Tycho consumer POMs (auto-generated)
+.tycho-consumer-pom.xml
