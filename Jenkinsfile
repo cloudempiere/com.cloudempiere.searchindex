@@ -4,7 +4,7 @@ pipeline {
     environment {
         clde_branch_master = "master"
         clde_branch_staging = "staging"
-        gitCredentialId = "github jenkins access token"
+        gitCredentialId = "norbertbede"
         awsCredentialsID = "4387aab6-ff4e-44e9-9e15-eb1452a3870b"
     }
 
