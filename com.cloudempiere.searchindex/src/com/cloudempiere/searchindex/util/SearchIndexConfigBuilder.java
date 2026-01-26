@@ -319,6 +319,8 @@ public class SearchIndexConfigBuilder {
                 params.add(Env.getAD_Client_ID(ctx));
                 String dynamicWhere = tableConfig.getSqlWhere();
                 if (!Util.isEmpty(dynamicWhere)) {
+                    // Validate WHERE clause to prevent SQL injection
+                    SearchIndexSecurityValidator.validateWhereClause(dynamicWhere);
                     if (!dynamicWhere.trim().toUpperCase().startsWith("AND")) {
                         whereClauseBuilder.append("AND ");
                     }
@@ -382,5 +384,24 @@ public class SearchIndexConfigBuilder {
         	return keyColumn;
         }
         return parts[1];
+    }
+
+    /**
+     * Clear cache for specific search index
+     * Called when search index configuration changes
+     * @param searchIndexId AD_SearchIndex_ID
+     */
+    public static void clearCache(int searchIndexId) {
+        searchIndexConfigCache.remove(searchIndexId);
+        log.info("Cleared search index config cache for AD_SearchIndex_ID=" + searchIndexId);
+    }
+
+    /**
+     * Clear entire search index config cache
+     * Use when bulk configuration changes occur
+     */
+    public static void clearAllCache() {
+        searchIndexConfigCache.clear();
+        log.info("Cleared entire search index config cache");
     }
 }

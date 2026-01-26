@@ -21,25 +21,19 @@ pipeline {
     }
 
    stages {
-        stage('Get-Staging-Plugin') {
+        stage('Set-Staging-Cloud-Path') {
             when {
                 branch "${clde_branch_staging}"
             }
             steps {
-                git url:'https://github.com/cloudempiere/com.cloudempiere.searchindex.git',
-                    credentialsId:"${gitCredentialId}",
-                    branch:"${clde_branch_staging}"
                 sh "sed -i -e 's+iDempiereCLDE+clde-server_staging-cloudempiere/iDempiereCLDE+g' com.cloudempiere.searchindex.parent/pom.xml "
             }
         }
-        stage('Get-Prod-Plugin') {
+        stage('Set-Prod-Cloud-Path') {
             when {
                 branch "${clde_branch_master}"
             }
             steps {
-                git url:'https://github.com/cloudempiere/com.cloudempiere.searchindex.git',
-                    credentialsId:"${gitCredentialId}",
-                    branch:"${clde_branch_master}"
                 sh "sed -i -e 's+iDempiereCLDE+clde-server_master-cloudempiere/iDempiereCLDE+g' com.cloudempiere.searchindex.parent/pom.xml "
             }
         }

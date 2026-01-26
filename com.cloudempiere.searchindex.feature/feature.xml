@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="com.cloudempiere.searchindex.feature"
+      label="CloudEmpiere Search Index"
+      version="10.2.0.qualifier"
+      provider-name="CloudEmpiere">
+
+   <description url="https://github.com/cloudempiere/com.cloudempiere.searchindex">
+      Full-text search indexing plugin for iDempiere ERP.
+      Provides configurable search capabilities with support for
+      PostgreSQL text search and Elasticsearch backends.
+   </description>
+
+   <copyright url="https://cloudempiere.com">
+      Copyright (c) 2024-2026 CloudEmpiere
+   </copyright>
+
+   <license url="https://www.gnu.org/licenses/gpl-2.0.html">
+      GNU General Public License, version 2
+   </license>
+
+   <requires>
+      <import plugin="org.adempiere.base" version="10.0.0" match="greaterOrEqual"/>
+      <import plugin="org.adempiere.plugin.utils" version="10.0.0" match="greaterOrEqual"/>
+      <import plugin="org.adempiere.ui.zk" version="10.0.0" match="greaterOrEqual"/>
+   </requires>
+
+   <plugin
+         id="com.cloudempiere.searchindex"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="com.cloudempiere.searchindex.ui"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         fragment="true"
+         unpack="false"/>
+
+</feature>

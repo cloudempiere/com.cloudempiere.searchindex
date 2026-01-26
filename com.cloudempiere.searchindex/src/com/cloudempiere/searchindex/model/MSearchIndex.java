@@ -208,7 +208,7 @@ public class MSearchIndex extends X_AD_SearchIndex implements ImmutablePOSupport
 	 * @return
 	 */
 	public static int getAD_SearchIndexProvider_ID(Properties ctx, String searchIndexName, String trxName) {
-		String sql = "SELECT AD_SearchIndexProvider_ID FROM AD_SearchIndex WHERE SearchIndexName=? AND IsActive='Y' AND AD_Client_ID = IN(0, ?)";
+		String sql = "SELECT AD_SearchIndexProvider_ID FROM AD_SearchIndex WHERE SearchIndexName=? AND IsActive='Y' AND AD_Client_ID IN (0, ?)";
 		return DB.getSQLValue(trxName, sql, searchIndexName, Env.getAD_Client_ID(ctx));
 	}
 
