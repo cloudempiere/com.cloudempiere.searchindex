@@ -184,7 +184,8 @@ The plugin uses **MSysConfig** for runtime configuration:
 ```sql
 CREATE TEXT SEARCH CONFIGURATION sk_unaccent (COPY = simple);
 ALTER TEXT SEARCH CONFIGURATION sk_unaccent
-  ALTER MAPPING FOR word WITH unaccent, simple;
+  ALTER MAPPING FOR word, asciiword, hword, hword_asciipart, asciihword
+  WITH pg_catalog.unaccent, simple;
 ```
 
 **Impact**: Eliminates regex, maintains Slovak language quality, 100× faster.
@@ -247,6 +248,14 @@ See `docs/guides/performance/postgres-fts.md` for detailed analysis and optimiza
 **5. FK Traversal Depth** (`SearchIndexConfigBuilder.java:288-312`):
 - Only supports 1-level FK relationships
 - Multi-level FK chains not fully implemented
+
+**6. Unaccent Dictionary Schema Dependency** (Migration scripts):
+- The `unaccent` extension may be installed in different schemas (`pg_catalog` vs `adempiere`)
+- Unqualified dictionary references fail silently when schema doesn't match search_path
+- **Symptom**: "text-search query contains only stop words or doesn't contain lexemes, ignored"
+- **Solution**: Use schema-qualified dictionary: `WITH pg_catalog.unaccent, simple`
+- **Fixed in**: Migration scripts now use `pg_catalog.unaccent` explicitly
+- **Impact**: Prevents silent failures on fresh PostgreSQL installations
 
 ## REST API Integration
 

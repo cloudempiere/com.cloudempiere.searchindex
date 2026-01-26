@@ -20,7 +20,7 @@
 -- ✓ Changed constraint from (ad_table_id, record_id)
 --   to (ad_client_id, ad_table_id, record_id)
 
-SELECT register_migration_script('202512180801_MultiTenant_Fix.sql') FROM dual;
+SELECT register_migration_script('202512180801_CLD-1652.sql') FROM dual;
 
 SET SQLBLANKLINES ON
 SET DEFINE OFF
