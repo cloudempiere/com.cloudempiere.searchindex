@@ -26,7 +26,7 @@ pipeline {
                 branch "${clde_branch_staging}"
             }
             steps {
-                sh "sed -i -e 's+iDempiereCLDE+clde-server_staging-cloudempiere/iDempiereCLDE+g' com.cloudempiere.searchindex.parent/pom.xml "
+                sh "sed -i -e 's+iDempiereCLDE+clde-server_staging/iDempiereCLDE+g' com.cloudempiere.searchindex.parent/pom.xml "
             }
         }
         stage('Get-Prod-Plugin') {
@@ -34,7 +34,7 @@ pipeline {
                 branch "${clde_branch_master}"
             }
             steps {
-                sh "sed -i -e 's+iDempiereCLDE+clde-server_master-cloudempiere/iDempiereCLDE+g' com.cloudempiere.searchindex.parent/pom.xml "
+                sh "sed -i -e 's+iDempiereCLDE+clde-server_master/iDempiereCLDE+g' com.cloudempiere.searchindex.parent/pom.xml "
             }
         }
         stage('Build') {
