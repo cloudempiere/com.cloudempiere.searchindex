@@ -14,7 +14,7 @@ and this project adheres to [Conventional Commits](https://conventionalcommits.o
 | **POSITION Search Performance (UI)** | 🔴 Critical | ✅ Fixed | [ADR-005](docs/adr/adr-005-searchtype-migration.md) | Backend UI now uses TS_RANK (100× faster) |
 | **Multi-Tenant Data Integrity** | 🔴 Critical | ✅ Fixed | [ADR-006](docs/adr/adr-006-multi-tenant-integrity.md) | UNIQUE constraint now includes ad_client_id |
 | **SQL Injection Vulnerabilities** | 🔴 Critical | ✅ Fixed | [ADR-002](docs/adr/adr-002-sql-injection-prevention.md) | Defense-in-depth validation added |
-| **Transaction Isolation** | 🔴 Critical | ✅ Fixed | [ADR-001](docs/adr/adr-001-transaction-isolation.md) | Index ops use separate transactions |
+| **Transaction Isolation** | 🔴 Critical | ✅ Fixed (2026-02-13) | [ADR-001](docs/adr/adr-001-transaction-isolation.md) | Hybrid approach: business trx for read, separate for write |
 | **Slovak Language Config** | 🟡 Medium | ✅ Fixed | [ADR-003](docs/adr/adr-003-slovak-text-search-configuration.md) | sk_unaccent config support added |
 | **REST API POSITION Hardcoded** | 🟡 Medium | ⚠️ Open | [ADR-004](docs/adr/adr-004-rest-api-odata-integration.md) | Requires fix in cloudempiere-rest repo |
 | **Cache Invalidation** | 🟡 Medium | Open | N/A | Restart required after config changes |
@@ -35,6 +35,14 @@ and this project adheres to [Conventional Commits](https://conventionalcommits.o
 ### Changed
 
 ### Fixed
+
+- **CRITICAL:** Fixed FK table indexing failure in uncommitted transactions (SearchIndexEventHandler)
+  - Event handler now uses business transaction for reading data (can see uncommitted changes)
+  - Fixes "NO Data found" error when parent and child records created in same transaction
+  - Critical for import processes that create related records atomically
+  - Impact: M_Product + M_Product_PO indexing now works correctly in import scenarios
+  - Related: ADR-001 clarified to specify hybrid transaction approach
+  - Commit: [pending]
 
 ---
 

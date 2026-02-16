@@ -1,11 +1,13 @@
 # ADR-001: Transaction Isolation Strategy for Search Index Updates
 
-**Status:** ✅ Implemented
+**Status:** ✅ Implemented (Fixed 2026-02-13)
 **Date:** 2025-12-12
 **Implementation Date:** 2025-12-17
+**Fix Date:** 2026-02-13
 **Decision Makers:** Development Team, Architecture Review Board
-**Related Issues:** Finding 2.1 (CRITICAL)
+**Related Issues:** Finding 2.1 (CRITICAL), FK Table Indexing Bug
 **Implementation Commits:** 378ec8b, 3026c09
+**Fix Commits:** [pending]
 
 ---
 
@@ -45,22 +47,32 @@ provider.createIndex(ctx, builder.build().getData(false), trxName);
 
 ## Decision
 
-We will implement **Separate Transaction Isolation** for all search index operations. Event handlers will use dedicated transactions independent of the triggering PO's transaction.
+We will implement **Hybrid Transaction Strategy** for search index operations:
+1. Use **business transaction** for reading source data (to see uncommitted changes)
+2. Use **separate transaction** for writing to index tables (to isolate failures)
 
-### Strategy: Immediate Separate Transaction
+### Strategy: Hybrid Transaction Approach
 
 ```java
 @Override
 protected void doHandleEvent(Event event) {
     PO eventPO = getPO(event);
+    String businessTrxName = eventPO.get_TrxName();  // For reading data
 
-    // Use separate transaction for index operations
+    // Phase 1: Read data using business transaction (see uncommitted changes)
+    PO[] mainPOArr = getMainPOs(eventPO, indexedTables, ctx, businessTrxName);
+
+    // Phase 2: Write index using separate transaction (isolate failures)
     Trx indexTrx = Trx.get(Trx.createTrxName("SearchIdx"), true);
     try {
         String indexTrxName = indexTrx.getTrxName();
 
-        // Perform index operations with separate transaction
-        provider.createIndex(ctx, builder.build().getData(false), indexTrxName);
+        SearchIndexConfigBuilder builder = new SearchIndexConfigBuilder()
+            .setTrxName(businessTrxName)  // Still uses business trx for reading
+            .build();
+
+        // Perform index write with separate transaction
+        provider.createIndex(ctx, builder.getData(false), indexTrxName);
 
         indexTrx.commit();
     } catch (Exception e) {
@@ -237,13 +249,43 @@ Use distributed transaction coordinator to ensure atomicity across database and 
 
 ---
 
+## Post-Implementation Issues & Fixes
+
+### Issue: FK Table Indexing Failure (2026-02-13)
+
+**Problem:** Initial implementation used null transaction for ALL operations, including reading parent records:
+```java
+// BROKEN (378ec8b):
+PO[] mainPOArr = getMainPOs(eventPO, indexedTables, ctx, null);  // Can't see uncommitted data
+```
+
+**Symptom:**
+```
+GenericPO.load: NO Data found for M_Product_ID=11330103
+```
+
+**Root Cause:** When import process creates M_Product + M_Product_PO in same transaction:
+1. M_Product created (not committed)
+2. M_Product_PO saved → fires event
+3. Event handler tries to load M_Product with null transaction
+4. M_Product not visible → exception → business transaction fails
+
+**Fix:** Use business transaction for reading, separate transaction for writing:
+```java
+// FIXED:
+String businessTrxName = eventPO.get_TrxName();
+PO[] mainPOArr = getMainPOs(eventPO, indexedTables, ctx, businessTrxName);  // Can see uncommitted data
+```
+
+**Lesson Learned:** "Separate transaction" only applies to index WRITES, not data READS.
+
 ## Monitoring & Validation
 
 ### Success Criteria
 
 - ✅ Business transactions complete in <500ms (no regression)
 - ✅ Index updates complete in <1s (separate transaction)
-- ✅ Zero business transaction failures due to index errors
+- ⚠️ Zero business transaction failures due to index errors (fixed 2026-02-13)
 - ✅ Index consistency >99.9% (measured by reconciliation job)
 
 ### Metrics to Track

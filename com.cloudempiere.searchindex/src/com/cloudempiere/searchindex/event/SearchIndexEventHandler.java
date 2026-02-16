@@ -226,8 +226,10 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 				return;
 		}
 		
-		// Fix ADR-001: Get main POs using null transaction (read-only query)
-		PO[] mainPOArr = getMainPOs(eventPO, indexedTables, ctx, null);
+		// Fix ADR-001: Use business transaction for reading data to see uncommitted changes
+		// This is critical for FK table indexing where parent records may not be committed yet
+		String businessTrxName = eventPO.get_TrxName();
+		PO[] mainPOArr = getMainPOs(eventPO, indexedTables, ctx, businessTrxName);
 		MSearchIndex[] searchIndexArr;
 
 		for (PO po : mainPOArr) {
@@ -251,7 +253,6 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 					boolean isActive = po.get_ValueAsBoolean("IsActive");
 					// Fix ADR-001: Use separate transaction for index operations
 					// Use business transaction for reading (sees uncommitted changes)
-					final String businessTrxName = po.get_TrxName();
 					executeIndexUpdateWithSeparateTransaction((indexTrxName) -> {
 						ISearchIndexProvider provider = SearchIndexUtils.getSearchIndexProvider(ctx, searchIndex.getAD_SearchIndexProvider_ID(), null, indexTrxName);
 						if (provider != null) {
@@ -293,7 +294,6 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 						|| type.equals(IEventTopics.PO_AFTER_NEW) && !po.equals(eventPO)) {
 					// Fix ADR-001: Use separate transaction for index operations
 					// Use business transaction for reading (sees uncommitted changes)
-					final String businessTrxName = po.get_TrxName();
 					executeIndexUpdateWithSeparateTransaction((indexTrxName) -> {
 						ISearchIndexProvider provider = SearchIndexUtils.getSearchIndexProvider(ctx, searchIndex.getAD_SearchIndexProvider_ID(), null, indexTrxName);
 						if (provider != null) {
@@ -308,7 +308,6 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 				} else if (type.equals(IEventTopics.PO_AFTER_NEW) && po.equals(eventPO)) {
 					// Fix ADR-001: Use separate transaction for index operations
 					// Use business transaction for reading (sees uncommitted changes)
-					final String businessTrxName = po.get_TrxName();
 					executeIndexUpdateWithSeparateTransaction((indexTrxName) -> {
 						ISearchIndexProvider provider = SearchIndexUtils.getSearchIndexProvider(ctx, searchIndex.getAD_SearchIndexProvider_ID(), null, indexTrxName);
 						if (provider != null) {
