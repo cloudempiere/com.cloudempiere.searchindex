@@ -49,27 +49,33 @@ pipeline {
                     // env-sensitive via env.NEW_ENV (staging for local, staging/production for real CI).
                     def p2_base = "https://cloudempiere-p2.s3.eu-west-1.amazonaws.com/plugins"
 
-                    // iDempiereCLDE core P2 (contains core + core-ext + absorbed plugins)
-                    env.IDEMPIERE_CORE_REPO = "${p2_base}/iDempiereCLDE/${env.NEW_ENV}/latest/"
+                    // MONOREPO = iDempiereCLDE P2: core + core-ext + 24 absorbed plugins.
+                    // Single URL covers idempiere.core.repository.url, cloudempiere.composite.repository.url,
+                    // and local.idempiere property variants.
+                    env.MONOREPO = "${p2_base}/iDempiereCLDE/${env.NEW_ENV}/latest/"
 
-                    // Composite P2 — bundles live inside iDempiereCLDE P2 (same URL).
-                    // Tycho resolves required bundles from either repo URL.
-                    env.CLOUDEMPIERE_COMPOSITE_REPO = "${p2_base}/iDempiereCLDE/${env.NEW_ENV}/latest/"
-
-                    // com.cloudempiere.core lib's own P2 (referenced by plugins like trekglobal.rest)
-                    env.CLOUDEMPIERE_CORE_REPO = "${p2_base}/com.cloudempiere.core/${env.NEW_ENV}/latest/"
-
-                    // trekglobal REST P2 (referenced by identity, etc.)
-                    env.IDEMPIERE_REST_REPO = "${p2_base}/com.trekglobal.idempiere.rest.custom/${env.NEW_ENV}/latest/"
+                    // Per-plugin P2 URLs — each Class 1 plugin publishes its own prefix.
+                    // Consumed by downstream plugins via their parent pom's <X.repository.url> properties.
+                    env.P2_LIB          = "${p2_base}/com.cloudempiere.lib/${env.NEW_ENV}/latest/"
+                    env.P2_CACHE        = "${p2_base}/com.cloudempiere.cache/${env.NEW_ENV}/latest/"
+                    env.P2_AWS          = "${p2_base}/com.cloudempiere.aws/${env.NEW_ENV}/latest/"
+                    env.P2_CORE_LIB     = "${p2_base}/com.cloudempiere.core/${env.NEW_ENV}/latest/"
+                    env.P2_SEARCHINDEX  = "${p2_base}/com.cloudempiere.searchindex/${env.NEW_ENV}/latest/"
+                    env.P2_REST         = "${p2_base}/com.trekglobal.idempiere.rest.custom/${env.NEW_ENV}/latest/"
+                    env.P2_DMS          = "${p2_base}/com.logilite.dms.custom/${env.NEW_ENV}/latest/"
 
                     // Timestamp for immutable snapshot path (YYYYMMDD.HHMMSS UTC)
                     env.BUILD_TS = sh(returnStdout: true, script: 'date -u +%Y%m%d.%H%M%S').trim()
 
                     echo "Repository URLs (all S3, env=${env.NEW_ENV}):"
-                    echo "  iDempiere core:   ${env.IDEMPIERE_CORE_REPO}"
-                    echo "  Composite:        ${env.CLOUDEMPIERE_COMPOSITE_REPO}"
-                    echo "  Cloudempiere-core:${env.CLOUDEMPIERE_CORE_REPO}"
-                    echo "  Trekglobal REST:  ${env.IDEMPIERE_REST_REPO}"
+                    echo "  MONOREPO:         ${env.MONOREPO}"
+                    echo "  P2_LIB:           ${env.P2_LIB}"
+                    echo "  P2_CACHE:         ${env.P2_CACHE}"
+                    echo "  P2_AWS:           ${env.P2_AWS}"
+                    echo "  P2_CORE_LIB:      ${env.P2_CORE_LIB}"
+                    echo "  P2_SEARCHINDEX:   ${env.P2_SEARCHINDEX}"
+                    echo "  P2_REST:          ${env.P2_REST}"
+                    echo "  P2_DMS:           ${env.P2_DMS}"
                     echo "  Build timestamp:  ${env.BUILD_TS}"
                     echo "  Local Jenkins:   ${is_local}  (JENKINS_URL=${env.JENKINS_URL})"
                     echo "  Legacy env:      ${env.LEGACY_ENV}"
@@ -89,11 +95,18 @@ pipeline {
             steps {
                 sh """
                     mvn clean verify -U \
-                        -Didempiere.core.repository.url=${IDEMPIERE_CORE_REPO} \
-                        -Dlocal.idempiere=${IDEMPIERE_CORE_REPO} \
-                        -Dcloudempiere.composite.repository.url=${CLOUDEMPIERE_COMPOSITE_REPO} \
-                        -Dcloudempiere.core.repository.url=${CLOUDEMPIERE_CORE_REPO} \
-                        -Didempiere.rest.repository.url=${IDEMPIERE_REST_REPO}
+                        -Didempiere.core.repository.url=${MONOREPO} \
+                        -Dlocal.idempiere=${MONOREPO} \
+                        -Dcloudempiere.composite.repository.url=${MONOREPO} \
+                        -Dcloudempiere.lib.repository.url=${P2_LIB} \
+                        -Dcloudempiere.cache.repository.url=${P2_CACHE} \
+                        -Dcloudempiere.aws.repository.url=${P2_AWS} \
+                        -Dcloudempiere.core.repository.url=${P2_CORE_LIB} \
+                        -Dcloudempiere.searchindex.repository.url=${P2_SEARCHINDEX} \
+                        -Didempiere.rest.repository.url=${P2_REST} \
+                        -Dlogilite.dms.repository.url=${P2_DMS} \
+                        -Ddms.repository.url=${P2_DMS} \
+                        -Ddms.core.repository.url=${P2_DMS}
                 """
             }
         }
