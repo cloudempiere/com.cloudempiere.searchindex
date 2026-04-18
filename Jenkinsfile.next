@@ -37,28 +37,7 @@ pipeline {
                     // Detected via JENKINS_URL containing "localhost".
                     def is_local = env.JENKINS_URL?.contains('localhost') ?: false
 
-                    // Core P2 source:
-                    //   - Local containerized Jenkins: mounted host workspace at /workspace/
-                    //   - Real CI host: sibling workspace dir (clde-server_<branch>-cloudempiere)
-                    env.IDEMPIERE_CORE_REPO = is_local
-                        ? "file:///workspace/iDempiereCLDE/core/org.idempiere.p2/target/repository"
-                        : "file://${base}/clde-server_${suffix}-cloudempiere/iDempiereCLDE/core/org.idempiere.p2/target/repository"
-
-                    // Composite P2 source (aggregates absorbed plugins). Some plugins
-                    // declare this repo in their parent pom via cloudempiere.composite.repository.url.
-                    env.CLOUDEMPIERE_COMPOSITE_REPO = is_local
-                        ? "file:///workspace/iDempiereCLDE/_composite/com.cloudempiere.composite.p2/target/repository"
-                        : "file://${base}/clde-server_${suffix}-cloudempiere/iDempiereCLDE/_composite/com.cloudempiere.composite.p2/target/repository"
-
-                    // trekglobal REST P2 source — pulled from cloudempiere-p2 S3 bucket
-                    // (already published by our new Jenkins once trekglobal.rest.custom runs).
-                    // Plugins like com.cloudempiere.identity declare idempiere.rest.repository.url
-                    // pointing at the trekglobal rest fork.
-                    env.IDEMPIERE_REST_REPO = "https://cloudempiere-p2.s3.eu-west-1.amazonaws.com/plugins/com.trekglobal.idempiere.rest.custom/${env.NEW_ENV}/latest/"
-
-                    // Timestamp for immutable snapshot path (YYYYMMDD.HHMMSS UTC)
-                    env.BUILD_TS = sh(returnStdout: true, script: 'date -u +%Y%m%d.%H%M%S').trim()
-
+                    // Env mapping (must be computed BEFORE the P2 URLs that use it)
                     env.LEGACY_ENV = is_local
                         ? 'development'
                         : (env.BRANCH_NAME == clde_branch_master ? 'production' : 'development')
@@ -66,11 +45,32 @@ pipeline {
                         ? 'staging'
                         : (env.BRANCH_NAME == clde_branch_master ? 'production' : 'staging')
 
-                    echo "Repository URLs:"
-                    echo "  iDempiere core:  ${env.IDEMPIERE_CORE_REPO}"
-                    echo "  Composite P2:    ${env.CLOUDEMPIERE_COMPOSITE_REPO}"
-                    echo "  REST P2 (S3):    ${env.IDEMPIERE_REST_REPO}"
-                    echo "  Build timestamp: ${env.BUILD_TS}"
+                    // All P2 sources resolved from cloudempiere-p2 S3 bucket,
+                    // env-sensitive via env.NEW_ENV (staging for local, staging/production for real CI).
+                    def p2_base = "https://cloudempiere-p2.s3.eu-west-1.amazonaws.com/plugins"
+
+                    // iDempiereCLDE core P2 (contains core + core-ext + absorbed plugins)
+                    env.IDEMPIERE_CORE_REPO = "${p2_base}/iDempiereCLDE/${env.NEW_ENV}/latest/"
+
+                    // Composite P2 — bundles live inside iDempiereCLDE P2 (same URL).
+                    // Tycho resolves required bundles from either repo URL.
+                    env.CLOUDEMPIERE_COMPOSITE_REPO = "${p2_base}/iDempiereCLDE/${env.NEW_ENV}/latest/"
+
+                    // com.cloudempiere.core lib's own P2 (referenced by plugins like trekglobal.rest)
+                    env.CLOUDEMPIERE_CORE_REPO = "${p2_base}/com.cloudempiere.core/${env.NEW_ENV}/latest/"
+
+                    // trekglobal REST P2 (referenced by identity, etc.)
+                    env.IDEMPIERE_REST_REPO = "${p2_base}/com.trekglobal.idempiere.rest.custom/${env.NEW_ENV}/latest/"
+
+                    // Timestamp for immutable snapshot path (YYYYMMDD.HHMMSS UTC)
+                    env.BUILD_TS = sh(returnStdout: true, script: 'date -u +%Y%m%d.%H%M%S').trim()
+
+                    echo "Repository URLs (all S3, env=${env.NEW_ENV}):"
+                    echo "  iDempiere core:   ${env.IDEMPIERE_CORE_REPO}"
+                    echo "  Composite:        ${env.CLOUDEMPIERE_COMPOSITE_REPO}"
+                    echo "  Cloudempiere-core:${env.CLOUDEMPIERE_CORE_REPO}"
+                    echo "  Trekglobal REST:  ${env.IDEMPIERE_REST_REPO}"
+                    echo "  Build timestamp:  ${env.BUILD_TS}"
                     echo "  Local Jenkins:   ${is_local}  (JENKINS_URL=${env.JENKINS_URL})"
                     echo "  Legacy env:      ${env.LEGACY_ENV}"
                     echo "  New env:         ${env.NEW_ENV}"
@@ -92,6 +92,7 @@ pipeline {
                         -Didempiere.core.repository.url=${IDEMPIERE_CORE_REPO} \
                         -Dlocal.idempiere=${IDEMPIERE_CORE_REPO} \
                         -Dcloudempiere.composite.repository.url=${CLOUDEMPIERE_COMPOSITE_REPO} \
+                        -Dcloudempiere.core.repository.url=${CLOUDEMPIERE_CORE_REPO} \
                         -Didempiere.rest.repository.url=${IDEMPIERE_REST_REPO}
                 """
             }
