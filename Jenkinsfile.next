@@ -50,6 +50,12 @@ pipeline {
                         ? "file:///workspace/iDempiereCLDE/_composite/com.cloudempiere.composite.p2/target/repository"
                         : "file://${base}/clde-server_${suffix}-cloudempiere/iDempiereCLDE/_composite/com.cloudempiere.composite.p2/target/repository"
 
+                    // trekglobal REST P2 source — pulled from cloudempiere-p2 S3 bucket
+                    // (already published by our new Jenkins once trekglobal.rest.custom runs).
+                    // Plugins like com.cloudempiere.identity declare idempiere.rest.repository.url
+                    // pointing at the trekglobal rest fork.
+                    env.IDEMPIERE_REST_REPO = "https://cloudempiere-p2.s3.eu-west-1.amazonaws.com/plugins/com.trekglobal.idempiere.rest.custom/${env.NEW_ENV}/latest/"
+
                     // Timestamp for immutable snapshot path (YYYYMMDD.HHMMSS UTC)
                     env.BUILD_TS = sh(returnStdout: true, script: 'date -u +%Y%m%d.%H%M%S').trim()
 
@@ -63,6 +69,7 @@ pipeline {
                     echo "Repository URLs:"
                     echo "  iDempiere core:  ${env.IDEMPIERE_CORE_REPO}"
                     echo "  Composite P2:    ${env.CLOUDEMPIERE_COMPOSITE_REPO}"
+                    echo "  REST P2 (S3):    ${env.IDEMPIERE_REST_REPO}"
                     echo "  Build timestamp: ${env.BUILD_TS}"
                     echo "  Local Jenkins:   ${is_local}  (JENKINS_URL=${env.JENKINS_URL})"
                     echo "  Legacy env:      ${env.LEGACY_ENV}"
@@ -83,7 +90,9 @@ pipeline {
                 sh """
                     mvn clean verify -U \
                         -Didempiere.core.repository.url=${IDEMPIERE_CORE_REPO} \
-                        -Dcloudempiere.composite.repository.url=${CLOUDEMPIERE_COMPOSITE_REPO}
+                        -Dlocal.idempiere=${IDEMPIERE_CORE_REPO} \
+                        -Dcloudempiere.composite.repository.url=${CLOUDEMPIERE_COMPOSITE_REPO} \
+                        -Didempiere.rest.repository.url=${IDEMPIERE_REST_REPO}
                 """
             }
         }
