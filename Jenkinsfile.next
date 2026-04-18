@@ -41,8 +41,12 @@ pipeline {
                     env.LEGACY_ENV = is_local
                         ? 'development'
                         : (env.BRANCH_NAME == clde_branch_master ? 'production' : 'development')
+                    // 3-env mapping:
+                    //   local Jenkins (any branch)    → develop/  (this dev Jenkins's output space)
+                    //   real CI on staging branch     → staging/  (pre-release)
+                    //   real CI on master branch      → production/ (released)
                     env.NEW_ENV    = is_local
-                        ? 'staging'
+                        ? 'develop'
                         : (env.BRANCH_NAME == clde_branch_master ? 'production' : 'staging')
 
                     // All P2 sources resolved from cloudempiere-p2 S3 bucket,
