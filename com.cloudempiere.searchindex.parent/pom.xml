@@ -18,8 +18,8 @@
 		<lifecycle.mapping.version>1.0.0</lifecycle.mapping.version>
 		<maven-clean-plugin.version>2.5</maven-clean-plugin.version>
 		<!-- default value of properties, use when run without profile -->
-		<idempiere.core.repository.url>file:///${basedir}/../../iDempiereCLDE/core/org.idempiere.p2/target/repository</idempiere.core.repository.url>
-		<cloudempiere.composite.repository.url>file:///${basedir}/../../iDempiereCLDE/_composite/com.cloudempiere.composite.p2/target/repository</cloudempiere.composite.repository.url>
+		<idempiere.core.repository.url>https://cloudempiere-p2.s3.eu-west-1.amazonaws.com/plugins/iDempiereCLDE/develop/latest/</idempiere.core.repository.url>
+		<cloudempiere.composite.repository.url>https://cloudempiere-p2.s3.eu-west-1.amazonaws.com/plugins/iDempiereCLDE/develop/latest/</cloudempiere.composite.repository.url>
 	</properties>
 
 	<build>
