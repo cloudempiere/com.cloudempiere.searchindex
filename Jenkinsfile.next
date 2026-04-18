@@ -101,6 +101,7 @@ pipeline {
                     mvn clean verify -U \
                         -Didempiere.core.repository.url=${MONOREPO} \
                         -Dlocal.idempiere=${MONOREPO} \
+                        -Didempiere.repo=${MONOREPO} \
                         -Dcloudempiere.composite.repository.url=${MONOREPO} \
                         -Dcloudempiere.lib.repository.url=${P2_LIB} \
                         -Dcloudempiere.cache.repository.url=${P2_CACHE} \
