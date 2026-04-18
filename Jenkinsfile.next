@@ -1,0 +1,166 @@
+pipeline {
+    agent any
+
+    environment {
+        clde_branch_master  = "master"
+        clde_branch_staging = "staging"
+        clde_branch_develop = "develop"
+        gitCredentialId     = "github jenkins access token"
+        awsCredentialsID    = "4387aab6-ff4e-44e9-9e15-eb1452a3870b"
+
+        // Plugin identity (used for new cloudempiere-p2 path)
+        plugin_name         = "com.cloudempiere.searchindex"
+        p2_module_dir       = "com.cloudempiere.searchindex.p2"
+        p2_zip_name         = "com.cloudempiere.searchindex.p2-10.2.0-SNAPSHOT.zip"
+    }
+
+    tools {
+        maven 'M3'
+        jdk   'openjdk11'
+    }
+
+    options {
+        buildDiscarder(
+            logRotator(artifactNumToKeepStr: '3', numToKeepStr: '5')
+        )
+        disableConcurrentBuilds()
+    }
+
+    stages {
+        stage('Set Repository URLs') {
+            steps {
+                script {
+                    def suffix = (env.BRANCH_NAME == clde_branch_master) ? 'master' : 'staging'
+                    def base   = "${WORKSPACE}/.."
+
+                    // Safety: local Jenkins always writes to staging, never production.
+                    // Detected via JENKINS_URL containing "localhost".
+                    def is_local = env.JENKINS_URL?.contains('localhost') ?: false
+
+                    // Core P2 source:
+                    //   - Local containerized Jenkins: mounted host workspace at /workspace/
+                    //   - Real CI host: sibling workspace dir (clde-server_<branch>-cloudempiere)
+                    env.IDEMPIERE_CORE_REPO = is_local
+                        ? "file:///workspace/iDempiereCLDE/core/org.idempiere.p2/target/repository"
+                        : "file://${base}/clde-server_${suffix}-cloudempiere/iDempiereCLDE/core/org.idempiere.p2/target/repository"
+
+                    // Composite P2 source (aggregates absorbed plugins). Some plugins
+                    // declare this repo in their parent pom via cloudempiere.composite.repository.url.
+                    env.CLOUDEMPIERE_COMPOSITE_REPO = is_local
+                        ? "file:///workspace/iDempiereCLDE/_composite/com.cloudempiere.composite.p2/target/repository"
+                        : "file://${base}/clde-server_${suffix}-cloudempiere/iDempiereCLDE/_composite/com.cloudempiere.composite.p2/target/repository"
+
+                    // Timestamp for immutable snapshot path (YYYYMMDD.HHMMSS UTC)
+                    env.BUILD_TS = sh(returnStdout: true, script: 'date -u +%Y%m%d.%H%M%S').trim()
+
+                    env.LEGACY_ENV = is_local
+                        ? 'development'
+                        : (env.BRANCH_NAME == clde_branch_master ? 'production' : 'development')
+                    env.NEW_ENV    = is_local
+                        ? 'staging'
+                        : (env.BRANCH_NAME == clde_branch_master ? 'production' : 'staging')
+
+                    echo "Repository URLs:"
+                    echo "  iDempiere core:  ${env.IDEMPIERE_CORE_REPO}"
+                    echo "  Composite P2:    ${env.CLOUDEMPIERE_COMPOSITE_REPO}"
+                    echo "  Build timestamp: ${env.BUILD_TS}"
+                    echo "  Local Jenkins:   ${is_local}  (JENKINS_URL=${env.JENKINS_URL})"
+                    echo "  Legacy env:      ${env.LEGACY_ENV}"
+                    echo "  New env:         ${env.NEW_ENV}"
+                }
+            }
+        }
+
+        stage('Build') {
+            when {
+                anyOf {
+                    branch "${clde_branch_staging}"
+                    branch "${clde_branch_develop}"
+                    branch "${clde_branch_master}"
+                }
+            }
+            steps {
+                sh """
+                    mvn clean verify -U \
+                        -Didempiere.core.repository.url=${IDEMPIERE_CORE_REPO} \
+                        -Dcloudempiere.composite.repository.url=${CLOUDEMPIERE_COMPOSITE_REPO}
+                """
+            }
+        }
+
+        // ------------------------------------------------------------------
+        // A. LEGACY PUBLISH — cloudempiere-releases/cloudempiere/<env>/<zip>
+        //    Keep until all consumers have migrated to cloudempiere-p2.
+        // ------------------------------------------------------------------
+        stage('Publish (legacy zip)') {
+            when {
+                anyOf {
+                    branch "${clde_branch_master}"
+                    branch "${clde_branch_staging}"
+                    branch "${clde_branch_develop}"
+                }
+            }
+            steps {
+                withAWS(credentials: "${awsCredentialsID}", region: 'eu-west-1') {
+                    s3Upload(
+                        file:   "${WORKSPACE}/${p2_module_dir}/target/${p2_zip_name}",
+                        bucket: 'cloudempiere-releases',
+                        path:   "cloudempiere/${env.LEGACY_ENV}/${p2_zip_name}"
+                    )
+                }
+            }
+        }
+
+        // ------------------------------------------------------------------
+        // B. NEW PUBLISH — cloudempiere-p2/plugins/<name>/<env>/{ts}/ + /latest/
+        //    P2 directory, not zip. Immutable snapshot + floating pointer.
+        //
+        //    Feature-gated to avoid breaking real CI until its AWS credential
+        //    has write access to the cloudempiere-p2 bucket. The stage runs when:
+        //      - Jenkins is local (JENKINS_URL contains 'localhost')          — always on for local pilot
+        //      - OR env var CE_NEW_P2_ENABLED='true' is set on the controller — opt-in for real CI
+        // ------------------------------------------------------------------
+        stage('Publish (new P2)') {
+            when {
+                allOf {
+                    anyOf {
+                        branch "${clde_branch_master}"
+                        branch "${clde_branch_staging}"
+                        branch "${clde_branch_develop}"
+                    }
+                    expression {
+                        return env.CE_NEW_P2_ENABLED == 'true' ||
+                               (env.JENKINS_URL?.contains('localhost') ?: false)
+                    }
+                }
+            }
+            steps {
+                withAWS(credentials: "${awsCredentialsID}", region: 'eu-west-1') {
+                    // B1. Immutable timestamped snapshot
+                    s3Upload(
+                        bucket:             'cloudempiere-p2',
+                        path:               "plugins/${plugin_name}/${env.NEW_ENV}/${env.BUILD_TS}/",
+                        workingDir:         "${WORKSPACE}/${p2_module_dir}/target/repository",
+                        includePathPattern: '**/*'
+                    )
+                }
+                // B2. Atomically update floating `latest/` pointer
+                sh """
+                    aws s3 sync --delete \
+                        ${WORKSPACE}/${p2_module_dir}/target/repository/ \
+                        s3://cloudempiere-p2/plugins/${plugin_name}/${env.NEW_ENV}/latest/
+                """
+            }
+        }
+    }
+
+    post {
+        success {
+            echo """
+                ✓ Published ${env.plugin_name} (branch: ${env.BRANCH_NAME})
+                  Legacy: s3://cloudempiere-releases/cloudempiere/${env.LEGACY_ENV}/${env.p2_zip_name}
+                  New:    s3://cloudempiere-p2/plugins/${env.plugin_name}/${env.NEW_ENV}/{${env.BUILD_TS}, latest}/
+            """
+        }
+    }
+}
