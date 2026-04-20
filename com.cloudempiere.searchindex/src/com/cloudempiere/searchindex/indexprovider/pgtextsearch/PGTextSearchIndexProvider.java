@@ -41,7 +41,6 @@ import java.util.logging.Level;
 
 import org.adempiere.util.IProcessUI;
 import org.compiere.model.MClient;
-import org.compiere.model.MRole;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
 import org.compiere.util.Util;
@@ -296,7 +295,6 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
             }
         }
 
-        MRole role = MRole.getDefault(ctx, false);
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         try {
@@ -372,11 +370,6 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 				result.setHtmlHeadline("");
 				return;
 			}
-
-			sql.append("SELECT ts_headline(body, q) FROM (");			
-//			sql.append(getIndexSql(columnIds, result.getAD_Table_ID())); // TODO
-
-			indexQuery.put(result.getAD_Table_ID(), sql.toString());
 		}
 
 		//Bring the table ids that are indexed

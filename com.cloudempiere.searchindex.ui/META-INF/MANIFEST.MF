@@ -2,6 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: SearchIndexUI
 Bundle-SymbolicName: com.cloudempiere.searchindex.ui
+Automatic-Module-Name: com.cloudempiere.searchindex.ui
 Bundle-Version: 10.2.0.qualifier
 Fragment-Host: org.adempiere.ui.zk
 Bundle-RequiredExecutionEnvironment: JavaSE-11

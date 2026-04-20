@@ -202,7 +202,6 @@ public class ZkSearchIndexUI extends Div implements EventListener<Event> {
 			int pgno = ee.getActivePage();
 
 			if (pgno != 0 && results != null) {
-				int start = pgno * 10;
 				int end = (pgno * 10) + 10;
 
 				if (end > results.size())
