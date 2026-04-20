@@ -1,5 +1,5 @@
 pipeline {
-   agent any
+    agent any
 
     environment {
         clde_branch_master = "master"
@@ -8,7 +8,7 @@ pipeline {
         awsCredentialsID = "4387aab6-ff4e-44e9-9e15-eb1452a3870b"
     }
 
-   tools {
+    tools {
         maven 'M3'
         jdk 'openjdk11'
     }
@@ -20,64 +20,68 @@ pipeline {
         disableConcurrentBuilds()
     }
 
-   stages {
-        stage('Set-Staging-Cloud-Path') {
-            when {
-                branch "${clde_branch_staging}"
-            }
+    stages {
+        stage('Set Repository URLs') {
             steps {
-                sh "sed -i -e 's+iDempiereCLDE+clde-server_staging-cloudempiere/iDempiereCLDE+g' com.cloudempiere.searchindex.parent/pom.xml "
-            }
-        }
-        stage('Set-Prod-Cloud-Path') {
-            when {
-                branch "${clde_branch_master}"
-            }
-            steps {
-                sh "sed -i -e 's+iDempiereCLDE+clde-server_master-cloudempiere/iDempiereCLDE+g' com.cloudempiere.searchindex.parent/pom.xml "
-            }
-        }
-        stage('Build') {
-            when {
-                    anyOf {
-                        branch "${clde_branch_staging}"
-                        branch "${clde_branch_master}"
-                    }
+                script {
+                    def suffix = (env.BRANCH_NAME == clde_branch_master) ? 'master' : 'staging'
+                    def base = "${WORKSPACE}/.."
+
+                    env.IDEMPIERE_CORE_REPO = "file://${base}/clde-server_${suffix}-cloudempiere/iDempiereCLDE/core/org.idempiere.p2/target/repository"
+
+                    echo "Repository URLs:"
+                    echo "  iDempiere core: ${env.IDEMPIERE_CORE_REPO}"
                 }
-            steps {
-                // Run Maven on a Unix agent.
-                sh "mvn clean verify -U"
             }
         }
 
-        stage('Publish Prod'){
+        stage('Build') {
+            when {
+                anyOf {
+                    branch "${clde_branch_staging}"
+                    branch "${clde_branch_master}"
+                }
+            }
+            steps {
+                sh """
+                    mvn clean verify -U \
+                        -Didempiere.core.repository.url=${IDEMPIERE_CORE_REPO}
+                """
+            }
+        }
+
+        stage('Publish Prod') {
             when {
                 allOf {
                     branch "${clde_branch_master}"
                 }
             }
             steps {
-                withAWS(credentials:"${awsCredentialsID}", region:'eu-west-1') {
+                withAWS(credentials: "${awsCredentialsID}", region: 'eu-west-1') {
                     s3Upload(
-                        file:"${WORKSPACE}/com.cloudempiere.searchindex.p2/target/com.cloudempiere.searchindex.p2-10.2.0-SNAPSHOT.zip", bucket:'cloudempiere-releases', path:"cloudempiere/production/com.cloudempiere.searchindex.p2-10.2.0-SNAPSHOT.zip"
+                        file: "${WORKSPACE}/com.cloudempiere.searchindex.p2/target/com.cloudempiere.searchindex.p2-10.2.0-SNAPSHOT.zip",
+                        bucket: 'cloudempiere-releases',
+                        path: "cloudempiere/production/com.cloudempiere.searchindex.p2-10.2.0-SNAPSHOT.zip"
                     )
                 }
             }
         }
 
-        stage('Publish Staging'){
+        stage('Publish Staging') {
             when {
                 allOf {
                     branch "${clde_branch_staging}"
                 }
             }
             steps {
-                withAWS(credentials:"${awsCredentialsID}", region:'eu-west-1') {
+                withAWS(credentials: "${awsCredentialsID}", region: 'eu-west-1') {
                     s3Upload(
-                        file:"${WORKSPACE}/com.cloudempiere.searchindex.p2/target/com.cloudempiere.searchindex.p2-10.2.0-SNAPSHOT.zip", bucket:'cloudempiere-releases', path:"cloudempiere/development/com.cloudempiere.searchindex.p2-10.2.0-SNAPSHOT.zip"
+                        file: "${WORKSPACE}/com.cloudempiere.searchindex.p2/target/com.cloudempiere.searchindex.p2-10.2.0-SNAPSHOT.zip",
+                        bucket: 'cloudempiere-releases',
+                        path: "cloudempiere/development/com.cloudempiere.searchindex.p2-10.2.0-SNAPSHOT.zip"
                     )
                 }
             }
         }
-   }
+    }
 }

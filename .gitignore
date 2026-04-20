@@ -1,10 +1,8 @@
 /*/bin/
 .DS_Store
 
-# Eclipse IDE files
-.project
-.settings/
-.classpath
+# Eclipse IDE files - .project, .classpath, .settings MUST be committed for PDE/OSGi plugins
+# Only ignore workspace-level metadata
 .metadata/
 
 # Maven target directories

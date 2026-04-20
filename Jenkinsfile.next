@@ -1,0 +1,12 @@
+// Dual-publish pipeline per ADR-111. Pipeline logic lives in the ce-shared
+// library (vars/ceP2Publish.groovy). Local Docker Jenkins reads this file;
+// legacy CI reads Jenkinsfile. Do not hand-edit the pipeline body — change
+// ce-jenkins/vars/ceP2Publish.groovy instead and all plugins update together.
+
+@Library('ce-shared') _
+
+ceP2Publish(
+    plugin_name:   'com.cloudempiere.searchindex',
+    p2_module_dir: 'com.cloudempiere.searchindex.p2',
+    p2_zip_name:   'com.cloudempiere.searchindex.p2-10.2.0-SNAPSHOT.zip'
+)
