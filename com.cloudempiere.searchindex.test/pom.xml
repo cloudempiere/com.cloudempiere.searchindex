@@ -8,7 +8,7 @@
         <groupId>org.idempiere</groupId>
         <artifactId>org.idempiere.parent</artifactId>
         <version>${revision}</version>
-        <relativePath>../../iDempiereCLDE/org.idempiere.parent/pom.xml</relativePath>
+        <relativePath>../../iDempiereCLDE/core/org.idempiere.parent/pom.xml</relativePath>
     </parent>
 
     <artifactId>com.cloudempiere.searchindex.test</artifactId>

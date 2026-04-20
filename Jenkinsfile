@@ -27,7 +27,7 @@ pipeline {
                     def suffix = (env.BRANCH_NAME == clde_branch_master) ? 'master' : 'staging'
                     def base = "${WORKSPACE}/.."
 
-                    env.IDEMPIERE_CORE_REPO = "file://${base}/clde-server_${suffix}-cloudempiere/iDempiereCLDE/org.idempiere.p2/target/repository"
+                    env.IDEMPIERE_CORE_REPO = "file://${base}/clde-server_${suffix}-cloudempiere/iDempiereCLDE/core/org.idempiere.p2/target/repository"
 
                     echo "Repository URLs:"
                     echo "  iDempiere core: ${env.IDEMPIERE_CORE_REPO}"
