@@ -19,7 +19,7 @@
 		<maven-clean-plugin.version>2.5</maven-clean-plugin.version>
 		<!-- default value of properties, use when run without profile -->
 		<idempiere.core.repository.url>https://cloudempiere-p2.s3.eu-west-1.amazonaws.com/plugins/iDempiereCLDE/develop/latest/</idempiere.core.repository.url>
-		<cloudempiere.composite.repository.url>https://cloudempiere-p2.s3.eu-west-1.amazonaws.com/plugins/iDempiereCLDE/develop/latest/</cloudempiere.composite.repository.url>
+		<cloudempiere.composite.repository.url>https://cloudempiere-p2.s3.eu-west-1.amazonaws.com/plugins/com.cloudempiere.composite/develop/latest/</cloudempiere.composite.repository.url>
 	</properties>
 
 	<build>
