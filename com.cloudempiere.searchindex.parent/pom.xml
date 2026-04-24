@@ -154,7 +154,8 @@
 		<profile>
 			<id>build.searchindex.extensions</id>
 			<activation>
-				<activeByDefault>true</activeByDefault>
+				<!-- was <activeByDefault>true</activeByDefault>; replaced to stack with `local` profile (see apply-local-profile.sh) -->
+				<property><name>!disable.extensions</name></property>
 			</activation>
 			<repositories>
 				<repository>
@@ -222,5 +223,26 @@
 				</plugins>
 			</build>
 		</profile>
+	    <!--
+	      Local-dev profile — auto-activates when developer laptop has the marker file
+	      `~/.cloudempiere-local-dev`. Overrides upstream P2 URLs to sibling local builds
+	      so Eclipse m2e and CLI `mvn verify` resolve against freshly-built core/composite
+	      instead of S3. CI containers never have the marker, so their builds still use S3.
+	      One-time setup per laptop:
+	        touch ~/.cloudempiere-local-dev
+	        cd ~/github/idempiere-cloudempiere/iDempiereCLDE && mvn clean verify -DskipTests
+	    -->
+	    <profile>
+	        <id>local</id>
+	        <activation>
+	            <file>
+	                <exists>${user.home}/.cloudempiere-local-dev</exists>
+	            </file>
+	        </activation>
+	        <properties>
+	            <idempiere.core.repository.url>file:///${user.home}/github/idempiere-cloudempiere/iDempiereCLDE/core/org.idempiere.p2/target/repository</idempiere.core.repository.url>
+	            <cloudempiere.composite.repository.url>file:///${user.home}/github/idempiere-cloudempiere/iDempiereCLDE/_composite/com.cloudempiere.composite.p2/target/repository</cloudempiere.composite.repository.url>
+	        </properties>
+	    </profile>
 	</profiles>
 </project>
