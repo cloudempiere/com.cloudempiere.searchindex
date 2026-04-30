@@ -363,13 +363,18 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 		if (indexQuery.get(result.getAD_Table_ID()) != null) {
 			sql.append(indexQuery.get(result.getAD_Table_ID()));
 		} else {
-
-			ArrayList<Integer> columnIds = null;//getIndexedColumns(result.getAD_Table_ID()); // TODO
-
-			if(columnIds == null || columnIds.isEmpty()) {
-				result.setHtmlHeadline("");
-				return;
-			}
+			// TODO: re-enable when getIndexedColumns/getIndexSql are implemented
+			//ArrayList<Integer> columnIds = getIndexedColumns(result.getAD_Table_ID());
+			//if (columnIds != null && !columnIds.isEmpty()) {
+			//    sql.append("SELECT ts_headline(body, q) FROM (");
+			//    sql.append(getIndexSql(columnIds, result.getAD_Table_ID()));
+			//    indexQuery.put(result.getAD_Table_ID(), sql.toString());
+			//} else {
+			//    result.setHtmlHeadline("");
+			//    return;
+			//}
+			result.setHtmlHeadline("");
+			return;
 		}
 
 		//Bring the table ids that are indexed

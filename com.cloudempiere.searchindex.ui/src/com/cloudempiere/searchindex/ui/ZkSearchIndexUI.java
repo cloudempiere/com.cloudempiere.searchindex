@@ -208,7 +208,7 @@ public class ZkSearchIndexUI extends Div implements EventListener<Event> {
 					end = results.size();
 
 //				TODO test and fix:
-//				for (int i = start; i < end; i++)
+//				for (int i = pgno * 10; i < end; i++)
 //					searchIndexProviderList.setHeadline(results.get(i), searchCombobox.getValue());
 
 				setModel(results);
