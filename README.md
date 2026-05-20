@@ -1,5 +1,10 @@
 # com.cloudempiere.searchindex
 
+<!-- local-build-link -->
+> **Local build setup:** see [iDempiereCLDE/LOCAL_BUILD.md](../iDempiereCLDE/LOCAL_BUILD.md) for the one-time `~/.m2/settings.xml` configuration
+> that lets `mvn verify` resolve P2 artifacts from sibling local builds instead of S3.
+
+
 **Full-text search plugin for iDempiere ERP with PostgreSQL and Elasticsearch support**
 
 [![Version](https://img.shields.io/badge/version-10.2.0-blue.svg)](CHANGELOG.md)

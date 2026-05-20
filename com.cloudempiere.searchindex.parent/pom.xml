@@ -19,7 +19,7 @@
 		<maven-clean-plugin.version>2.5</maven-clean-plugin.version>
 		<!-- default value of properties, use when run without profile -->
 		<idempiere.core.repository.url>https://cloudempiere-p2.s3.eu-west-1.amazonaws.com/plugins/iDempiereCLDE/develop/latest/</idempiere.core.repository.url>
-		<cloudempiere.composite.repository.url>https://cloudempiere-p2.s3.eu-west-1.amazonaws.com/plugins/iDempiereCLDE/develop/latest/</cloudempiere.composite.repository.url>
+		<cloudempiere.composite.repository.url>https://cloudempiere-p2.s3.eu-west-1.amazonaws.com/plugins/com.cloudempiere.composite/develop/latest/</cloudempiere.composite.repository.url>
 	</properties>
 
 	<build>
@@ -154,7 +154,8 @@
 		<profile>
 			<id>build.searchindex.extensions</id>
 			<activation>
-				<activeByDefault>true</activeByDefault>
+				<!-- was <activeByDefault>true</activeByDefault>; replaced to stack with `local` profile (see apply-local-profile.sh) -->
+				<property><name>!disable.extensions</name></property>
 			</activation>
 			<repositories>
 				<repository>
@@ -222,5 +223,20 @@
 				</plugins>
 			</build>
 		</profile>
+	    <!--
+	      Local-dev profile — overrides upstream P2 URLs to sibling local builds so
+	      Eclipse m2e and CLI `mvn verify` resolve against freshly-built artifacts
+	      instead of S3. Activate per developer in ~/.m2/settings.xml; CI does not
+	      activate this, so CI builds keep using S3. See iDempiereCLDE/LOCAL_BUILD.md.
+	    -->
+	    <profile>
+	        <id>cloudempiere-local</id>
+	        <properties>
+	            <!-- Default workspace location. Override in ~/.m2/settings.xml or via -Dcloudempiere.workspace=... -->
+	            <cloudempiere.workspace>${user.home}/github/idempiere-cloudempiere</cloudempiere.workspace>
+	            <idempiere.core.repository.url>file:///${cloudempiere.workspace}/iDempiereCLDE/core/org.idempiere.p2/target/repository</idempiere.core.repository.url>
+	            <cloudempiere.composite.repository.url>file:///${cloudempiere.workspace}/iDempiereCLDE/_composite/com.cloudempiere.composite.p2/target/repository</cloudempiere.composite.repository.url>
+	        </properties>
+	    </profile>
 	</profiles>
 </project>
