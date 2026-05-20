@@ -41,7 +41,6 @@ import java.util.logging.Level;
 
 import org.adempiere.util.IProcessUI;
 import org.compiere.model.MClient;
-import org.compiere.model.MRole;
 import org.compiere.util.DB;
 import org.compiere.util.Env;
 import org.compiere.util.Util;
@@ -296,7 +295,6 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
             }
         }
 
-        MRole role = MRole.getDefault(ctx, false);
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         try {
@@ -365,18 +363,18 @@ public class PGTextSearchIndexProvider implements ISearchIndexProvider {
 		if (indexQuery.get(result.getAD_Table_ID()) != null) {
 			sql.append(indexQuery.get(result.getAD_Table_ID()));
 		} else {
-
-			ArrayList<Integer> columnIds = null;//getIndexedColumns(result.getAD_Table_ID()); // TODO
-
-			if(columnIds == null || columnIds.isEmpty()) {
-				result.setHtmlHeadline("");
-				return;
-			}
-
-			sql.append("SELECT ts_headline(body, q) FROM (");			
-//			sql.append(getIndexSql(columnIds, result.getAD_Table_ID())); // TODO
-
-			indexQuery.put(result.getAD_Table_ID(), sql.toString());
+			// TODO: re-enable when getIndexedColumns/getIndexSql are implemented
+			//ArrayList<Integer> columnIds = getIndexedColumns(result.getAD_Table_ID());
+			//if (columnIds != null && !columnIds.isEmpty()) {
+			//    sql.append("SELECT ts_headline(body, q) FROM (");
+			//    sql.append(getIndexSql(columnIds, result.getAD_Table_ID()));
+			//    indexQuery.put(result.getAD_Table_ID(), sql.toString());
+			//} else {
+			//    result.setHtmlHeadline("");
+			//    return;
+			//}
+			result.setHtmlHeadline("");
+			return;
 		}
 
 		//Bring the table ids that are indexed

@@ -26,11 +26,14 @@ pipeline {
                 script {
                     def suffix = (env.BRANCH_NAME == clde_branch_master) ? 'master' : 'staging'
                     def base = "${WORKSPACE}/.."
+                    def cldeRoot = "${base}/clde-server_${suffix}-cloudempiere/iDempiereCLDE"
 
-                    env.IDEMPIERE_CORE_REPO = "file://${base}/clde-server_${suffix}-cloudempiere/iDempiereCLDE/core/org.idempiere.p2/target/repository"
+                    env.IDEMPIERE_CORE_REPO = "file://${cldeRoot}/core/org.idempiere.p2/target/repository"
+                    env.CLOUDEMPIERE_COMPOSITE_REPO = "file://${cldeRoot}/_composite/com.cloudempiere.composite.p2/target/repository"
 
                     echo "Repository URLs:"
-                    echo "  iDempiere core: ${env.IDEMPIERE_CORE_REPO}"
+                    echo "  iDempiere core:         ${env.IDEMPIERE_CORE_REPO}"
+                    echo "  Cloudempiere composite: ${env.CLOUDEMPIERE_COMPOSITE_REPO}"
                 }
             }
         }
@@ -45,7 +48,8 @@ pipeline {
             steps {
                 sh """
                     mvn clean verify -U \
-                        -Didempiere.core.repository.url=${IDEMPIERE_CORE_REPO}
+                        -Didempiere.core.repository.url=${IDEMPIERE_CORE_REPO} \
+                        -Dcloudempiere.composite.repository.url=${CLOUDEMPIERE_COMPOSITE_REPO}
                 """
             }
         }

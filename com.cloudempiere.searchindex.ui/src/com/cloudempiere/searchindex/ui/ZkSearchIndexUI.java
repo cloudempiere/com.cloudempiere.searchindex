@@ -202,14 +202,13 @@ public class ZkSearchIndexUI extends Div implements EventListener<Event> {
 			int pgno = ee.getActivePage();
 
 			if (pgno != 0 && results != null) {
-				int start = pgno * 10;
 				int end = (pgno * 10) + 10;
 
 				if (end > results.size())
 					end = results.size();
 
 //				TODO test and fix:
-//				for (int i = start; i < end; i++)
+//				for (int i = pgno * 10; i < end; i++)
 //					searchIndexProviderList.setHeadline(results.get(i), searchCombobox.getValue());
 
 				setModel(results);

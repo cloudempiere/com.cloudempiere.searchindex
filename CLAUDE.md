@@ -1,5 +1,10 @@
 # CLAUDE.md
 
+<!-- local-build-link -->
+> **Local build setup:** see [iDempiereCLDE/LOCAL_BUILD.md](../iDempiereCLDE/LOCAL_BUILD.md) for the one-time `~/.m2/settings.xml` configuration
+> that lets `mvn verify` resolve P2 artifacts from sibling local builds instead of S3.
+
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
