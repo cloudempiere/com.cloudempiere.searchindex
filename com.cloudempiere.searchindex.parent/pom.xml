@@ -18,8 +18,10 @@
 		<lifecycle.mapping.version>1.0.0</lifecycle.mapping.version>
 		<maven-clean-plugin.version>2.5</maven-clean-plugin.version>
 		<!-- default value of properties, use when run without profile -->
-		<idempiere.core.repository.url>https://cloudempiere-p2.s3.eu-west-1.amazonaws.com/plugins/iDempiereCLDE/master/latest/</idempiere.core.repository.url>
-		<cloudempiere.composite.repository.url>https://cloudempiere-p2.s3.eu-west-1.amazonaws.com/plugins/com.cloudempiere.composite/master/latest/</cloudempiere.composite.repository.url>
+		<!-- Which published P2 repo channel to consume (P2 repo, NOT a git branch). Override in CI: -Dcloudempiere.p2.channel=production -->
+		<cloudempiere.p2.channel>staging</cloudempiere.p2.channel>
+		<idempiere.core.repository.url>https://cloudempiere-p2.s3.eu-west-1.amazonaws.com/plugins/iDempiereCLDE/${cloudempiere.p2.channel}/latest/</idempiere.core.repository.url>
+		<cloudempiere.composite.repository.url>https://cloudempiere-p2.s3.eu-west-1.amazonaws.com/plugins/com.cloudempiere.composite/${cloudempiere.p2.channel}/latest/</cloudempiere.composite.repository.url>
 	</properties>
 
 	<build>
