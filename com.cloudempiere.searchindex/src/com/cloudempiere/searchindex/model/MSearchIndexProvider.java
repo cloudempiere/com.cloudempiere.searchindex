@@ -74,6 +74,17 @@ public class MSearchIndexProvider extends X_AD_SearchIndexProvider implements Im
 	}
 
 	/**
+	 * Copy constructor
+	 * @param ctx
+	 * @param copy
+	 * @param trxName
+	 */
+	public MSearchIndexProvider(Properties ctx, MSearchIndexProvider copy, String trxName) {
+		this(ctx, 0, trxName);
+		copyPO(copy);
+	}
+
+	/**
 	 * Get search index provider from cache
 	 * @param ctx
 	 * @param AD_SearchTableIndexProvider_ID
