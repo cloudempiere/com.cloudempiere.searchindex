@@ -58,7 +58,14 @@
     <description>Unit and integration tests for com.cloudempiere.searchindex</description>
 
     <properties>
-        <skipTests>false</skipTests>
+        <!-- Tests are NOT executed in plugin CI. They are integration tests: they extend
+             AbstractTestCase and need a live iDempiere OSGi runtime plus a seeded database
+             (Garden World). Running them without one fails with NullPointerException in
+             AbstractTestCase.getTrxName / DynamicServiceLocator, which is what happened to
+             com.cloudempiere.ccp.test in CI build #6.
+             CI builds the fragment to prove it COMPILES; execution is opt-in via -Prun-tests.
+             Matches com.cloudempiere.graphql.test. -->
+        <skipTests>true</skipTests>
         <sonar.skip>true</sonar.skip>
         <idempiere.home>../../iDempiereCLDE</idempiere.home>
         <!-- JUnit 5 parallel execution -->
