@@ -3,13 +3,54 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- Use iDempiere parent for Tycho configuration and test dependencies -->
+    <!--
+      Parent is the searchindex parent, NOT org.idempiere.parent.
+
+      This used to point at ../../iDempiereCLDE/core/org.idempiere.parent/pom.xml — a relative
+      filesystem path into a SIBLING REPOSITORY that CI never checks out, so the module could not
+      even be read there, let alone built. It also meant inheriting none of the P2 channels the
+      searchindex parent declares, so the host bundle com.cloudempiere.searchindex would not have
+      resolved either.
+
+      The fragment's target platform must be the one the bundle under test resolves against.
+      Same arrangement as the sibling .ui module and as com.cloudempiere.graphql.test.
+    -->
     <parent>
-        <groupId>org.idempiere</groupId>
-        <artifactId>org.idempiere.parent</artifactId>
-        <version>${revision}</version>
-        <relativePath>../../iDempiereCLDE/core/org.idempiere.parent/pom.xml</relativePath>
+        <groupId>com.cloudempiere.searchindex</groupId>
+        <artifactId>com.cloudempiere.searchindex.parent</artifactId>
+        <version>10.2.0-SNAPSHOT</version>
+        <relativePath>../com.cloudempiere.searchindex.parent/pom.xml</relativePath>
     </parent>
+
+    <!--
+      org.idempiere.test supplies AbstractTestCase. It is <packaging>eclipse-test-plugin</packaging>
+      in core, and Tycho never publishes those to P2 — upstream's deliberate design, identical on
+      release-10/11/12/master — so it will never appear in the iDempiereCLDE P2 channel. It resolves
+      on a developer machine only because a local full reactor build leaves it in the target
+      platform; in CI it is absent.
+
+      Supplied as a pom dependency, which is what Tycho asks for when it reports "must be provided
+      through pom dependencies", folded into the target platform by pomDependencies=consider below.
+      assertj is imported by MANIFEST.MF but ships from Maven Central, not any P2 channel.
+
+      COMPILE scope on both, deliberately: Tycho folds only compile-scope pom dependencies into the
+      target platform, so <scope>test</scope> would leave the manifest imports unresolved. The whole
+      bundle is test code regardless.
+
+      See com.cloudempiere.graphql/docs/testing/INTEGRATION-TESTS-NOT-IN-CI.md
+    -->
+    <dependencies>
+        <dependency>
+            <groupId>org.idempiere</groupId>
+            <artifactId>org.idempiere.test</artifactId>
+            <version>10.0.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>3.22.0</version>
+        </dependency>
+    </dependencies>
 
     <artifactId>com.cloudempiere.searchindex.test</artifactId>
     <packaging>eclipse-test-plugin</packaging>
@@ -55,11 +96,31 @@
                 <artifactId>target-platform-configuration</artifactId>
                 <version>${tycho.version}</version>
                 <configuration>
+                    <!-- Fold the pom dependencies above into the target platform; without this
+                         Tycho resolves only P2 content and the manifest imports fail. -->
+                    <pomDependencies>consider</pomDependencies>
                     <dependency-resolution>
-                        <extraRequirements>
+                        <!-- combine.children=append keeps the parent's requirements
+                             (org.eclipse.core.runtime, org.eclipse.equinox.common). Without it
+                             this list REPLACES them and they vanish silently.
+
+                             org.adempiere.server.product drags in the product closure, which is
+                             what supplies org.idempiere.test's OWN Import-Packages — notably
+                             org.springframework.beans.factory.config 5.2.15+, provided by
+                             wrapped.org.springframework.spring-beans in the core P2. Without it
+                             com.cloudempiere.ccp.test failed with:
+                                 Unresolved requirement: Require-Bundle: org.idempiere.test
+                                   -> Unresolved requirement: Import-Package: org.springframework...
+                             i.e. org.idempiere.test resolves but cannot itself be satisfied. -->
+                        <extraRequirements combine.children="append">
                             <requirement>
                                 <type>eclipse-plugin</type>
                                 <id>com.cloudempiere.searchindex</id>
+                                <versionRange>0.0.0</versionRange>
+                            </requirement>
+                            <requirement>
+                                <type>p2-installable-unit</type>
+                                <id>org.adempiere.server.product</id>
                                 <versionRange>0.0.0</versionRange>
                             </requirement>
                         </extraRequirements>

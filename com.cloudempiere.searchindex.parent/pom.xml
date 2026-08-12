@@ -22,6 +22,14 @@
 		<cloudempiere.p2.channel>staging</cloudempiere.p2.channel>
 		<idempiere.core.repository.url>https://cloudempiere-p2.s3.eu-west-1.amazonaws.com/plugins/iDempiereCLDE/${cloudempiere.p2.channel}/latest/</idempiere.core.repository.url>
 		<cloudempiere.composite.repository.url>https://cloudempiere-p2.s3.eu-west-1.amazonaws.com/plugins/com.cloudempiere.composite/${cloudempiere.p2.channel}/latest/</cloudempiere.composite.repository.url>
+		<!-- Maven-layout channel (NOT p2) — carries org.idempiere.test, which Tycho builds but
+		     never publishes to P2 because its packaging is eclipse-test-plugin (upstream's
+		     design, identical on release-10/11/12/master). com.cloudempiere.searchindex.test
+		     needs it for AbstractTestCase. Published by iDempiereCLDE/ci/buildspec-p2-publish.yml.
+		     `latest/` floats; to pin, swap it for an iDempiereCLDE build ts — the artifact comes
+		     out of the same reactor run and shares that ts.
+		     See com.cloudempiere.graphql/docs/testing/INTEGRATION-TESTS-NOT-IN-CI.md -->
+		<cloudempiere.maven.repository.url>https://cloudempiere-p2.s3.eu-west-1.amazonaws.com/maven/${cloudempiere.p2.channel}/latest/</cloudempiere.maven.repository.url>
 	</properties>
 
 	<build>
@@ -177,6 +185,21 @@
 				<repository>
 					<id>zkoss</id>
 					<url>http://mavensync.zkoss.org/maven2</url>
+				</repository>
+				<!-- Default (maven2) layout, deliberately — idempiere-core and
+				     cloudempiere-composite above are layout=p2; this one must not be.
+				     Snapshots on with updatePolicy=always: org.idempiere.test is a floating
+				     10.0.0-SNAPSHOT tracking core, and CI caches the local Maven repo, so the
+				     default daily policy would serve a stale jar for up to 24h after a core
+				     publish. -->
+				<repository>
+					<id>cloudempiere-maven</id>
+					<url>${cloudempiere.maven.repository.url}</url>
+					<releases><enabled>true</enabled></releases>
+					<snapshots>
+						<enabled>true</enabled>
+						<updatePolicy>always</updatePolicy>
+					</snapshots>
 				</repository>
 			</repositories>
 			<build>

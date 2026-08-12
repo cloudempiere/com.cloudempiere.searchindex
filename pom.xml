@@ -19,7 +19,14 @@
     <module>com.cloudempiere.searchindex</module>
     <module>com.cloudempiere.searchindex.ui</module>
     <!-- Test module requires Eclipse IDE or special target platform with org.idempiere.test -->
-    <!-- <module>com.cloudempiere.searchindex.test</module> -->
+    <!-- Test fragment. Out of the reactor until 2026-08-12: it needs org.idempiere.test
+         (AbstractTestCase), which is <packaging>eclipse-test-plugin</packaging> in core and so
+         is never published to P2 — upstream's design, identical on release-10/11/12/master.
+         Now consumed as a pom dependency from the maven channel iDempiereCLDE publishes, and
+         the fragment is parented to searchindex.parent instead of reaching across the
+         filesystem into the iDempiereCLDE repo.
+         See com.cloudempiere.graphql/docs/testing/INTEGRATION-TESTS-NOT-IN-CI.md -->
+    <module>com.cloudempiere.searchindex.test</module>
     <module>com.cloudempiere.searchindex.feature</module>
     <module>com.cloudempiere.searchindex.p2</module>
   </modules>
