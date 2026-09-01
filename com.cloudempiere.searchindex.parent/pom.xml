@@ -10,7 +10,7 @@
 	<name>Maven parent project for CloudEmpiere Search Index</name>
 
 	<properties>
-		<tycho.version>2.7.5</tycho.version>
+		<tycho.version>4.0.8</tycho.version>
 		<tycho.extras.version>${tycho.version}</tycho.extras.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.dependency.version>2.8</maven.dependency.version>
@@ -241,8 +241,8 @@
 									<arch>x86_64</arch>
 								</environment>
 							</environments>
-							<executionEnvironmentDefault>JavaSE-11</executionEnvironmentDefault>
-							<executionEnvironment>JavaSE-11</executionEnvironment>
+							<executionEnvironmentDefault>JavaSE-17</executionEnvironmentDefault>
+							<executionEnvironment>JavaSE-17</executionEnvironment>
 						</configuration>
 					</plugin>
 				</plugins>
