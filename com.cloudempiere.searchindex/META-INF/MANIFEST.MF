@@ -15,4 +15,5 @@ Export-Package: com.cloudempiere.searchindex.indexprovider,
 Bundle-ActivationPolicy: lazy
 Automatic-Module-Name: com.cloudempiere.searchindex
 Import-Package: org.osgi.framework,
- org.osgi.service.component.annotations;version="1.5.1"
+ org.osgi.service.component.annotations;version="1.5.1",
+ org.osgi.service.event;version="1.4.1"
