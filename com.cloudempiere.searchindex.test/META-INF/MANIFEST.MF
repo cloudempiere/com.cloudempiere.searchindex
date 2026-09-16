@@ -4,7 +4,7 @@ Bundle-Name: Search Index Tests
 Bundle-SymbolicName: com.cloudempiere.searchindex.test
 Bundle-Version: 14.0.0.qualifier
 Bundle-Vendor: Cloudempiere
-Fragment-Host: com.cloudempiere.searchindex;bundle-version="10.0.0"
+Fragment-Host: com.cloudempiere.searchindex;bundle-version="14.0.0"
 Automatic-Module-Name: com.cloudempiere.searchindex.test
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: org.adempiere.base;bundle-version="14.0.0",
