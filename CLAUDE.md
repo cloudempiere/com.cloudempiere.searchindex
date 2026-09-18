@@ -17,7 +17,7 @@ This project uses Maven with Tycho for building Eclipse/OSGi plugins:
 
 - **Parent POM**: Located at `../../iDempiereCLDE/org.idempiere.parent/pom.xml`
 - **Build command**: `mvn clean install` (run from parent directory or individual plugin directories)
-- **Java version**: JavaSE-11 (as specified in MANIFEST.MF)
+- **Java version**: JavaSE-17 (as specified in MANIFEST.MF)
 
 ## Module Structure
 
@@ -390,7 +390,7 @@ The plugin expects to find the parent iDempiere platform at `../../iDempiereCLDE
 4. Review ts_rank vs position-based ranking for performance
 
 **OSGi bundle not starting:**
-1. Verify MANIFEST.MF has correct Bundle-RequiredExecutionEnvironment (JavaSE-11)
+1. Verify MANIFEST.MF has correct Bundle-RequiredExecutionEnvironment (JavaSE-17)
 2. Check Service-Component header points to OSGI-INF/*.xml
 3. Ensure singleton:=true is set in Bundle-SymbolicName
 4. Verify all required bundles are available and started
