@@ -24,7 +24,6 @@ compilers.p.discouraged-class=0
 compilers.p.exec-env-too-low=0
 # use of internal (non-exported) classes in plugin.xml is not reported
 compilers.p.internal=0
-compilers.p.missing-packages=1
 # Export-Package without version is not reported (ADR-122 VER-04)
 compilers.p.missing-version-export-package=0
 # Import-Package without version is not reported (warning only: core exports unversioned, so core goes via Require-Bundle)
@@ -45,3 +44,4 @@ compilers.s.create-docs=false
 # the project uses workspace defaults instead of these settings
 compilers.use-project=true
 eclipse.preferences.version=1
+compilers.p.missing-packages=2

@@ -4,16 +4,16 @@ Bundle-Name: Searchindex
 Bundle-SymbolicName: com.cloudempiere.searchindex;singleton:=true
 Bundle-Version: 14.0.0.qualifier
 Bundle-RequiredExecutionEnvironment: JavaSE-17
-Require-Bundle: org.adempiere.base;bundle-version="14.0.0",
- org.adempiere.plugin.utils;bundle-version="14.0.0"
+Require-Bundle: org.adempiere.base;bundle-version="[14.0.0,15.0.0)",
+ org.adempiere.plugin.utils;bundle-version="[14.0.0,15.0.0)"
 Bundle-Activator: com.cloudempiere.searchindex.Activator
 Service-Component: OSGI-INF/*.xml
-Export-Package: com.cloudempiere.searchindex.indexprovider,
- com.cloudempiere.searchindex.indexprovider.pgtextsearch,
- com.cloudempiere.searchindex.model,
- com.cloudempiere.searchindex.util
+Export-Package: com.cloudempiere.searchindex.indexprovider;version="14.0.0",
+ com.cloudempiere.searchindex.indexprovider.pgtextsearch;version="14.0.0",
+ com.cloudempiere.searchindex.model;version="14.0.0",
+ com.cloudempiere.searchindex.util;version="14.0.0"
 Bundle-ActivationPolicy: lazy
 Automatic-Module-Name: com.cloudempiere.searchindex
-Import-Package: org.osgi.framework,
+Import-Package: org.osgi.framework;version="[1.10.0,2.0.0)",
  org.osgi.service.component.annotations;version="1.5.1",
  org.osgi.service.event;version="1.4.1"
