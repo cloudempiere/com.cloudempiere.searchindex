@@ -1,0 +1,47 @@
+# @file PDE checks: unversioned dependencies, wrong BREE, build.properties gaps are not reported
+# ADR-122 canonical PDE compiler settings. Severity: 0 = error, 1 = warning, 2 = ignore.
+# A "# " line directly above a key explains it (shown by scripts/validate-eclipse-setup.sh).
+compilers.f.unresolved-features=1
+compilers.f.unresolved-plugins=1
+# a bundle that needs a newer Java than its BREE is not reported
+compilers.incompatible-environment=0
+# build.properties problems are not reported
+compilers.p.build=0
+# missing entries in build.properties bin.includes (files left out of the jar) are not reported
+compilers.p.build.bin.includes=0
+compilers.p.build.encodings=2
+compilers.p.build.java.compiler=2
+compilers.p.build.java.compliance=1
+# build.properties without output.. is not reported
+compilers.p.build.missing.output=0
+compilers.p.build.output.library=1
+compilers.p.build.source.library=1
+compilers.p.build.src.includes=1
+compilers.p.deprecated=1
+# use of discouraged (x-internal) classes in plugin.xml is not reported
+compilers.p.discouraged-class=0
+# a BREE lower than the APIs the code uses is not reported
+compilers.p.exec-env-too-low=0
+# use of internal (non-exported) classes in plugin.xml is not reported
+compilers.p.internal=0
+compilers.p.missing-packages=1
+# Export-Package without version is not reported (ADR-122 VER-04)
+compilers.p.missing-version-export-package=0
+# Import-Package without version is not reported (warning only: core exports unversioned, so core goes via Require-Bundle)
+compilers.p.missing-version-import-package=1
+# Require-Bundle without bundle-version is not reported (ADR-122 VER-04)
+compilers.p.missing-version-require-bundle=0
+compilers.p.no-required-att=0
+compilers.p.not-externalized-att=2
+compilers.p.unknown-attribute=1
+compilers.p.unknown-class=1
+compilers.p.unknown-element=1
+compilers.p.unknown-identifier=1
+compilers.p.unknown-resource=1
+compilers.p.unresolved-ex-points=0
+# a Require-Bundle / Import-Package that cannot be resolved is not an error
+compilers.p.unresolved-import=0
+compilers.s.create-docs=false
+# the project uses workspace defaults instead of these settings
+compilers.use-project=true
+eclipse.preferences.version=1
