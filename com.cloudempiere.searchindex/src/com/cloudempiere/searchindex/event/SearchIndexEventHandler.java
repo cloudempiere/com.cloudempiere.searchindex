@@ -21,6 +21,7 @@
  **********************************************************************/
 package com.cloudempiere.searchindex.event;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
@@ -30,6 +31,7 @@ import org.adempiere.base.event.AbstractEventHandler;
 import org.adempiere.base.event.IEventManager;
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.model.GenericPO;
+import org.compiere.model.MColumn;
 import org.compiere.model.MSysConfig;
 import org.compiere.model.MTable;
 import org.compiere.model.PO;
@@ -207,7 +209,7 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 			
 			// Continue with normal column change check if IsActive didn't change
 			if (!isActiveChanged) {
-				for (int columnId : mTableEvt.getColumnIDs(false)) {
+				for (int columnId : Arrays.stream(mTableEvt.getColumns(false)).mapToInt(MColumn::getAD_Column_ID).toArray()) {
 					if (eventPO.is_ValueChanged_byId(columnId))
 						changedColumnIDs.add(columnId);
 				}
