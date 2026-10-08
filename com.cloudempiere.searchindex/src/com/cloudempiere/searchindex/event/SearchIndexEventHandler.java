@@ -21,7 +21,6 @@
  **********************************************************************/
 package com.cloudempiere.searchindex.event;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
@@ -209,9 +208,9 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 			
 			// Continue with normal column change check if IsActive didn't change
 			if (!isActiveChanged) {
-				for (int columnId : Arrays.stream(mTableEvt.getColumns(false)).mapToInt(MColumn::getAD_Column_ID).toArray()) {
-					if (eventPO.is_ValueChanged_byId(columnId))
-						changedColumnIDs.add(columnId);
+				for (MColumn column : mTableEvt.getColumns(false)) {
+					if (eventPO.is_ValueChanged(column.getColumnName()))
+						changedColumnIDs.add(column.getAD_Column_ID());
 				}
 				for (IndexedTable searchIndexConfig : indexedTables) {
 					for (int changedColId : changedColumnIDs) {
