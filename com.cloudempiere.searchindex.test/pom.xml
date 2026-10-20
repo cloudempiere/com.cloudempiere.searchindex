@@ -88,7 +88,7 @@
                     <argLine>-DIDEMPIERE_HOME=${idempiere.home} ${p1} ${p2} ${p3} ${p4} ${p5}</argLine>
                     <testRuntime>p2Installed</testRuntime>
                     <skipTests>${skipTests}</skipTests>
-                    <providerHint>junit58</providerHint>
+                    <providerHint>junit59</providerHint>
                     <useUIHarness>false</useUIHarness>
                     <includes>
                         <include>**/*Test.java</include>
