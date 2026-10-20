@@ -36,6 +36,13 @@ and this project adheres to [Conventional Commits](https://conventionalcommits.o
 
 ### Fixed
 
+- **v14:** Search index columns with a Table / Search reference (`AD_SearchIndexColumn.AD_Reference_ID`) no longer break the index update (SearchIndexConfigBuilder)
+  - Symptom: `PSQLException: syntax error at or near "("` from `loadSearchIndexData`, generated SELECT contained `M_Product_PO.NVL(M_Product_PO.VendorProductNo,'-1') as M_Product_PO_NVL(...)`; record saves succeeded but the index row was not updated
+  - Cause: since IDEMPIERE-6163 `MLookupInfo.lookupDisplayColumns` holds the display column as SQL (`NVL(T.Col,'-1')`), and `lookupDisplayColumnNames` copies it for references that display a non-key column. The builder used the entries as column names
+  - Fix: display column names are resolved to plain columns of the lookup table (the reference's `AD_Display` when core returns an expression); translated columns index the base column as before the migration; virtual display columns are skipped with a warning; a column name that is not a SQL identifier is skipped instead of failing the whole query
+  - Also fixes references that display the key column (identifiers), which failed the same way before the migration
+  - Affected on dev2: `idx_product_ts` (M_Product_PO VendorProductNo, M_Product_MatchCode), `idx_bpartner_ts` (AD_User Name/EMail, C_BPartner_Location EMail), `idx_r_request_ts` (R_RequestUpdate Result)
+  - Test bundle: `providerHint` junit59 (junit58 did not resolve against the v14 target platform); new `SearchIndexConfigBuilderSqlTest` (unit) and `SearchIndexConfigBuilderLookupTest` (integration)
 - **CRITICAL:** Fixed FK table indexing failure in uncommitted transactions (SearchIndexEventHandler)
   - Event handler now uses business transaction for reading data (can see uncommitted changes)
   - Fixes "NO Data found" error when parent and child records created in same transaction
