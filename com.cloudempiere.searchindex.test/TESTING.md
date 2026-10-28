@@ -467,7 +467,7 @@ Modify test behavior in `pom.xml`:
 JUnit 5 version and Java compatibility:
 
 ```manifest
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Import-Package: org.junit.jupiter.api;version="5.6.0",
  org.assertj.core.api;version="3.22.0"
 ```
