@@ -40,7 +40,6 @@ import org.zkoss.zul.Comboitem;
 import org.zkoss.zul.Div;
 import org.zkoss.zul.ListModelArray;
 import org.zkoss.zul.Listbox;
-import org.zkoss.zul.Vbox;
 import org.zkoss.zul.Vlayout;
 import org.zkoss.zul.event.PagingEvent;
 
@@ -131,7 +130,7 @@ public class ZkSearchIndexUI extends Div implements EventListener<Event> {
 			showResults(false, ErrorLabel.NO_INDEX);
 		}
 
-		Vbox box = new Vbox();
+		Vlayout box = new Vlayout();
 		box.setVflex("1");
 		box.setHflex("1");
 		box.appendChild(searchCombobox);

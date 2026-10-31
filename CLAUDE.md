@@ -17,7 +17,7 @@ This project uses Maven with Tycho for building Eclipse/OSGi plugins:
 
 - **Parent POM**: Located at `../../iDempiereCLDE/org.idempiere.parent/pom.xml`
 - **Build command**: `mvn clean install` (run from parent directory or individual plugin directories)
-- **Java version**: JavaSE-11 (as specified in MANIFEST.MF)
+- **Java version**: JavaSE-17 (as specified in MANIFEST.MF)
 
 ## Module Structure
 
@@ -245,10 +245,10 @@ See `docs/guides/performance/postgres-fts.md` for detailed analysis and optimiza
 - **Impact**: Multi-tenant index corruption possible
 - **Solution**: [ADR-006: Multi-Tenant Integrity](docs/adr/adr-006-multi-tenant-integrity.md)
 
-**4. Cache Invalidation** (`SearchIndexConfigBuilder.java:39, 256`):
-- Configuration cache is never explicitly cleared
-- Stale entries persist after AD_SearchIndex modifications
-- **Workaround**: Restart OSGi bundle or trigger event handler re-initialization
+**4. Cache Invalidation** (`SearchIndexConfigBuilder.java:41`):
+- `SearchIndexEventHandler` clears the entry when an AD_SearchIndex / AD_SearchIndexTable / AD_SearchIndexColumn record changes (`SearchIndexConfigBuilder.clearCache`)
+- Not cleared when the dictionary the config reads changes (AD_Ref_Table, AD_Column) or when a new bundle version changes how the config is built: restart the bundle or run Cache Reset
+- The cache key is AD_SearchIndex_ID only, not AD_Client_ID; a build without an index id (-1) caches the first client's configs under -1
 
 **5. FK Traversal Depth** (`SearchIndexConfigBuilder.java:288-312`):
 - Only supports 1-level FK relationships
@@ -390,7 +390,7 @@ The plugin expects to find the parent iDempiere platform at `../../iDempiereCLDE
 4. Review ts_rank vs position-based ranking for performance
 
 **OSGi bundle not starting:**
-1. Verify MANIFEST.MF has correct Bundle-RequiredExecutionEnvironment (JavaSE-11)
+1. Verify MANIFEST.MF has correct Bundle-RequiredExecutionEnvironment (JavaSE-17)
 2. Check Service-Component header points to OSGI-INF/*.xml
 3. Ensure singleton:=true is set in Bundle-SymbolicName
 4. Verify all required bundles are available and started

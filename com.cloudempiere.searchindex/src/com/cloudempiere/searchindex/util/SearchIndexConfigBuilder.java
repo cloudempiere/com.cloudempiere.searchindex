@@ -13,11 +13,14 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.logging.Level;
+import java.util.regex.Pattern;
 
 import org.adempiere.exceptions.AdempiereException;
+import org.compiere.model.MColumn;
 import org.compiere.model.MLookup;
 import org.compiere.model.MLookupFactory;
 import org.compiere.model.MLookupInfo;
+import org.compiere.model.MRefTable;
 import org.compiere.util.CCache;
 import org.compiere.util.CLogger;
 import org.compiere.util.DB;
@@ -37,6 +40,8 @@ public class SearchIndexConfigBuilder {
 	private static final CLogger log = CLogger.getCLogger(SearchIndexConfigBuilder.class);
 	/** Search Index Config Cache */
 	private static final CCache<Integer, List<SearchIndexConfig>> searchIndexConfigCache = new CCache<>("SearchIndexConfig", 50);
+	/** Plain SQL identifier - a column name that can be qualified with its table and used in an alias */
+	private static final Pattern SQL_IDENTIFIER = Pattern.compile("[A-Za-z_][A-Za-z0-9_]*");
 
 	/** Context */
 	private Properties ctx = null;
@@ -248,7 +253,7 @@ public class SearchIndexConfigBuilder {
 	                tableConfig.addColumn(new SearchIndexColumnConfig(tableId, tableName, -1, columnName, parentColId, parentColName, null, searchWeight));
 	                MLookup lookup = MLookupFactory.get(ctx, 0, columnId, referenceId, Env.getLanguage(ctx), columnName, referenceValueId, isParent, null);
 	                MLookupInfo lookupInfo = lookup.getLookupInfo();
-	                for (String lookupDisplayColumnName : lookupInfo.lookupDisplayColumns) {
+	                for (String lookupDisplayColumnName : getLookupDisplayColumnNames(lookupInfo, referenceValueId)) {
 	                    tableConfig.addColumn(new SearchIndexColumnConfig(-1, lookupInfo.TableName, -1, lookupDisplayColumnName, -1, getLookupKeyColumnName(lookupInfo.KeyColumn), tableName, searchWeight));
 	                }
 	            }
@@ -278,41 +283,6 @@ public class SearchIndexConfigBuilder {
             	if (tableId > 0 && tableId != tableConfig.getTableId())
             		continue;
             	
-                StringBuilder fromClauseBuilder = new StringBuilder();
-                fromClauseBuilder.append(" FROM ").append(tableConfig.getTableName());
-                StringBuilder selectClauseBuilder = new StringBuilder();
-                selectClauseBuilder.append("SELECT ").append(tableConfig.getTableName()).append(".").append(tableConfig.getKeyColName()).append(" as Record_ID, ");
-
-                Set<String> joinedTables = new HashSet<>();
-
-                for (SearchIndexColumnConfig columnConfig : tableConfig.getColumns()) {
-                    String columnAlias = columnConfig.getTableName() + "_" + columnConfig.getColumnName();
-                    if (columnConfig.getTableId() == tableConfig.getTableId()) {
-                        if (!Util.isEmpty(columnConfig.getColumnName())) {
-                            selectClauseBuilder.append(tableConfig.getTableName()).append(".").append(columnConfig.getColumnName()).append(" as ").append(columnAlias);
-                        }
-                    } else {
-                        if (!Util.isEmpty(columnConfig.getTableName()) && !Util.isEmpty(columnConfig.getColumnName())) {
-                            selectClauseBuilder.append(columnConfig.getTableName()).append(".").append(columnConfig.getColumnName()).append(" as ").append(columnAlias);
-                        }
-                        if (!joinedTables.contains(columnConfig.getTableName())) {
-                            fromClauseBuilder.append(" LEFT JOIN ").append(columnConfig.getTableName()).append(" ON ");
-                            if (!Util.isEmpty(columnConfig.getParentTableName()) && !tableConfig.getTableName().equals(columnConfig.getParentTableName())) {
-                                fromClauseBuilder.append(columnConfig.getParentTableName());
-                            } else {
-                                fromClauseBuilder.append(tableConfig.getTableName());
-                            }
-                            fromClauseBuilder.append(".").append(columnConfig.getParentColumnName());
-                            fromClauseBuilder.append(" = ").append(columnConfig.getTableName()).append(".").append(columnConfig.getColumnName());
-                            joinedTables.add(columnConfig.getTableName());
-                        }
-                    }
-                    if (selectClauseBuilder.charAt(selectClauseBuilder.length() - 2) != ',') {
-                        selectClauseBuilder.append(", ");
-                    }
-                }
-                selectClauseBuilder.deleteCharAt(selectClauseBuilder.length() - 2);
-
                 StringBuilder whereClauseBuilder = new StringBuilder();
                 List<Object> params = new ArrayList<>();
                 whereClauseBuilder.append(" WHERE ").append(tableConfig.getTableName()).append(".AD_Client_ID = ? AND ").append(tableConfig.getTableName()).append(".IsActive = 'Y' ");
@@ -332,7 +302,7 @@ public class SearchIndexConfigBuilder {
                 	params.add(recordId);
                 }
 
-                String query = selectClauseBuilder.toString() + fromClauseBuilder.toString() + whereClauseBuilder.toString();
+                String query = getSelectFromClause(tableConfig) + whereClauseBuilder.toString();
 
                 PreparedStatement pstmt = null;
                 ResultSet rs = null;
@@ -349,7 +319,7 @@ public class SearchIndexConfigBuilder {
                         Map<String, SearchIndexColumnData> data = new LinkedHashMap<>();
                         data.put("Record_ID", new SearchIndexColumnData("Record_ID", rs.getObject("Record_ID"), Env.ONE, tableConfig.getMaxSearchWeight()));
                         for (SearchIndexColumnConfig columnConfig : tableConfig.getColumns()) {
-                            if (!Util.isEmpty(columnConfig.getColumnName())) {
+                            if (isSqlIdentifier(columnConfig.getColumnName())) {
                                 String key = columnConfig.getTableName() + "." + columnConfig.getColumnName();
                                 String columnAlias = columnConfig.getTableName() + "_" + columnConfig.getColumnName();
                                 data.put(key, new SearchIndexColumnData(key, rs.getObject(columnAlias), columnConfig.getSearchWeight(), tableConfig.getMaxSearchWeight()));
@@ -370,6 +340,96 @@ public class SearchIndexConfigBuilder {
         }
     }
 	
+	/**
+	 * Get the SELECT and FROM clause of the data query of a table config.
+	 * A column whose name is not a plain SQL identifier is skipped: it would break the whole query.
+	 * @param tableConfig
+	 * @return SELECT ... FROM ... with joins, without WHERE
+	 */
+	protected static String getSelectFromClause(SearchIndexTableConfig tableConfig) {
+		StringBuilder fromClauseBuilder = new StringBuilder();
+		fromClauseBuilder.append(" FROM ").append(tableConfig.getTableName());
+		StringBuilder selectClauseBuilder = new StringBuilder();
+		selectClauseBuilder.append("SELECT ").append(tableConfig.getTableName()).append(".").append(tableConfig.getKeyColName()).append(" as Record_ID, ");
+
+		Set<String> joinedTables = new HashSet<>();
+
+		for (SearchIndexColumnConfig columnConfig : tableConfig.getColumns()) {
+			if (!isSqlIdentifier(columnConfig.getColumnName())) {
+				if (!Util.isEmpty(columnConfig.getColumnName()))
+					log.severe("Search index column skipped, not a column name: " + columnConfig.getTableName() + "." + columnConfig.getColumnName());
+				continue;
+			}
+			String columnAlias = columnConfig.getTableName() + "_" + columnConfig.getColumnName();
+			if (columnConfig.getTableId() == tableConfig.getTableId()) {
+				selectClauseBuilder.append(tableConfig.getTableName()).append(".").append(columnConfig.getColumnName()).append(" as ").append(columnAlias);
+			} else {
+				if (!Util.isEmpty(columnConfig.getTableName())) {
+					selectClauseBuilder.append(columnConfig.getTableName()).append(".").append(columnConfig.getColumnName()).append(" as ").append(columnAlias);
+				}
+				if (!joinedTables.contains(columnConfig.getTableName())) {
+					fromClauseBuilder.append(" LEFT JOIN ").append(columnConfig.getTableName()).append(" ON ");
+					if (!Util.isEmpty(columnConfig.getParentTableName()) && !tableConfig.getTableName().equals(columnConfig.getParentTableName())) {
+						fromClauseBuilder.append(columnConfig.getParentTableName());
+					} else {
+						fromClauseBuilder.append(tableConfig.getTableName());
+					}
+					fromClauseBuilder.append(".").append(columnConfig.getParentColumnName());
+					fromClauseBuilder.append(" = ").append(columnConfig.getTableName()).append(".").append(columnConfig.getColumnName());
+					joinedTables.add(columnConfig.getTableName());
+				}
+			}
+			if (selectClauseBuilder.charAt(selectClauseBuilder.length() - 2) != ',') {
+				selectClauseBuilder.append(", ");
+			}
+		}
+		selectClauseBuilder.deleteCharAt(selectClauseBuilder.length() - 2);
+
+		return selectClauseBuilder.toString() + fromClauseBuilder.toString();
+	}
+
+	/**
+	 * Get the plain column names a lookup displays.
+	 * Since IDEMPIERE-6163 MLookupInfo.lookupDisplayColumns holds the display column as SQL, e.g.
+	 * NVL(M_Product_PO.VendorProductNo,'-1'), and so does lookupDisplayColumnNames when a table
+	 * reference displays a column other than the key. Such an entry is replaced by the display
+	 * column of the reference. Virtual columns are skipped, they have no physical column to select.
+	 * @param lookupInfo lookup of the search index column
+	 * @param referenceValueId AD_Reference_Value_ID of the search index column
+	 * @return column names of lookupInfo.TableName
+	 */
+	protected List<String> getLookupDisplayColumnNames(MLookupInfo lookupInfo, int referenceValueId) {
+		List<String> columnNames = new ArrayList<>();
+		List<String> entries = lookupInfo.lookupDisplayColumnNames != null ? lookupInfo.lookupDisplayColumnNames : lookupInfo.lookupDisplayColumns;
+		if (entries == null)
+			return columnNames;
+		for (String entry : entries) {
+			String columnName = entry;
+			if (!isSqlIdentifier(columnName) && referenceValueId > 0) {
+				MRefTable refTable = MRefTable.get(ctx, referenceValueId);
+				if (refTable != null && refTable.getAD_Display() > 0)
+					columnName = MColumn.get(ctx, refTable.getAD_Display()).getColumnName();
+			}
+			MColumn column = isSqlIdentifier(columnName) ? MColumn.get(ctx, lookupInfo.TableName, columnName) : null;
+			if (column == null) {
+				log.warning("Lookup display column not found in " + lookupInfo.TableName + ": " + entry);
+			} else if (column.isVirtualColumn()) {
+				log.warning("Virtual lookup display column is not indexed: " + lookupInfo.TableName + "." + column.getColumnName());
+			} else if (!columnNames.contains(column.getColumnName())) {
+				columnNames.add(column.getColumnName());
+			}
+		}
+		return columnNames;
+	}
+
+	/**
+	 * @param name
+	 * @return true if name is a plain SQL identifier
+	 */
+	protected static boolean isSqlIdentifier(String name) {
+		return name != null && SQL_IDENTIFIER.matcher(name).matches();
+	}
+
 	/**
 	 * Get the lookup key column name
 	 * @param keyColumn

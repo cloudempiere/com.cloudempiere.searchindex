@@ -30,6 +30,7 @@ import org.adempiere.base.event.AbstractEventHandler;
 import org.adempiere.base.event.IEventManager;
 import org.adempiere.base.event.IEventTopics;
 import org.adempiere.model.GenericPO;
+import org.compiere.model.MColumn;
 import org.compiere.model.MSysConfig;
 import org.compiere.model.MTable;
 import org.compiere.model.PO;
@@ -207,9 +208,9 @@ public class SearchIndexEventHandler extends AbstractEventHandler {
 			
 			// Continue with normal column change check if IsActive didn't change
 			if (!isActiveChanged) {
-				for (int columnId : mTableEvt.getColumnIDs(false)) {
-					if (eventPO.is_ValueChanged_byId(columnId))
-						changedColumnIDs.add(columnId);
+				for (MColumn column : mTableEvt.getColumns(false)) {
+					if (eventPO.is_ValueChanged(column.getColumnName()))
+						changedColumnIDs.add(column.getAD_Column_ID());
 				}
 				for (IndexedTable searchIndexConfig : indexedTables) {
 					for (int changedColId : changedColumnIDs) {
